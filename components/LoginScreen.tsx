@@ -9,10 +9,10 @@ import {
   TextInput,
   Pressable,
   TouchableOpacity,
-  ActivityIndicator,
-  StatusBar,
   Alert,
   Switch,
+  Image,
+  StatusBar,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import * as SecureStore from "expo-secure-store";
@@ -22,6 +22,7 @@ import Label from "./ui/Label";
 import ErrorText from "./ui/ErrorText";
 import PrimaryButton from "./ui/PrimaryButton";
 import GhostButton from "./ui/GhostButton";
+import { assets } from "@/assets/images/assets";
 
 // -----------------------------
 // Schéma & types
@@ -70,7 +71,7 @@ export default function LoginScreen() {
     setError,
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange",
+    mode: "onSubmit",
     defaultValues: { email: "", password: "" },
   });
 
@@ -167,11 +168,11 @@ export default function LoginScreen() {
           <View className="flex-1 px-5 pt-10 pb-8">
             {/* Branding */}
             <View className="items-center mb-10">
-              <View className="w-16 h-16 rounded-2xl bg-primary items-center justify-center shadow">
-                <Text className="text-customblack font-extrabold text-xl">
-                  T
-                </Text>
-              </View>
+              <Image
+                source={assets.logo as any}
+                alt="Tokana Logo"
+                style={{ width: 48, height: 48 }}
+              />
               <Text className="mt-4 text-2xl font-extrabold text-secondary">
                 Tokana Delivery
               </Text>
@@ -199,7 +200,7 @@ export default function LoginScreen() {
                     value={value}
                     placeholder="ex: rider@tokana.mg"
                     placeholderTextColor="#949789"
-                    className="w-full rounded-2xl border border-accent px-4 py-3 bg-white text-customblack"
+                    className="w-full rounded-xl border border-accent px-4 py-3 bg-white text-customblack"
                   />
                 )}
               />
