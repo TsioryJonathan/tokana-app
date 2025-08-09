@@ -1,9 +1,5 @@
-import { Text, View } from "react-native";
+import LoginScreen from "@/components/LoginScreen";
 
 export default function Index() {
-  return (
-    <View className="w-screen h-screen flex items-center justify-center bg-red-500">
-      <Text className="text-6xl font-bold">Welcome!</Text>
-    </View>
-  );
+  return <LoginScreen />;
 }
