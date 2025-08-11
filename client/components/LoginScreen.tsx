@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   KeyboardAvoidingView,
@@ -9,154 +9,42 @@ import {
   TextInput,
   Pressable,
   TouchableOpacity,
-  Alert,
   Switch,
   Image,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
-import { useForm, Controller } from "react-hook-form";
-import * as SecureStore from "expo-secure-store";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import Label from "./ui/Label";
-import ErrorText from "./ui/ErrorText";
 import PrimaryButton from "./ui/PrimaryButton";
 import GhostButton from "./ui/GhostButton";
 import { assets } from "@/assets/images/assets";
-
-// -----------------------------
-// Schéma & types
-// -----------------------------
-const loginSchema = z.object({
-  email: z.string().min(1, "Email requis").email("Email invalide"),
-  password: z.string().min(6, "Minimum 6 caractères"),
-});
-type LoginValues = z.infer<typeof loginSchema>;
-
-// -----------------------------
-// Helpers stockage sécurisé
-// -----------------------------
-const TOKEN_KEY = "tokana_token";
-const REMEMBER_KEY = "tokana_remember";
-
-async function saveToken(token: string) {
-  try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-  } catch {}
-}
-async function getRemember(): Promise<boolean> {
-  try {
-    const v = await SecureStore.getItemAsync(REMEMBER_KEY);
-    return v === "1";
-  } catch {
-    return false;
-  }
-}
-async function setRemember(on: boolean) {
-  try {
-    await SecureStore.setItemAsync(REMEMBER_KEY, on ? "1" : "0");
-  } catch {}
-}
+import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [secure, setSecure] = useState(true);
-  const [remember, setRememberState] = useState<boolean>(false);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isValid, isSubmitting, isDirty },
-    setError,
-  } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    mode: "onSubmit",
-    defaultValues: { email: "", password: "" },
-  });
+  const onPressLogin = () => {
+    if (loading) return;
+    setLoading(true);
+    setTimeout(() => setLoading(false), 1200);
+  };
 
-  React.useEffect(() => {
-    // Recharger le choix "remember me" si déjà activé
-    getRemember()
-      .then(setRememberState)
-      .catch(() => {});
-  }, []);
+  const onPressForgot = () => {};
+  const onPressRegister = () => {};
 
-  const canSubmit = useMemo(
-    () => isValid && isDirty && !loading && !isSubmitting,
-    [isValid, isDirty, loading, isSubmitting]
-  );
-
-  const onSubmit = useCallback(
-    async (values: LoginValues) => {
-      setLoading(true);
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      // Timeout de sécurité
-      const timeout = setTimeout(() => controller.abort(), 15000);
-
-      try {
-        // 🔐 Exemple d'appel API (à remplacer par ton endpoint)
-        // Utilise HTTPS en prod, gère le refresh token côté app.
-        const res = await fetch("https://api.tokana.mg/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          if (res.status === 401) {
-            setError("password", { message: "Identifiants incorrects" });
-          } else {
-            Alert.alert("Erreur", "Impossible de se connecter. Réessaye.");
-          }
-          return;
-        }
-
-        const data = (await res.json()) as {
-          token: string;
-          user: { id: string; name: string };
-        };
-
-        // Stockage sécurisé si Remember est actif
-        if (remember && data?.token) {
-          await saveToken(data.token);
-        }
-        await setRemember(remember);
-
-        // 👉 Navigue vers l’app (ex: react-navigation)
-        // navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-
-        Alert.alert(
-          "Bienvenue",
-          `Bonjour ${data?.user?.name ?? "Tokana Rider"} !`
-        );
-      } catch (err: any) {
-        if (err?.name === "AbortError") {
-          Alert.alert("Temps dépassé", "Vérifie ta connexion et réessaye.");
-        } else {
-          Alert.alert("Erreur réseau", "Vérifie ta connexion internet.");
-        }
-      } finally {
-        clearTimeout(timeout);
-        setLoading(false);
-        abortRef.current = null;
-      }
-    },
-    [remember, setError]
-  );
-
-  const cancelRequest = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
+  const canSubmit =
+    email.trim().length > 0 && password.trim().length >= 6 && !loading;
 
   return (
     <SafeAreaView className="flex-1 bg-customwhite">
       <StatusBar
         barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
       />
+
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.select({ ios: "padding", android: undefined })}
@@ -165,29 +53,34 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          <View className="flex-1 px-5 pt-10 pb-8">
+          <View
+            className="flex-1 px-5 py-8"
+            style={{ maxWidth: 480, alignSelf: "center" }}
+          >
             {/* Branding */}
-            <View className="items-center mb-10">
-              <Image
-                source={assets.logo as any}
-                alt="Tokana Logo"
-                style={{ width: 48, height: 48 }}
-              />
-              <Text className="mt-4 text-2xl font-extrabold text-secondary">
+            <View className="items-center mb-8">
+              <View className="w-16 h-16 rounded-2xl bg-white shadow-md items-center justify-center">
+                <Image
+                  source={assets.logo as any}
+                  alt="Tokana Logo"
+                  style={{ width: 44, height: 44 }}
+                />
+              </View>
+              <Text className="mt-4 text-3xl text-secondary font-quicksand-bold tracking-wide uppercase">
                 Tokana Delivery
               </Text>
-              <Text className="text-accent mt-1">
+              <Text className="text-accent mt-1 font-quicksand">
                 Livraison à vélo — rapide & assurée
               </Text>
             </View>
 
-            {/* Form */}
-            <View accessible accessibilityLabel="Formulaire de connexion">
-              <Label htmlFor="email">Email</Label>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
+            {/* Carte Form */}
+            <View className="bg-white rounded-2xl p-5 shadow-lg border border-accent/20">
+              {/* Email */}
+              <View>
+                <Label htmlFor="email">Email</Label>
+                <View className="w-full rounded-xl border border-accent/50 flex-row items-center px-3 bg-white">
+                  <Mail size={18} color="#949789" />
                   <TextInput
                     nativeID="email"
                     accessibilityLabel="Champ email"
@@ -195,135 +88,125 @@ export default function LoginScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
                     placeholder="ex: rider@tokana.mg"
                     placeholderTextColor="#949789"
-                    className="w-full rounded-xl border border-accent px-4 py-3 bg-white text-customblack"
+                    value={email}
+                    onChangeText={setEmail}
+                    selectionColor="#fcce2a"
+                    returnKeyType="next"
+                    className="flex-1 px-3 py-3 text-customblack font-quicksand"
                   />
-                )}
-              />
-              <ErrorText message={errors.email?.message} />
+                </View>
+              </View>
 
               <View className="h-4" />
 
-              <Label htmlFor="password">Mot de passe</Label>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <View className="w-full rounded-2xl border border-accent flex-row items-center px-2 bg-white">
-                    <TextInput
-                      nativeID="password"
-                      accessibilityLabel="Champ mot de passe"
-                      secureTextEntry={secure}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      placeholder="Minimum 6 caractères"
-                      placeholderTextColor="#949789"
-                      className="flex-1 px-2 py-3 text-customblack"
-                    />
-                    <Pressable
-                      onPress={() => setSecure((s) => !s)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        secure
-                          ? "Afficher le mot de passe"
-                          : "Masquer le mot de passe"
-                      }
-                      hitSlop={8}
-                      className="px-3 py-2"
-                    >
-                      <Text className="text-accent">
-                        {secure ? "👁️" : "🙈"}
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
-              />
-              <ErrorText message={errors.password?.message} />
+              {/* Password */}
+              <View>
+                <Label htmlFor="password">Mot de passe</Label>
+                <View className="w-full rounded-xl border border-accent/50 flex-row items-center px-3 bg-white">
+                  <Lock size={18} color="#949789" />
+                  <TextInput
+                    nativeID="password"
+                    accessibilityLabel="Champ mot de passe"
+                    secureTextEntry={secure}
+                    placeholder="Minimum 6 caractères"
+                    placeholderTextColor="#949789"
+                    value={password}
+                    onChangeText={setPassword}
+                    selectionColor="#fcce2a"
+                    returnKeyType="done"
+                    onSubmitEditing={onPressLogin}
+                    className="flex-1 px-3 py-3 text-customblack font-quicksand"
+                  />
+                  <Pressable
+                    onPress={() => setSecure((s) => !s)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      secure
+                        ? "Afficher le mot de passe"
+                        : "Masquer le mot de passe"
+                    }
+                    hitSlop={8}
+                    className="p-2 -mr-1"
+                  >
+                    {secure ? (
+                      <EyeOff size={20} color="#949789" />
+                    ) : (
+                      <Eye size={20} color="#949789" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
 
               {/* Remember + Forgot */}
               <View className="flex-row items-center justify-between mt-4">
                 <View className="flex-row items-center">
                   <Switch
                     value={remember}
-                    onValueChange={(v) => setRememberState(v)}
+                    onValueChange={setRemember}
                     thumbColor={remember ? "#fcce2a" : undefined}
                     accessibilityLabel="Se souvenir de moi"
                   />
-                  <Text className="ml-2 text-secondary">
+                  <Text className="ml-2 text-secondary font-quicksand">
                     Se souvenir de moi
                   </Text>
                 </View>
+
                 <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert(
-                      "Mot de passe oublié",
-                      "Implémente le flux de réinitialisation."
-                    )
-                  }
+                  onPress={onPressForgot}
                   accessibilityRole="button"
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
-                  <Text className="text-secondary underline">
+                  <Text className="text-secondary underline font-quicksand-medium">
                     Mot de passe oublié ?
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <View className="h-6" />
-
-              <PrimaryButton
-                onPress={handleSubmit(onSubmit)}
-                disabled={!canSubmit}
-                loading={loading}
-                testID="login-submit"
-                accessibilityLabel="Se connecter"
-              >
-                Se connecter
-              </PrimaryButton>
-
-              {loading && (
-                <TouchableOpacity
-                  onPress={cancelRequest}
-                  className="mt-3 self-center"
-                  accessibilityRole="button"
-                  accessibilityLabel="Annuler la connexion"
+              {/* CTA */}
+              <View className="mt-6">
+                <PrimaryButton
+                  onPress={onPressLogin}
+                  disabled={!canSubmit}
+                  loading={loading}
+                  accessibilityLabel="Se connecter"
                 >
-                  <Text className="text-accent">Annuler</Text>
-                </TouchableOpacity>
-              )}
-
-              <View className="h-4" />
-
-              {/* CTA secondaire (ex: SSO, inscription) */}
-              <GhostButton
-                onPress={() =>
-                  Alert.alert(
-                    "Inscription",
-                    "Redirige vers l’écran d’inscription."
-                  )
-                }
-                accessibilityLabel="Créer un compte"
-              >
-                Créer un compte
-              </GhostButton>
-
-              <View className="h-10" />
-
-              {/* Footer/legal */}
-              <View className="items-center">
-                <Text className="text-accent text-center">
-                  En vous connectant, vous acceptez nos{" "}
-                  <Text className="underline">CGU</Text> &{" "}
-                  <Text className="underline">
-                    Politique de confidentialité
+                  <Text className="font-quicksand-medium">
+                    {loading ? "Connexion..." : "Se connecter"}
                   </Text>
-                  .
-                </Text>
+                </PrimaryButton>
+
+                {loading && (
+                  <View className="mt-3 items-center">
+                    <ActivityIndicator />
+                    <Text className="text-accent mt-2 font-quicksand">
+                      Vérification en cours…
+                    </Text>
+                  </View>
+                )}
+
+                <View className="mt-3">
+                  <GhostButton
+                    onPress={onPressRegister}
+                    accessibilityLabel="Créer un compte"
+                  >
+                    <Text className="font-quicksand">Créer un compte</Text>
+                  </GhostButton>
+                </View>
               </View>
+            </View>
+
+            {/* Mentions */}
+            <View className="items-center mt-6 px-4">
+              <Text className="text-accent text-center font-quicksand">
+                En vous connectant, vous acceptez nos{" "}
+                <Text className="underline font-quicksand">CGU</Text> &{" "}
+                <Text className="underline font-quicksand">
+                  Politique de confidentialité
+                </Text>
+                .
+              </Text>
             </View>
           </View>
         </ScrollView>

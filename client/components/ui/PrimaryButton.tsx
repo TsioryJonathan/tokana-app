@@ -7,6 +7,8 @@ function PrimaryButton({
   loading,
   testID,
   accessibilityLabel,
+  textClassName,
+  className,
 }: {
   children: React.ReactNode;
   onPress: () => void;
@@ -14,6 +16,8 @@ function PrimaryButton({
   loading?: boolean;
   testID?: string;
   accessibilityLabel?: string;
+  textClassName?: string;
+  className?: string;
 }) {
   const isDisabled = disabled || loading;
   return (
@@ -26,12 +30,14 @@ function PrimaryButton({
       testID={testID}
       className={`w-full items-center justify-center rounded-2xl py-4 ${
         isDisabled ? "bg-accent" : "bg-primary"
-      }`}
+      } ${className}`}
     >
       {loading ? (
         <ActivityIndicator />
       ) : (
-        <Text className="text-black text-lg font-semibold">{children}</Text>
+        <Text className={`text-black font-semibold ${textClassName}`}>
+          {children}
+        </Text>
       )}
     </TouchableOpacity>
   );

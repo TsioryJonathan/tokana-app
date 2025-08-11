@@ -10,7 +10,7 @@ function Label({
   return (
     <Text
       nativeID={htmlFor}
-      className="text-base font-semibold text-secondary mb-2"
+      className="text-base font-quicksand-bold text-secondary mb-2"
       accessibilityRole="text"
     >
       {children}
