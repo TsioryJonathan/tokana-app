@@ -4,12 +4,9 @@ import {
   View,
   Text,
   Image,
-  TouchableOpacity,
   StatusBar,
   Platform,
   ImageSourcePropType,
-  ScrollView,
-  SafeAreaViewBase,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { assets } from "@/assets/images/assets";
