@@ -16,13 +16,13 @@ import GhostButton from "@/components/ui/GhostButton";
 export default function WelcomeScreen() {
   const router = useRouter();
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <SafeAreaView className="flex-1 bg-customwhite">
       <StatusBar
         barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
       />
 
-      <View className="flex flex-col justify-between items-center mt-16 gap-5 px-10">
-        <View className="w-full h-[40%] flex flex-1 items-center justify-center">
+      <View className="h-full flex flex-col justify-between items-center gap-5 px-10">
+        <View className="w-full h-[40%] flex flex-1 items-center justify-center pt-24">
           <Image
             source={assets.deliveryGuy as ImageSourcePropType}
             style={{
@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
         </View>
         <View className="mt-10 items-center h-[60%] justify-evenly">
           <View className="flex flex-col items-center justify-between mx-10">
-            <Text className="text-3xl font-quicksand-bold text-secondary tracking-wide">
+            <Text className="text-3xl font-quicksand-bold text-secondary tracking-wide text-center">
               Bienvenue chez Tokana
             </Text>
             <Text className="mt-2 text-lg font-quicksand-semibold text-customblack">
