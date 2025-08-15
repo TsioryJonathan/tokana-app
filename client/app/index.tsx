@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
       <View className="h-full flex flex-col justify-between items-center gap-5 px-10">
         <View className="w-full h-[40%] flex flex-1 items-center justify-center pt-24">
           <Image
-            source={assets.deliveryGuy as ImageSourcePropType}
+            source={assets.deliveryGuyMockup as ImageSourcePropType}
             style={{
               width: 300,
               height: 300,
