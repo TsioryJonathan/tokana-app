@@ -139,6 +139,7 @@ export default function NewOrderWizard() {
     else router.back();
   };
   const submit = () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payload = {
       sender,
       recipient,
