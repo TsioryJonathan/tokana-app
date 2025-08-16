@@ -124,7 +124,7 @@ Base: /api/orders (auth required unless noted per action)
   - Rules summary:
     - Pickup fee per order: ville=0; peripherie=(0 if parcels>2 else 2000); super-peripherie=5000
     - Delivery + express surcharge per parcel
-    - >5kg currently rejected
+    - >5kg returns requiresManualHandling=true with instructions and optional contactPhone
 
 ## Slots
 - GET /api/slots/standard?zoneLevel=ville|peripherie|super-peripherie
