@@ -28,6 +28,22 @@ import {
   toNumberSafe,
 } from "@/utils/price.helper";
 
+/* INITIAL STATES */
+const INITIAL_PARCEL: ParcelState = {
+  category: "SMALL",
+  weightKg: "",
+  fragile: false,
+  bulky: false,
+};
+const INITIAL_SENDER: SenderState = { name: "", phone: "", address: "" };
+const INITIAL_RECIPIENT: RecipientState = { name: "", phone: "", address: "" };
+const INITIAL_SERVICE: ServiceState = {
+  service: "STANDARD",
+  distanceKmBracket: "<5",
+  needReturn: false,
+};
+const INITIAL_PAYMENT: PaymentState = { codAmountAr: "", notes: "" };
+
 const mgPhoneRegex = /^(\+261|0)\d{8,9}$/;
 
 const steps = [
@@ -72,31 +88,11 @@ function Stepper({ step }: { step: Step }) {
 export default function NewOrderWizard() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(0);
-  const [parcel, setParcel] = useState<ParcelState>({
-    category: "SMALL",
-    weightKg: "",
-    fragile: false,
-    bulky: false,
-  });
-  const [sender, setSender] = useState<SenderState>({
-    name: "",
-    phone: "",
-    address: "",
-  });
-  const [recipient, setRecipient] = useState<RecipientState>({
-    name: "",
-    phone: "",
-    address: "",
-  });
-  const [service, setService] = useState<ServiceState>({
-    service: "STANDARD",
-    distanceKmBracket: "<5",
-    needReturn: false,
-  });
-  const [payment, setPayment] = useState<PaymentState>({
-    codAmountAr: "",
-    notes: "",
-  });
+  const [parcel, setParcel] = useState<ParcelState>(INITIAL_PARCEL);
+  const [sender, setSender] = useState<SenderState>(INITIAL_SENDER);
+  const [recipient, setRecipient] = useState<RecipientState>(INITIAL_RECIPIENT);
+  const [service, setService] = useState<ServiceState>(INITIAL_SERVICE);
+  const [payment, setPayment] = useState<PaymentState>(INITIAL_PAYMENT);
   const price = useMemo(
     () =>
       basePrice(service.distanceKmBracket, service.service) +
@@ -139,7 +135,6 @@ export default function NewOrderWizard() {
     else router.back();
   };
   const submit = () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payload = {
       sender,
       recipient,
@@ -152,10 +147,18 @@ export default function NewOrderWizard() {
       priceAr: price,
     };
     // TODO: await api.createOrder(payload)
-    Alert.alert("Commande créée", `Montant estimé : ${formatAr(price)}`);
+
+    resetForm();
     router.replace("/(client)/orders/index");
   };
-
+  const resetForm = () => {
+    setParcel(INITIAL_PARCEL);
+    setSender(INITIAL_SENDER);
+    setRecipient(INITIAL_RECIPIENT);
+    setService(INITIAL_SERVICE);
+    setPayment(INITIAL_PAYMENT);
+    setStep(0);
+  };
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
