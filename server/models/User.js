@@ -28,7 +28,7 @@ const User = sequelize.define('User', {
     allowNull: false,
     validate: {
       notEmpty: { msg: 'Numéro de téléphone requis' },
-      is: { args: [/^\+2613[2-4|7-9]\d{7}$/], msg: 'Format de téléphone malgache invalide (ex: +261321234567)' },
+      is: { args: [/^(\+261|0)(3[0-9]|20)\d{7}$/], msg: 'Téléphone MG invalide (ex: +261201234567 ou 0201234567)' },
     },
   },
 }, {

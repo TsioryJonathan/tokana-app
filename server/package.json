@@ -5,8 +5,10 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon app.js",
+    "start": "NODE_ENV=production node app.js",
+    "dev": "nodemon app.js",
     "migrate": "node -r dotenv/config node_modules/sequelize-cli/lib/sequelize db:migrate",
+    "seed": "node -r dotenv/config node_modules/sequelize-cli/lib/sequelize db:seed:all",
     "test": "mocha tests/**/*.test.js"
   },
   "keywords": [],
@@ -14,11 +16,17 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
+    "date-fns-tz": "^3.2.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
     "joi": "^18.0.0",
     "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.7.1",
+    "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7"

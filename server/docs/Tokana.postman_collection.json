@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "Tokana Backend API (MVP)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for Tokana backend (MVP). Uses variables: {{baseUrl}}, {{accessToken}}, {{refreshToken}}."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\",\n  \"role\": \"client\",\n  \"name\": \"Client Test\",\n  \"phone\": \"0201234567\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (email)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"secret123\"\n}" }
+          }
+        },
+        {
+          "name": "Login (phone)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"0201234567\",\n  \"password\": \"secret123\"\n}" }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api","auth","refresh"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api","auth","logout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        },
+        {
+          "name": "Logout All",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout-all", "host": ["{{baseUrl}}"], "path": ["api","auth","logout-all"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Me",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/me", "host": ["{{baseUrl}}"], "path": ["api","me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zones Public",
+      "item": [
+        {
+          "name": "Get Zones",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/zones", "host": ["{{baseUrl}}"], "path": ["api","zones"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Zones",
+      "item": [
+        {"name":"List Zones","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones","host":["{{baseUrl}}"],"path":["api","admin","zones"]}}},
+        {"name":"List Axes by Zone","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/:zoneId/axes","host":["{{baseUrl}}"],"path":["api","admin","zones",":zoneId","axes"]}}},
+        {"name":"List Localities by Axis","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/axes/:axisId/localities","host":["{{baseUrl}}"],"path":["api","admin","zones","axes",":axisId","localities"]}}},
+        {"name":"Create Zone","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones","host":["{{baseUrl}}"],"path":["api","admin","zones"]},"body":{"mode":"raw","raw":"{\n  \"key\": \"ville\",\n  \"label\": \"TANA-VILLE (Centre-ville)\"\n}"}}},
+        {"name":"Update Zone","request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/:id","host":["{{baseUrl}}"],"path":["api","admin","zones",":id"]},"body":{"mode":"raw","raw":"{\n  \"label\": \"Nouveau Label\"\n}"}}},
+        {"name":"Delete Zone","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/:id","host":["{{baseUrl}}"],"path":["api","admin","zones",":id"]}}},
+        {"name":"Create Axis","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/:zoneId/axes","host":["{{baseUrl}}"],"path":["api","admin","zones",":zoneId","axes"]},"body":{"mode":"raw","raw":"{\n  \"key\": \"nord\",\n  \"label\": \"Nord\"\n}"}}},
+        {"name":"Update Axis","request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/axes/:id","host":["{{baseUrl}}"],"path":["api","admin","zones","axes",":id"]},"body":{"mode":"raw","raw":"{\n  \"label\": \"Nord MAJ\"\n}"}}},
+        {"name":"Delete Axis","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/axes/:id","host":["{{baseUrl}}"],"path":["api","admin","zones","axes",":id"]}}},
+        {"name":"Create Locality","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/axes/:axisId/localities","host":["{{baseUrl}}"],"path":["api","admin","zones","axes",":axisId","localities"]},"body":{"mode":"raw","raw":"{\n  \"name\": \"Mahazo\"\n}"}}},
+        {"name":"Update Locality","request":{"method":"PUT","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/localities/:id","host":["{{baseUrl}}"],"path":["api","admin","zones","localities",":id"]},"body":{"mode":"raw","raw":"{\n  \"name\": \"Mahazo Centre\"\n}"}}},
+        {"name":"Delete Locality","request":{"method":"DELETE","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/admin/zones/localities/:id","host":["{{baseUrl}}"],"path":["api","admin","zones","localities",":id"]}}}
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Quote",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/pricing/quote", "host": ["{{baseUrl}}"], "path": ["api","pricing","quote"] },
+            "body": { "mode": "raw", "raw": "{\n  \"zoneLevel\": \"ville\",\n  \"type\": \"standard\",\n  \"weight\": 1.2,\n  \"parcels\": 1\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Slots",
+      "item": [
+        {"name":"Standard Slots","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/slots/standard?zoneLevel=ville","host":["{{baseUrl}}"],"path":["api","slots","standard"],"query":[{"key":"zoneLevel","value":"ville"}]}}},
+        {"name":"Express Availability","request":{"method":"GET","url":{"raw":"{{baseUrl}}/api/slots/express","host":["{{baseUrl}}"],"path":["api","slots","express"]}}}
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {"name":"Create Order","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/orders","host":["{{baseUrl}}"],"path":["api","orders"]},"body":{"mode":"raw","raw":"{\n  \"type\": \"standard\",\n  \"zoneLevel\": \"ville\",\n  \"pickupAddress\": \"Rue A\",\n  \"dropoffAddress\": \"Rue B\",\n  \"weight\": 1.0,\n  \"parcels\": 1,\n  \"cashToCollect\": 0,\n  \"recipientEmail\": \"dest@example.com\",\n  \"slotStart\": \"2025-08-16T08:00:00.000Z\",\n  \"slotEnd\": \"2025-08-16T10:00:00.000Z\"\n}"}}},
+        {"name":"List My Orders","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/orders","host":["{{baseUrl}}"],"path":["api","orders"]}}},
+        {"name":"Get Order","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/orders/:id","host":["{{baseUrl}}"],"path":["api","orders",":id"]}}},
+        {"name":"Assign Order (admin)","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/orders/:id/assign","host":["{{baseUrl}}"],"path":["api","orders",":id","assign"]},"body":{"mode":"raw","raw":"{\n  \"assignedTo\": null\n}"}}},
+        {"name":"Order History","request":{"method":"GET","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"}],"url":{"raw":"{{baseUrl}}/api/orders/:id/history","host":["{{baseUrl}}"],"path":["api","orders",":id","history"]}}},
+        {"name":"Update Status","request":{"method":"PATCH","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/orders/:id/status","host":["{{baseUrl}}"],"path":["api","orders",":id","status"]},"body":{"mode":"raw","raw":"{\n  \"status\": \"en_chemin_pour_livraison\"\n}"}}}
+      ]
+    },
+    {
+      "name": "Delivery OTP",
+      "item": [
+        {"name":"Request OTP","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/orders/:id/request-otp","host":["{{baseUrl}}"],"path":["api","orders",":id","request-otp"]},"body":{"mode":"raw","raw":"{\n  \"channel\": \"email\"\n}"}}},
+        {"name":"Verify OTP","request":{"method":"POST","header":[{"key":"Authorization","value":"Bearer {{accessToken}}"},{"key":"Content-Type","value":"application/json"}],"url":{"raw":"{{baseUrl}}/api/orders/:id/verify-otp","host":["{{baseUrl}}"],"path":["api","orders",":id","verify-otp"]},"body":{"mode":"raw","raw":"{\n  \"code\": \"123456\"\n}"}}}
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ]
+}
