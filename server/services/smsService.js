@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 
 const provider = process.env.SMS_PROVIDER || 'dev';
 
