@@ -1,0 +1,1550 @@
+openapi: 3.0.3
+info:
+  title: Tokana Backend API (MVP)
+  version: 1.0.0
+  description: |
+    Complete OpenAPI spec for Tokana MVP.
+servers:
+  - url: http://localhost:5000
+    description: Local dev
+tags:
+  - name: Auth
+  - name: Me
+  - name: Zones
+  - name: Admin Zones
+  - name: Orders
+  - name: Pricing
+  - name: Slots
+  - name: Delivery OTP
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        msg:
+          type: string
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+        role: { type: string, enum: [client, livreur, admin] }
+    ZonePublicResponse:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          label: { type: string }
+          axes:
+            type: object
+            additionalProperties:
+              type: array
+              items: { type: string }
+    Zone:
+      type: object
+      properties:
+        id: { type: integer }
+        key: { type: string, enum: [ville, peripherie, super-peripherie] }
+        label: { type: string }
+    Axis:
+      type: object
+      properties:
+        id: { type: integer }
+        zoneId: { type: integer }
+        key: { type: string, enum: [nord, est, sud, ouest, nord_ouest, sud_ouest] }
+        label: { type: string }
+    Locality:
+      type: object
+      properties:
+        id: { type: integer }
+        axisId: { type: integer }
+        name: { type: string }
+    PricingQuoteRequest:
+      type: object
+      properties:
+        zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+        type: { type: string, enum: [standard, express] }
+        weight: { type: number }
+        parcels: { type: integer }
+      required: [zoneLevel, type, weight, parcels]
+    PricingQuoteResponse:
+      type: object
+      properties:
+        total: { type: integer }
+        currency: { type: string, example: MGA }
+        breakdown:
+          type: object
+          additionalProperties: { type: integer }
+    Slot:
+      type: object
+      properties:
+        startISO: { type: string, format: date-time }
+        endISO: { type: string, format: date-time }
+    Order:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [standard, express] }
+        zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+        pickupAddress: { type: string }
+        dropoffAddress: { type: string }
+        weight: { type: number }
+        parcels: { type: integer }
+        cashToCollect: { type: integer, nullable: true }
+        recipientEmail: { type: string, nullable: true }
+        status: { type: string }
+        assignedTo: { type: integer, nullable: true }
+        createdBy: { type: integer }
+    OrderStatusHistory:
+      type: object
+      properties:
+        id: { type: integer }
+        orderId: { type: integer }
+        fromStatus: { type: string, nullable: true }
+        toStatus: { type: string }
+        changedAt: { type: string, format: date-time }
+    OTPRequest:
+      type: object
+      properties:
+        channel: { type: string, enum: [sms, email] }
+        phone: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+      required: [channel]
+    OTPVerify:
+      type: object
+      properties:
+        code: { type: string, pattern: '^[0-9]{6}$' }
+      required: [code]
+    AuthTokens:
+      type: object
+      properties:
+        token: { type: string }
+        refreshToken: { type: string }
+paths:
+  # Public Zones
+  /api/zones:
+    get:
+      summary: Get public zones (DB-only)
+      tags: [Zones]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZonePublicResponse'
+              examples:
+                sample:
+                  value:
+                    ville:
+                      label: "Ville"
+                      axes:
+                        nord: ["Ankadifotsy", "Ankorondrano"]
+                        sud: ["Anosy"]
+
+  # Auth
+  /api/auth/register:
+    post:
+      summary: Register with email or phone
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                phone: { type: string }
+                password: { type: string }
+                role: { type: string, enum: [client, livreur, admin], nullable: true }
+                name: { type: string, nullable: true }
+              anyOf:
+                - required: [email, password]
+                - required: [phone, password]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+                  token: { type: string }
+                  refreshToken: { type: string }
+              examples:
+                sample:
+                  value:
+                    user:
+                      id: 12
+                      email: "client@example.com"
+                      phone: null
+                      name: "Client Test"
+                      role: "client"
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    refreshToken: "1|df4a9b7e..."
+        '409':
+          description: Conflict (email or phone already registered)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Email or phone already in use"
+
+  /api/auth/login:
+    post:
+      summary: Login with email or phone
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              oneOf:
+                - properties:
+                    email: { type: string }
+                    password: { type: string }
+                  required: [email, password]
+                - properties:
+                    phone: { type: string }
+                    password: { type: string }
+                  required: [phone, password]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+                  token: { type: string }
+                  refreshToken: { type: string }
+        '401':
+          description: Unauthorized (invalid credentials)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalid:
+                  value:
+                    msg: "Invalid email/phone or password"
+
+  /api/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+              required: [refreshToken]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthTokens' }
+              examples:
+                sample:
+                  value:
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    refreshToken: "2|a1b2c3d4..."
+        '401':
+          description: Unauthorized (invalid/expired refresh token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalid:
+                  value:
+                    msg: "Invalid or expired refresh token"
+
+  /api/auth/logout:
+    post:
+      summary: Logout (revoke one refresh token)
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+              required: [refreshToken]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "Logged out"
+        '401':
+          description: Unauthorized (invalid refresh token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalid:
+                  value:
+                    msg: "Invalid refresh token"
+
+  /api/auth/logout-all:
+    post:
+      summary: Logout all sessions
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "Logged out from all sessions"
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                noToken:
+                  value:
+                    msg: "Unauthorized"
+
+  # Me
+  /api/me:
+    get:
+      summary: Get current user
+      tags: [Me]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+              examples:
+                sample:
+                  value:
+                    id: 12
+                    email: "client@example.com"
+                    phone: "+261341234567"
+                    name: "Client Test"
+                    role: "client"
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                noToken:
+                  value:
+                    msg: "Unauthorized"
+
+  # Admin Zones CRUD
+  /api/admin/zones:
+    get:
+      summary: List zones
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Zone' }
+              examples:
+                sample:
+                  value:
+                    - id: 1
+                      key: "ville"
+                      label: "Ville"
+                    - id: 2
+                      key: "peripherie"
+                      label: "Périphérie"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+    post:
+      summary: Create zone
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key: { type: string, enum: [ville, peripherie, super-peripherie] }
+                label: { type: string }
+              required: [key, label]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 3
+                    key: "super-peripherie"
+                    label: "Super-Périphérie"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '409':
+          description: Conflict (zone key already exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Zone with this key already exists"
+
+  /api/admin/zones/{id}:
+    put:
+      summary: Update zone label
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+              required: [label]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 2
+                    key: "peripherie"
+                    label: "Périphérie (modifié)"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Zone not found"
+    delete:
+      summary: Delete zone
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Zone not found"
+
+  /api/admin/zones/{zoneId}/axes:
+    get:
+      summary: List axes for zone
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: zoneId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Axis' }
+              examples:
+                sample:
+                  value:
+                    - id: 10
+                      zoneId: 1
+                      key: "nord"
+                      label: "Nord"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Zone Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Zone not found"
+    post:
+      summary: Create axis for zone
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: zoneId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key: { type: string, enum: [nord, est, sud, ouest, nord_ouest, sud_ouest] }
+                label: { type: string }
+              required: [key, label]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 11
+                    zoneId: 1
+                    key: "sud_ouest"
+                    label: "Sud-Ouest"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Zone Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Zone not found"
+        '409':
+          description: Conflict (axis key already exists for zone)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Axis with this key already exists for zone"
+
+  /api/admin/zones/axes/{id}:
+    put:
+      summary: Update axis label
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+              required: [label]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 11
+                    zoneId: 1
+                    key: "sud_ouest"
+                    label: "Sud-Ouest (modifié)"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Axis Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Axis not found"
+    delete:
+      summary: Delete axis
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Axis Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Axis not found"
+
+  /api/admin/zones/axes/{axisId}/localities:
+    get:
+      summary: List localities for axis
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: axisId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Locality' }
+              examples:
+                sample:
+                  value:
+                    - id: 100
+                      axisId: 10
+                      name: "Andavamamba"
+                    - id: 101
+                      axisId: 10
+                      name: "67ha"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Axis Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Axis not found"
+    post:
+      summary: Create locality for axis
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: axisId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 102
+                    axisId: 10
+                    name: "Ambodivona"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Axis Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Axis not found"
+        '409':
+          description: Conflict (locality already exists on this axis)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Locality with this name already exists for axis"
+
+  /api/admin/zones/localities/{id}:
+    put:
+      summary: Update locality name
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 101
+                    axisId: 10
+                    name: "67ha (modifié)"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Locality Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Locality not found"
+        '409':
+          description: Conflict (locality name duplicate on axis)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Locality with this name already exists for axis"
+    delete:
+      summary: Delete locality
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Locality Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Locality not found"
+
+  # Pricing
+  /api/pricing/quote:
+    post:
+      summary: Get pricing quote
+      tags: [Pricing]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PricingQuoteRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PricingQuoteResponse' }
+              examples:
+                sample:
+                  value:
+                    total: 6500
+                    currency: MGA
+                    breakdown:
+                      base: 5000
+                      expressSurcharge: 1500
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+
+  # Slots
+  /api/slots/standard:
+    get:
+      summary: Get standard delivery slots
+      tags: [Slots]
+      parameters:
+        - in: query
+          name: zoneLevel
+          required: true
+          schema: { type: string, enum: [ville, peripherie, super-peripherie] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Slot' }
+              examples:
+                sample:
+                  value:
+                    - startISO: "2025-08-16T08:00:00+03:00"
+                      endISO: "2025-08-16T10:00:00+03:00"
+                    - startISO: "2025-08-16T10:00:00+03:00"
+                      endISO: "2025-08-16T12:00:00+03:00"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+
+  /api/slots/express:
+    get:
+      summary: Get express availability
+      tags: [Slots]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allowed: { type: boolean }
+                  reason: { type: string, nullable: true }
+              examples:
+                allowed:
+                  value:
+                    allowed: true
+                    reason: null
+                blocked:
+                  value:
+                    allowed: false
+                    reason: "Too late for today"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+
+  # Orders
+  /api/orders:
+    post:
+      summary: Create order
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string, enum: [standard, express] }
+                zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+                pickupAddress: { type: string }
+                dropoffAddress: { type: string }
+                weight: { type: number }
+                parcels: { type: integer }
+                cashToCollect: { type: integer, nullable: true }
+                recipientEmail: { type: string, format: email }
+                slotStart: { type: string, format: date-time }
+                slotEnd: { type: string, format: date-time }
+              required: [type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+              examples:
+                sample:
+                  value:
+                    id: 501
+                    type: "standard"
+                    zoneLevel: "ville"
+                    pickupAddress: "Analakely"
+                    dropoffAddress: "Ambohijatovo"
+                    weight: 2.1
+                    parcels: 1
+                    cashToCollect: 0
+                    recipientEmail: "destinataire@example.com"
+                    status: "created"
+                    assignedTo: null
+                    createdBy: 12
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                badRequest:
+                  value:
+                    msg: "weight must be <= 5kg for MVP"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '409':
+          description: Conflict (slot not allowed or business rule conflict)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Selected slot is not allowed"
+    get:
+      summary: List orders (scoped)
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: assignedTo
+          schema: { type: string, enum: [me] }
+        - in: query
+          name: mine
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+              examples:
+                sample:
+                  value:
+                    - id: 501
+                      type: "standard"
+                      zoneLevel: "ville"
+                      pickupAddress: "Analakely"
+                      dropoffAddress: "Ambohijatovo"
+                      weight: 2.1
+                      parcels: 1
+                      cashToCollect: 0
+                      recipientEmail: "destinataire@example.com"
+                      status: "created"
+                      assignedTo: null
+                      createdBy: 12
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+
+  /api/orders/{id}:
+    get:
+      summary: Get order by id
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+              examples:
+                sample:
+                  value:
+                    id: 501
+                    type: "standard"
+                    zoneLevel: "ville"
+                    pickupAddress: "Analakely"
+                    dropoffAddress: "Ambohijatovo"
+                    weight: 2.1
+                    parcels: 1
+                    cashToCollect: 0
+                    recipientEmail: "destinataire@example.com"
+                    status: "created"
+                    assignedTo: null
+                    createdBy: 12
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Order not found"
+
+  /api/orders/{id}/assign:
+    patch:
+      summary: Assign/unassign order (admin)
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignedTo: { type: integer, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 501
+                    assignedTo: 33
+                    status: "assigned"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Order not found"
+
+  /api/orders/{id}/history:
+    get:
+      summary: Get order status history
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OrderStatusHistory' }
+              examples:
+                sample:
+                  value:
+                    - id: 9001
+                      orderId: 501
+                      fromStatus: null
+                      toStatus: "created"
+                      changedAt: "2025-08-16T08:05:00+03:00"
+                    - id: 9002
+                      orderId: 501
+                      fromStatus: "created"
+                      toStatus: "assigned"
+                      changedAt: "2025-08-16T09:00:00+03:00"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Order not found"
+
+  /api/orders/{id}/status:
+    patch:
+      summary: Update order status
+      tags: [Orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+              required: [status]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    id: 501
+                    status: "out_for_delivery"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Order not found"
+        '409':
+          description: Conflict (invalid status transition)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Transition not allowed"
+
+  # Delivery OTP
+  /api/orders/{id}/request-otp:
+    post:
+      summary: Request delivery OTP
+      tags: [Delivery OTP]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OTPRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "OTP sent"
+                emailFallback:
+                  value:
+                    msg: "OTP sent via email"
+        '429':
+          description: Too Many Requests (cooldown)
+          headers:
+            Retry-After:
+              schema: { type: integer }
+              description: seconds to wait
+          content:
+            application/json:
+              examples:
+                cooldown:
+                  value:
+                    msg: "Too many requests, retry later"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notFound:
+                  value:
+                    msg: "Order not found"
+        '409':
+          description: Conflict (already verified)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                alreadyVerified:
+                  value:
+                    msg: "Order already OTP-verified"
+
+  /api/orders/{id}/verify-otp:
+    post:
+      summary: Verify delivery OTP
+      tags: [Delivery OTP]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OTPVerify' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "OTP verified"
+        '401': { description: Unauthorized }
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Conflict (invalid or expired code / already verified)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalid:
+                  value:
+                    msg: "Invalid or expired OTP code"
+                alreadyVerified:
+                  value:
+                    msg: "Order already OTP-verified"

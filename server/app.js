@@ -12,6 +12,11 @@ import ordersRoutes from './routes/ordersRoutes.js';
 import zonesRoutes from './routes/zonesRoutes.js';
 import zonesAdminRoutes from './routes/admin/zonesAdminRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
+import swaggerUi from 'swagger-ui-express';
+import yaml from 'yaml';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 const app = express();
@@ -70,6 +75,19 @@ app.use('/api/slots', slotRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/zones', zonesRoutes);
 app.use('/api/admin/zones', zonesAdminRoutes);
+
+// Swagger UI at /docs
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const openapiPath = path.resolve(__dirname, 'docs', 'openapi.yaml');
+  const file = fs.readFileSync(openapiPath, 'utf8');
+  const openapiDoc = yaml.parse(file);
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiDoc));
+  console.log('Swagger UI mounted at /docs');
+} catch (e) {
+  console.warn('Swagger UI not mounted (openapi.yaml missing or invalid):', e.message);
+}
 
 app.use(errorHandler);
 
