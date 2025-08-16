@@ -17,12 +17,23 @@ const computePickupFee = (zoneLevel, parcels) => {
 
 export const getQuote = async (req, res, next) => {
   try {
-    const { error, value } = quoteSchema.validate(req.query, { abortEarly: false, convert: true });
+    // Prefer POST body; fallback to GET query for backward compatibility
+    const input = (req.body && Object.keys(req.body).length > 0) ? req.body : req.query;
+    const { error, value } = quoteSchema.validate(input, { abortEarly: false, convert: true });
     if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
     const { zoneLevel, weight, type, parcels } = value;
 
     if (weight > 5) {
-      return res.status(400).json({ msg: 'Poids > 5kg non pris en charge pour le moment' });
+      const contactPhone = process.env.CONTACT_PHONE || null;
+      return res.json({
+        zoneLevel,
+        weight,
+        type,
+        parcels,
+        requiresManualHandling: true,
+        instructions: 'Poids supérieur à 5kg. Veuillez contacter le responsable par appel téléphonique ou SMS pour un devis personnalisé.',
+        contactPhone,
+      });
     }
 
     // Find matching bracket
@@ -44,6 +55,7 @@ export const getQuote = async (req, res, next) => {
       parcels,
       fees: { pickupFee, deliveryFee, expressSurcharge },
       priceTotal,
+      requiresManualHandling: false,
     });
   } catch (err) {
     next(err);
