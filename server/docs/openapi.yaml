@@ -77,11 +77,20 @@ components:
     PricingQuoteResponse:
       type: object
       properties:
-        total: { type: integer }
-        currency: { type: string, example: MGA }
-        breakdown:
+        zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+        type: { type: string, enum: [standard, express] }
+        weight: { type: number }
+        parcels: { type: integer }
+        fees:
           type: object
-          additionalProperties: { type: integer }
+          properties:
+            pickupFee: { type: integer, example: 0 }
+            deliveryFee: { type: integer, example: 5000 }
+            expressSurcharge: { type: integer, example: 1500 }
+        priceTotal: { type: integer, example: 6500 }
+        requiresManualHandling: { type: boolean, example: false }
+        instructions: { type: string, nullable: true }
+        contactPhone: { type: string, nullable: true, description: 'E.164 or local format' }
     Slot:
       type: object
       properties:
@@ -1017,13 +1026,27 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/PricingQuoteResponse' }
               examples:
-                sample:
+                normal:
                   value:
-                    total: 6500
-                    currency: MGA
-                    breakdown:
-                      base: 5000
-                      expressSurcharge: 1500
+                    zoneLevel: ville
+                    type: standard
+                    weight: 1.2
+                    parcels: 1
+                    fees:
+                      pickupFee: 0
+                      deliveryFee: 5000
+                      expressSurcharge: 0
+                    priceTotal: 5000
+                    requiresManualHandling: false
+                over_5kg_manual:
+                  value:
+                    zoneLevel: ville
+                    type: standard
+                    weight: 6.5
+                    parcels: 1
+                    requiresManualHandling: true
+                    instructions: "Poids supérieur à 5kg. Veuillez contacter le responsable par appel téléphonique ou SMS pour un devis personnalisé."
+                    contactPhone: "+26134XXXXXXX"
         '401':
           description: Unauthorized
           content:
