@@ -20,11 +20,18 @@ import RegisterForm from "./RegisterForm";
 type Props = {
   onPressRegister?: () => void; // callback externe optionnel
   onPressForgot?: () => void; // callback externe optionnel
+  q?: string;
 };
 
-export default function AuthScreen({ onPressRegister, onPressForgot }: Props) {
+export default function AuthScreen({
+  onPressRegister,
+  onPressForgot,
+  q,
+}: Props) {
   // Onglet actif
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [activeTab, setActiveTab] = useState<"login" | "signup">(
+    q === "register" ? "signup" : "login"
+  );
 
   // ----- States Login -----
   const [email, setEmail] = useState("");
@@ -110,7 +117,6 @@ export default function AuthScreen({ onPressRegister, onPressForgot }: Props) {
         source={assets.tana as any}
         resizeMode="center"
         style={{ flex: 1 }}
-
       >
         <LinearGradient
           colors={["rgba(0,0,0,0.0)", "rgba(0,0,0,0.65)"]}
