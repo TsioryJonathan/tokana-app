@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "gen:sdk": "openapi-typescript-codegen --input ../server/docs/openapi.yaml --output ./app/lib/api --client fetch --exportCore --exportServices --exportModels --name TokanaApiClient"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -44,9 +45,10 @@
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
-    "typescript": "~5.8.3",
+    "openapi-typescript-codegen": "^0.29.0",
+    "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.17",
-    "prettier-plugin-tailwindcss": "^0.5.11"
+    "typescript": "~5.8.3"
   },
   "private": true
 }
