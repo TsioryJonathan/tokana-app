@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "gen:sdk": "openapi-typescript-codegen --input ../server/docs/openapi.yaml --output ./app/lib/api --client fetch --exportCore --exportServices --exportModels --name TokanaApiClient"
+    "gen:sdk": "npx openapi-typescript-codegen --input ../server/docs/openapi.yaml --output ./app/lib/api --client fetch --exportCore true --exportServices true --exportModels true --name TokanaApiClient"
   },
   "dependencies": {
     "@expo-google-fonts/quicksand": "^0.4.0",

@@ -20,7 +20,7 @@ export type { OrderStatusHistory } from './models/OrderStatusHistory';
 export { OTPRequest } from './models/OTPRequest';
 export type { OTPVerify } from './models/OTPVerify';
 export { PricingQuoteRequest } from './models/PricingQuoteRequest';
-export type { PricingQuoteResponse } from './models/PricingQuoteResponse';
+export { PricingQuoteResponse } from './models/PricingQuoteResponse';
 export type { Slot } from './models/Slot';
 export { User } from './models/User';
 export { Zone } from './models/Zone';
