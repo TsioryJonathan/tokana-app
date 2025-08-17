@@ -20,7 +20,6 @@ export class AuthService {
             email?: string;
             phone?: string;
             password?: string;
-            role?: 'client' | 'livreur' | 'admin' | null;
             name?: string | null;
         },
     ): CancelablePromise<{
