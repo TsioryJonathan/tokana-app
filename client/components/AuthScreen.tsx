@@ -13,6 +13,8 @@ import {
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { assets } from "@/assets/images/assets";
+import { TokanaApiClient } from "@/app/lib/api";
+import { getAccessToken, setSession } from "@/app/lib/auth/session";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -48,10 +50,17 @@ export default function AuthScreen({
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ----- API client -----
+  const api = useMemo(() => new TokanaApiClient({
+    // BASE could be moved to env later; defaults to http://localhost:5000
+    TOKEN: async () => (await getAccessToken()) ?? '',
+  }), []);
+
   // ----- Validation helpers -----
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
-  const mgPhoneRegex = /^(\+261|0)\d{8,9}$/;
+  // Align with backend validator: /^(\+261|0)(3[0-9]|20)\d{7}$/
+  const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 
   // Soumission possible (login)
   const canSubmitLogin = useMemo(
@@ -69,11 +78,18 @@ export default function AuthScreen({
   }, [emailRegex, email, password, confirm, fullName, acceptTerms, loading]);
 
   // ----- Handlers -----
-  const onPressLogin = () => {
+  const onPressLogin = async () => {
     if (loading) return;
     setLoading(true);
-    // TODO: call your API here
-    setTimeout(() => setLoading(false), 1200);
+    try {
+      const res = await api.auth.postApiAuthLogin({ email: email.trim(), password });
+      await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
+      console.log("login ok", res.user);
+    } catch (err: any) {
+      console.warn("login error", err?.body || err?.message || err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -93,10 +109,26 @@ export default function AuthScreen({
 
     setLoading(true);
     try {
-      // TODO: call your API here
-      await new Promise((r) => setTimeout(r, 900));
+      const res = await api.auth.postApiAuthRegister({
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        password,
+        name: fullName.trim(),
+      });
+      // Option: session on register, but UX ici bascule vers login. On peut ne pas persister tout de suite.
+      await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       // Après succès : repasser sur l’onglet login
       setActiveTab("login");
+    } catch (err: any) {
+      // Map minimal errors to existing error slots without changing UI
+      const msg: string = err?.body?.msg || err?.message || "Erreur d’inscription";
+      const newErrs: Record<string, string> = {};
+      if (/email/i.test(msg)) newErrs.email = msg;
+      if (/téléphone|phone/i.test(msg)) newErrs.phone = msg;
+      if (/mot de passe|password/i.test(msg)) newErrs.password = msg;
+      if (Object.keys(newErrs).length === 0) newErrs.email = msg; // fallback
+      setErrors(newErrs);
+      console.warn("register error", err?.body || err?.message || err);
     } finally {
       setLoading(false);
     }
