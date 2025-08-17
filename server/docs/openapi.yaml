@@ -185,7 +185,6 @@ paths:
                 email: { type: string }
                 phone: { type: string }
                 password: { type: string }
-                role: { type: string, enum: [client, livreur, admin], nullable: true }
                 name: { type: string, nullable: true }
               anyOf:
                 - required: [email, password]
@@ -1007,6 +1006,82 @@ paths:
                 notFound:
                   value:
                     msg: "Locality not found"
+
+  # Admin Users
+  /api/admin/users:
+    post:
+      summary: Create delivery user (livreur)
+      tags: [Admin Users]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                phone: { type: string, description: "MG format: +26120xxxxxxx or 020xxxxxxx" }
+                password: { type: string, minLength: 6 }
+                name: { type: string }
+              required: [phone, password, name]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  email: { type: string, nullable: true }
+                  phone: { type: string }
+                  name: { type: string }
+                  role: { type: string, enum: [client, livreur, admin] }
+              examples:
+                created:
+                  value:
+                    id: 301
+                    email: null
+                    phone: "+261341234567"
+                    name: "Rakoto"
+                    role: "livreur"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                badRequest:
+                  value:
+                    msg: "\"password\" length must be at least 6 characters long"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
+        '409':
+          description: Conflict (email/phone already exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                conflict:
+                  value:
+                    msg: "Téléphone déjà utilisé"
 
   # Pricing
   /api/pricing/quote:
