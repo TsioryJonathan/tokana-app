@@ -26,6 +26,7 @@ export { User } from './models/User';
 export { Zone } from './models/Zone';
 export type { ZonePublicResponse } from './models/ZonePublicResponse';
 
+export { AdminUsersService } from './services/AdminUsersService';
 export { AdminZonesService } from './services/AdminZonesService';
 export { AuthService } from './services/AuthService';
 export { DeliveryOtpService } from './services/DeliveryOtpService';

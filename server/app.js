@@ -11,6 +11,7 @@ import slotRoutes from './routes/slotRoutes.js';
 import ordersRoutes from './routes/ordersRoutes.js';
 import zonesRoutes from './routes/zonesRoutes.js';
 import zonesAdminRoutes from './routes/admin/zonesAdminRoutes.js';
+import usersAdminRoutes from './routes/admin/usersAdminRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'yaml';
@@ -75,6 +76,7 @@ app.use('/api/slots', slotRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/zones', zonesRoutes);
 app.use('/api/admin/zones', zonesAdminRoutes);
+app.use('/api/admin/users', usersAdminRoutes);
 
 // Swagger UI at /docs
 try {

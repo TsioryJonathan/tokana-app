@@ -5,6 +5,7 @@
 import type { BaseHttpRequest } from './core/BaseHttpRequest';
 import type { OpenAPIConfig } from './core/OpenAPI';
 import { FetchHttpRequest } from './core/FetchHttpRequest';
+import { AdminUsersService } from './services/AdminUsersService';
 import { AdminZonesService } from './services/AdminZonesService';
 import { AuthService } from './services/AuthService';
 import { DeliveryOtpService } from './services/DeliveryOtpService';
@@ -15,6 +16,7 @@ import { SlotsService } from './services/SlotsService';
 import { ZonesService } from './services/ZonesService';
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
 export class TokanaApiClient {
+    public readonly adminUsers: AdminUsersService;
     public readonly adminZones: AdminZonesService;
     public readonly auth: AuthService;
     public readonly deliveryOtp: DeliveryOtpService;
@@ -36,6 +38,7 @@ export class TokanaApiClient {
             HEADERS: config?.HEADERS,
             ENCODE_PATH: config?.ENCODE_PATH,
         });
+        this.adminUsers = new AdminUsersService(this.request);
         this.adminZones = new AdminZonesService(this.request);
         this.auth = new AuthService(this.request);
         this.deliveryOtp = new DeliveryOtpService(this.request);
