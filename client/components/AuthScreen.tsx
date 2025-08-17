@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { assets } from "@/assets/images/assets";
 import { TokanaApiClient } from "@/app/lib/api";
 import { getAccessToken, setSession } from "@/app/lib/auth/session";
+import { router } from "expo-router";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -85,6 +86,9 @@ export default function AuthScreen({
       const res = await api.auth.postApiAuthLogin({ email: email.trim(), password });
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       console.log("login ok", res.user);
+      if (res.user?.role === 'admin') router.replace('/admin');
+      else if (res.user?.role === 'livreur') router.replace('/delivery');
+      else router.replace('/');
     } catch (err: any) {
       console.warn("login error", err?.body || err?.message || err);
     } finally {
@@ -115,10 +119,11 @@ export default function AuthScreen({
         password,
         name: fullName.trim(),
       });
-      // Option: session on register, but UX ici bascule vers login. On peut ne pas persister tout de suite.
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
-      // Après succès : repasser sur l’onglet login
-      setActiveTab("login");
+      // Redirige selon le rôle (normalement client)
+      if (res.user?.role === 'admin') router.replace('/admin');
+      else if (res.user?.role === 'livreur') router.replace('/delivery');
+      else router.replace('/');
     } catch (err: any) {
       // Map minimal errors to existing error slots without changing UI
       const msg: string = err?.body?.msg || err?.message || "Erreur d’inscription";
