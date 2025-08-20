@@ -6,17 +6,15 @@ import React, {
   useState,
 } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
-  StatusBar,
-  Platform,
   FlatList,
   RefreshControl,
   TouchableOpacity,
   Animated,
   Easing,
 } from "react-native";
+// safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -377,11 +375,7 @@ export default function ClientHome() {
   }, [orders, filter]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
-      />
-
+    <View className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="px-5 pt-4 pb-3 flex-row items-center justify-between">
         <View className="flex-row items-center">
@@ -398,7 +392,7 @@ export default function ClientHome() {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/(client)/orders/index")}
+          onPress={() => router.push("/orders" as any)}
           activeOpacity={0.8}
         >
           <View>
@@ -412,7 +406,7 @@ export default function ClientHome() {
       {/* CTA principal */}
       <View className="px-5">
         <TouchableOpacity
-          onPress={() => router.push("/(client)/orders/new")}
+          onPress={() => router.push("/orders/new" as any)}
           activeOpacity={0.9}
           className="rounded-2xl overflow-hidden"
         >
@@ -487,7 +481,7 @@ export default function ClientHome() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => router.push("/(client)/orders/index")}
+            onPress={() => router.push("/orders" as any)}
             activeOpacity={0.8}
           >
             <View className="flex-row items-center">
@@ -524,7 +518,7 @@ export default function ClientHome() {
                   Aucune commande ici
                 </Text>
                 <TouchableOpacity
-                  onPress={() => router.push("/(client)/orders/new")}
+                  onPress={() => router.push("/orders/new" as any)}
                   className="mt-4 px-4 py-2 rounded-xl bg-slate-900"
                   activeOpacity={0.9}
                 >
@@ -542,7 +536,7 @@ export default function ClientHome() {
                 order={item}
                 onPress={() =>
                   router.push({
-                    pathname: "/(client)/orders/[id]",
+                    pathname: "/orders/[id]" as any,
                     params: { id: item.code },
                   })
                 }
@@ -551,6 +545,6 @@ export default function ClientHome() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

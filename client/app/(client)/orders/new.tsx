@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   ScrollView,
@@ -149,7 +148,7 @@ export default function NewOrderWizard() {
     // TODO: await api.createOrder(payload)
 
     resetForm();
-    router.replace("/(client)/orders/index");
+    router.replace("/orders" as any);
   };
   const resetForm = () => {
     setParcel(INITIAL_PARCEL);
@@ -160,7 +159,7 @@ export default function NewOrderWizard() {
     setStep(0);
   };
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-slate-50">
       <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
         <TouchableOpacity onPress={goPrev} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
@@ -224,6 +223,6 @@ export default function NewOrderWizard() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

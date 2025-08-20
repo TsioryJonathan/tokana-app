@@ -1,7 +1,6 @@
 // app/(client)/profile.tsx
 import React, { useMemo, useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   Platform,
   Image,
 } from "react-native";
+// safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -98,7 +98,7 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="px-5 py-3 bg-white border-b border-slate-200 flex-row items-center justify-between">
         <Text className="text-lg font-quicksand-bold text-slate-900">
@@ -410,7 +410,7 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

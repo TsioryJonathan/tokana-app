@@ -1,13 +1,6 @@
 import React from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  Image,
-  StatusBar,
-  Platform,
-  ImageSourcePropType,
-} from "react-native";
+import { View, Text, Image, StatusBar, Platform, ImageSourcePropType } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { assets } from "@/assets/images/assets";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -15,10 +8,18 @@ import GhostButton from "@/components/ui/GhostButton";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView className="flex-1 bg-customwhite">
+    <SafeAreaView
+      className="flex-1 bg-customwhite"
+      edges={["top","bottom"]}
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
+        barStyle="dark-content"
+        translucent={Platform.OS === 'android'}
+        backgroundColor="transparent"
       />
 
       <View className="h-full flex flex-col justify-between items-center gap-5 px-10">

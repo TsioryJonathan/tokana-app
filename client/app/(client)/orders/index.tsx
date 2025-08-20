@@ -408,7 +408,7 @@ export default function OrdersList() {
             highlight={highlight === item.id || highlight === item.code}
             onPress={() =>
               router.push({
-                pathname: "/(client)/orders/[id]",
+                pathname: "/orders/[id]" as any,
                 params: { id: item.code },
               })
             }

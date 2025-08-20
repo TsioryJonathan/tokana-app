@@ -1,17 +1,17 @@
 import React from "react";
-import { Stack } from "expo-router";
+import { Platform, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Slot } from "expo-router";
 
-const AuthLayout = () => {
+export default function AuthLayout() {
   return (
-    <Stack>
-      <Stack.Screen
-        name="auth"
-        options={{
-          headerShown: false,
-        }}
+    <SafeAreaView className="flex-1 bg-black" edges={["top","bottom"]}>
+      <StatusBar
+        barStyle="light-content"
+        translucent={Platform.OS === 'android'}
+        backgroundColor="transparent"
       />
-    </Stack>
+      <Slot />
+    </SafeAreaView>
   );
-};
-
-export default AuthLayout;
+}
