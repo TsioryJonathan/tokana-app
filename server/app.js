@@ -63,6 +63,7 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+console.log('CORS allowed origins:', allowedOrigins.length ? allowedOrigins : 'ALL (dev)');
 // Rate limit API
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api/', limiter);
@@ -94,4 +95,5 @@ try {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Serveur sur port ${PORT}`));
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => console.log(`Serveur sur http://${HOST}:${PORT}`));
