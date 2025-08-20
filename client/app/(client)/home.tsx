@@ -18,6 +18,8 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import StatChip from "@/components/ui/StatChip";
+import FilterChip from "@/components/ui/FilterChip";
 
 // --- Types / mocks ---
 type OrderStatus =
@@ -282,60 +284,7 @@ function OrderCard({ order, onPress }: { order: Order; onPress?: () => void }) {
   );
 }
 
-// --- Stat chip ---
-function StatChip({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="flex-1 bg-white rounded-2xl px-4 py-3 mr-3 shadow-sm border border-slate-100">
-      <View className="flex-row items-center">
-        <View>{icon}</View>
-        <Text className="ml-2 text-[12px] text-slate-500 font-quicksand-medium">
-          {label}
-        </Text>
-      </View>
-      <Text className="mt-1 text-xl font-quicksand-bold text-slate-900">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-// --- Filter chips ---
 type Filter = "ALL" | "ACTIVE" | "DELIVERED" | "CANCELLED";
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      className={`mr-2 px-3 py-1.5 rounded-full border ${
-        active
-          ? "bg-emerald-50 border-emerald-300"
-          : "bg-white border-slate-200"
-      }`}
-    >
-      <Text
-        className={`text-[12px] font-quicksand-semibold ${active ? "text-emerald-700" : "text-slate-700"}`}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 export default function ClientHome() {
   const router = useRouter();

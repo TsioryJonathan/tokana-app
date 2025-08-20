@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
           />
         </View>
         <View className="mt-10 items-center h-[60%] justify-evenly">
-          <View className="flex flex-col items-center justify-between mx-10">
+          <View className="flex flex-col items-center justify-between">
             <Text className="text-3xl font-quicksand-bold text-secondary tracking-wide text-center">
               Bienvenue chez Tokana
             </Text>
@@ -42,7 +42,6 @@ export default function WelcomeScreen() {
                 router.push("/(auth)/auth");
               }}
               textClassName="font-quicksand-bold"
-              className="w-fit"
             >
               Se connecter
             </PrimaryButton>
@@ -51,7 +50,6 @@ export default function WelcomeScreen() {
                 router.push("/(auth)/auth?q=register");
               }}
               textClassName="font-quicksand-bold"
-              className="w-fit"
             >
               S&apos;inscrire
             </GhostButton>
