@@ -1,46 +1,20 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getApiClient } from "@/lib/api/client";
+import { useToast } from "@/components/ui/Toast";
+import {
+  mapBackendOrderToUI,
+  type UIOrder as Order,
+  type OrderStatus,
+  mapBackendStatus,
+  statusLabel,
+} from "@/lib/mappers/order";
 
-// Types de commande
-type OrderStatus =
-  | "CREATED"
-  | "PICKED_UP"
-  | "IN_TRANSIT"
-  | "DELIVERED"
-  | "CANCELLED";
-type Order = {
-  id: string;
-  code: string;
-  createdAt: string;
-  from: string;
-  to: string;
-  priceAr: number;
-  service: "STANDARD" | "EXPRESS";
-  status: OrderStatus;
-};
+// Types et mapping centralisés dans app/lib/mappers/order
 
-// Mock pour simuler une commande (remplace par API)
-const mockOrder: Order = {
-  id: "1",
-  code: "TK-20250816-001",
-  createdAt: new Date().toISOString(),
-  from: "Ankorondrano",
-  to: "Analakely",
-  priceAr: 3500,
-  service: "STANDARD",
-  status: "IN_TRANSIT",
-};
-
-// Helpers affichage
-const statusLabel: Record<OrderStatus, string> = {
-  CREATED: "Créée",
-  PICKED_UP: "Retirée",
-  IN_TRANSIT: "En cours",
-  DELIVERED: "Livrée",
-  CANCELLED: "Annulée",
-};
+// Helpers affichage centralisés dans mappers/order
 
 function formatAr(amount: number) {
   return `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Ar`;
@@ -49,15 +23,48 @@ function formatAr(amount: number) {
 export default function OrderDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<
+    { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
+  >([]);
+
+  const api = useMemo(getApiClient, []);
 
   useEffect(() => {
-    // Ici tu remplaces par un appel API en fonction de id
-    // ex: fetch(`/api/orders/${id}`)
-    setOrder(mockOrder);
-  }, [id]);
+    let mounted = true;
+    (async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const data = await api.orders.getApiOrders1(Number(id));
+        const ui = mapBackendOrderToUI(data);
+        if (mounted) setOrder(ui);
+        // Load history
+        const h = await api.orders.getApiOrdersHistory(Number(id));
+        const mapped = (h || [])
+          .map((it) => ({
+            id: Number(it.id || 0),
+            from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
+            to: mapBackendStatus(String(it.toStatus || "")),
+            at: String(it.changedAt || ""),
+          }))
+          .sort((a, b) => (a.at > b.at ? -1 : 1));
+        if (mounted) setHistory(mapped);
+      } catch (e) {
+        console.warn("order detail error", e);
+        showToast("Erreur de chargement de la commande", "error");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [id, api, showToast]);
 
-  if (!order) {
+  if (loading || !order) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-slate-600">Chargement de la commande...</Text>
@@ -119,6 +126,39 @@ export default function OrderDetails() {
               {new Date(order.createdAt).toLocaleString()}
             </Text>
           </View>
+        </View>
+
+        {/* Historique des statuts */}
+        <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <Text className="text-base font-quicksand-bold text-slate-900">
+            Historique
+          </Text>
+          {history.length === 0 ? (
+            <Text className="mt-2 text-slate-500 text-sm">
+              Aucun historique disponible.
+            </Text>
+          ) : (
+            <View className="mt-2">
+              {history.map((h, idx) => (
+                <View
+                  key={`${h.id}-${idx}`}
+                  className="flex-row items-start py-2 border-b border-slate-100"
+                >
+                  <View className="mt-1 mr-3">
+                    <Ionicons name="time-outline" size={14} color="#64748B" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-quicksand-semibold text-slate-800">
+                      {statusLabel[h.to]}
+                    </Text>
+                    <Text className="text-[12px] text-slate-500">
+                      {new Date(h.at).toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
