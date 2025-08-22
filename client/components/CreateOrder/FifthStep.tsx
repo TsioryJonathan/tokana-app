@@ -1,4 +1,4 @@
-import { View, Text, Platform } from "react-native";
+import { View, Text } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
 import SectionHeader from "../ui/SectionHeader";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,19 +16,14 @@ const FifthStep = ({
     <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
       <SectionHeader
         icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
-        title="Paiement & notes"
+        title="Paiement (en implémentation) & notes"
       />
-      <LabeledInput
-        label="Montant à récupérer (optionnel)"
-        placeholder="Ex: 80 000"
-        keyboardType={Platform.select({
-          ios: "number-pad",
-          android: "numeric",
-        })}
-        value={payment.codAmountAr}
-        onChangeText={(t) => setPayment({ ...payment, codAmountAr: t })}
-        right={<Text className="ml-2 text-[12px] text-slate-500">Ar</Text>}
-      />
+      <View className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+        <Text className="text-[12px] text-amber-800 font-quicksand-medium">
+          Les fonctionnalités de paiement ne sont pas encore disponibles dans cet MVP.
+          Vous pouvez ajouter des notes pour le livreur si nécessaire.
+        </Text>
+      </View>
       <LabeledInput
         label="Instructions / notes"
         placeholder="Code portail, repère..."

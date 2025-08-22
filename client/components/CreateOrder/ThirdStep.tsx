@@ -32,6 +32,13 @@ const ThirdStep = ({
         onChangeText={(t) => setRecipient({ ...recipient, phone: t })}
       />
       <LabeledInput
+        label="Email (optionnel)"
+        placeholder="ex: client@mail.com"
+        keyboardType="email-address"
+        value={recipient.email || ""}
+        onChangeText={(t) => setRecipient({ ...recipient, email: t })}
+      />
+      <LabeledInput
         label="Adresse de livraison"
         placeholder="Quartier, rue, repère"
         value={recipient.address}
