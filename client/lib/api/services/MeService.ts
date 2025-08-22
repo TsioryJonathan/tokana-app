@@ -15,7 +15,7 @@ export class MeService {
     public getApiMe(): CancelablePromise<User> {
         return this.httpRequest.request({
             method: 'GET',
-            url: '/api/me',
+            url: '/api/auth/me',
             errors: {
                 401: `Unauthorized (missing/invalid token)`,
             },

@@ -13,19 +13,21 @@ export class SlotsService {
      * @returns Slot OK
      * @throws ApiError
      */
-    public getApiSlotsStandard(
+    public async getApiSlotsStandard(
         zoneLevel: 'ville' | 'peripherie' | 'super-peripherie',
-    ): CancelablePromise<Array<Slot>> {
-        return this.httpRequest.request({
+    ): Promise<Array<Slot>> {
+        const res: any = await this.httpRequest.request({
             method: 'GET',
-            url: '/api/slots/standard',
+            url: '/api/slots',
             query: {
+                'type': 'standard',
                 'zoneLevel': zoneLevel,
             },
             errors: {
                 401: `Unauthorized`,
             },
         });
+        return Array.isArray(res?.slots) ? res.slots : [];
     }
     /**
      * Get express availability
@@ -34,11 +36,15 @@ export class SlotsService {
      */
     public getApiSlotsExpress(): CancelablePromise<{
         allowed?: boolean;
+        eta?: { minMinutes?: number; maxMinutes?: number };
         reason?: string | null;
     }> {
         return this.httpRequest.request({
             method: 'GET',
-            url: '/api/slots/express',
+            url: '/api/slots',
+            query: {
+                'type': 'express',
+            },
             errors: {
                 401: `Unauthorized`,
             },
