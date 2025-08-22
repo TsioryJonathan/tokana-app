@@ -44,7 +44,7 @@
       ]
     ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.0.220:5000",
+      "API_BASE_DEV": "http://localhost:5000",
       "API_BASE_PROD": "https://api.example.com"
     },
     "experiments": {

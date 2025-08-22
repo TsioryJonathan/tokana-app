@@ -13,10 +13,11 @@ import {
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { assets } from "@/assets/images/assets";
-import { TokanaApiClient } from "@/app/lib/api";
-import { getAccessToken, setSession } from "@/app/lib/auth/session";
+import { TokanaApiClient } from "@/lib/api";
+import { getAccessToken, setSession } from "@/lib/auth/session";
 import { router } from "expo-router";
 import Constants from "expo-constants";
+import { useToast } from "@/components/ui/Toast";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -53,17 +54,23 @@ export default function AuthScreen({
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Toast
+  const { showToast } = useToast();
+
   // ----- API client -----
   const api = useMemo(() => {
     const extra = (Constants as any)?.expoConfig?.extra || {};
     let base: string | undefined;
     if (__DEV__) {
-      // Prefer configured dev base, else fallback to expo host IP
+      // Prefer configured dev base; on native, avoid localhost and prefer Expo host IP
       base = extra.API_BASE_DEV;
+      const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
+      const host = hostUri ? hostUri.split(":")[0] : undefined;
+      const nativeFallback = host ? `http://${host}:5000` : "http://localhost:5000";
       if (!base) {
-        const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
-        const host = hostUri ? hostUri.split(":")[0] : undefined;
-        base = Platform.select({ web: "http://localhost:5000", default: host ? `http://${host}:5000` : "http://localhost:5000" });
+        base = Platform.select({ web: "http://localhost:5000", default: nativeFallback }) as string;
+      } else if (Platform.OS !== 'web' && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
+        base = nativeFallback;
       }
     } else {
       base = extra.API_BASE_PROD || "https://api.example.com";
@@ -103,11 +110,14 @@ export default function AuthScreen({
       const res = await api.auth.postApiAuthLogin({ email: email.trim(), password });
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       console.log("login ok", res.user);
-      if (res.user?.role === 'admin') router.replace('/admin');
+      showToast("Connexion réussie", "success");
+      if (res.user?.role === 'admin') router.replace('/(admin)');
       else if (res.user?.role === 'livreur') router.replace('/delivery');
       else router.replace('/home');
     } catch (err: any) {
       console.warn("login error", err?.body || err?.message || err);
+      const msg: string = err?.body?.msg || err?.message || "Connexion échouée";
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -138,7 +148,8 @@ export default function AuthScreen({
       });
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       // Redirige selon le rôle (normalement client)
-      if (res.user?.role === 'admin') router.replace('/admin');
+      showToast("Inscription réussie", "success");
+      if (res.user?.role === 'admin') router.replace('/(admin)');
       else if (res.user?.role === 'livreur') router.replace('/delivery');
       else router.replace('/home');
     } catch (err: any) {
@@ -151,6 +162,7 @@ export default function AuthScreen({
       if (Object.keys(newErrs).length === 0) newErrs.email = msg; // fallback
       setErrors(newErrs);
       console.warn("register error", err?.body || err?.message || err);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
