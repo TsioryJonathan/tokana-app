@@ -1,5 +1,5 @@
 // app/(client)/profile.tsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,20 +11,29 @@ import {
   Platform,
   Image,
 } from "react-native";
+import LogoutButton from "@/components/LogoutButton";
 // safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { getApiClient } from "@/lib/api/client";
+import { useToast } from "@/components/ui/Toast";
 
 type MobileMoney = "MVOLA" | "AIRTEL" | "ORANGE";
 
+const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+
 export default function Profile() {
   const router = useRouter();
+  const api = useMemo(getApiClient, []);
+  const { showToast } = useToast();
 
-  // --- Mock user (remplace par ton store / API) ---
+  // --- User depuis API ---
   const [avatarUrl] = useState<string | null>(null);
-  const [name, setName] = useState("Rakoto Andry");
-  const [phone, setPhone] = useState("+261341234567");
-  const [email, setEmail] = useState("rakoto.andry@example.com");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [editing, setEditing] = useState(false);
 
@@ -51,19 +60,40 @@ export default function Profile() {
   const canSave = useMemo(
     () =>
       name.trim().length > 1 &&
-      /^\+?\d{7,15}$/.test(phone.replace(/\s/g, "")) &&
+      (phone.trim() === "" || mgPhoneRegex.test(phone.trim())) &&
       (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) || email.trim() === ""),
     [name, phone, email]
   );
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const me = await api.me.getApiMe();
+        if (!mounted) return;
+        setName(me.name || "");
+        setPhone(me.phone || "");
+        setEmail(me.email || "");
+        setRole(me.role || null);
+      } catch (e) {
+        console.warn("/api/me failed", e);
+        showToast("Impossible de charger le profil", "error");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [api]);
+
   const onSaveProfile = async () => {
     if (!canSave) {
-      Alert.alert("Profil", "Vérifie tes informations.");
+      showToast("Vérifie tes informations", "error");
       return;
     }
-    // TODO: await api.updateProfile({ name, phone, email })
-    setEditing(false);
-    Alert.alert("Profil", "Informations mises à jour.");
+    // Backend actuel: pas de route de mise à jour de profil (seulement GET /api/me)
+    showToast("Mise à jour du profil bientôt disponible", "info");
   };
 
   const toggleLink = async (m: MobileMoney) => {
@@ -83,19 +113,15 @@ export default function Profile() {
   const removeAddress = (id: string) =>
     setAddresses((prev) => prev.filter((a) => a.id !== id));
 
-  const handleLogout = async () => {
-    Alert.alert("Déconnexion", "Voulez-vous vous déconnecter ?", [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Se déconnecter",
-        style: "destructive",
-        onPress: async () => {
-          // TODO: await auth.signOut()
-          router.replace("/(auth)/auth");
-        },
-      },
-    ]);
-  };
+  // Logout handled by reusable LogoutButton with confirm
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text className="text-slate-600">Chargement du profil…</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-slate-50">
@@ -168,9 +194,14 @@ export default function Profile() {
                   <Text className="text-base font-quicksand-bold text-slate-900">
                     {name}
                   </Text>
-                  <Text className="text-[12px] text-slate-600">{phone}</Text>
+                  {phone ? (
+                    <Text className="text-[12px] text-slate-600">{phone}</Text>
+                  ) : null}
                   {email ? (
                     <Text className="text-[12px] text-slate-600">{email}</Text>
+                  ) : null}
+                  {role ? (
+                    <Text className="text-[12px] text-slate-500 mt-1">{role}</Text>
                   ) : null}
                 </>
               ) : (
@@ -320,10 +351,7 @@ export default function Profile() {
           <TouchableOpacity
             onPress={() => {
               // TODO: router.push("/(client)/security/change-password")
-              Alert.alert(
-                "Sécurité",
-                "Écran de changement de mot de passe à implémenter."
-              );
+              showToast("Changement de mot de passe à venir", "info");
             }}
             activeOpacity={0.8}
             className="flex-row items-center justify-between px-3 py-3 rounded-xl border border-slate-200"
@@ -371,18 +399,13 @@ export default function Profile() {
 
         {/* Danger & logout */}
         <View className="px-1">
-          <TouchableOpacity
-            onPress={handleLogout}
-            activeOpacity={0.9}
-            className="bg-slate-900 px-5 py-3 rounded-xl items-center"
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="log-out-outline" size={18} color="#fff" />
-              <Text className="ml-2 text-white font-quicksand-bold">
-                Se déconnecter
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <LogoutButton
+            title="Se déconnecter"
+            confirm
+            className="bg-slate-900 rounded-xl text-white"
+            textClassName="font-quicksand-bold"
+            onLoggedOut={() => router.replace('/(auth)/auth')}
+          />
 
           <TouchableOpacity
             onPress={() =>
