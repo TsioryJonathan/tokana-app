@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Stack, usePathname, useRouter, type Href } from 'expo-router';
 import { View, Text, Platform, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getApiClient } from '@/lib/api/client';
+import { getApiBase, getApiClient } from '@/lib/api/client';
 import { useToast } from '@/components/ui/Toast';
+import { ApiError } from '@/lib/api';
+import { getAccessToken } from '@/lib/auth/session';
 
 export default function AdminLayout() {
   const api = useMemo(getApiClient, []);
@@ -17,6 +19,18 @@ export default function AdminLayout() {
     let mounted = true;
     (async () => {
       try {
+        // Early check: no token => ask login
+        const token = await getAccessToken();
+        if (!token) {
+          if (!mounted) return;
+          showToast('Veuillez vous reconnecter', 'error');
+          router.replace('/');
+          return;
+        }
+        // Debug: log base + token presence
+        const base = getApiBase();
+        // eslint-disable-next-line no-console
+        console.log('[AdminLayout] calling /api/me on', base, '| token length:', token?.length ?? 0);
         const me = await api.me.getApiMe();
         if (!mounted) return;
         setMeName(me.name || null);
@@ -27,7 +41,25 @@ export default function AdminLayout() {
         }
       } catch (e) {
         if (!mounted) return;
-        showToast('Session invalide', 'error');
+        // Provide precise feedback
+        let status: number | undefined;
+        try {
+          if (e instanceof ApiError) {
+            status = e.status;
+          } else if (e && typeof e === 'object' && 'status' in (e as any)) {
+            status = (e as any).status as number;
+          }
+        } catch {}
+        // eslint-disable-next-line no-console
+        console.error('[AdminLayout] /api/me error:', e);
+        if (status === 401) {
+          showToast('Session expirée, veuillez vous reconnecter', 'error');
+        } else if (status === 403) {
+          showToast('Accès réservé aux administrateurs', 'error');
+        } else {
+          const base = getApiBase();
+          showToast(`Erreur réseau API${base ? ` (${base})` : ''}`, 'error');
+        }
         router.replace('/');
         return;
       } finally {
