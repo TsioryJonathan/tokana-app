@@ -4,6 +4,11 @@ import { TokanaApiClient } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth/session";
 
 let cached: TokanaApiClient | null = null;
+let currentBase: string | null = null;
+
+export function getApiBase(): string | null {
+  return currentBase;
+}
 
 export function getApiClient(): TokanaApiClient {
   if (cached) return cached;
@@ -19,9 +24,13 @@ export function getApiClient(): TokanaApiClient {
     } else if (Platform.OS !== 'web' && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
       base = nativeFallback;
     }
+    // Debug log in development
+    // eslint-disable-next-line no-console
+    console.log('[TokanaApi] BASE (dev):', base, '| hostUri:', hostUri);
   } else {
     base = extra.API_BASE_PROD || "https://api.example.com";
   }
+  currentBase = base!;
   cached = new TokanaApiClient({
     BASE: base!,
     TOKEN: async () => (await getAccessToken()) ?? "",
