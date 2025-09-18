@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "gen:sdk": "npx openapi-typescript-codegen --input ../server/docs/openapi.yaml --output ./app/lib/api --client fetch --exportCore true --exportServices true --exportModels true --name TokanaApiClient"
+    "gen:sdk": "npx openapi-typescript-codegen --input ../server/docs/openapi.yaml --output ./lib/api --client fetch --exportCore true --exportServices true --exportModels true --name TokanaApiClient"
   },
   "dependencies": {
     "@expo-google-fonts/quicksand": "^0.4.0",
@@ -18,12 +18,13 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
-    "expo": "~53.0.20",
+    "expo": "^54.0.2",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.4.0",
+    "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.7",
     "expo-router": "~5.1.4",
     "expo-secure-store": "^14.2.3",
@@ -45,8 +46,7 @@
     "react-native-svg": "15.11.2",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "zod": "^3.23.8",
-    "expo-linear-gradient": "~14.1.5"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
