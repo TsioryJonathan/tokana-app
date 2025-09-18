@@ -13,6 +13,8 @@ import zonesRoutes from './routes/zonesRoutes.js';
 import zonesAdminRoutes from './routes/admin/zonesAdminRoutes.js';
 import usersAdminRoutes from './routes/admin/usersAdminRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
+import { protect } from './middleware/authMiddleware.js';
+import User from './models/User.js';
 import swaggerUi from 'swagger-ui-express';
 import yaml from 'yaml';
 import fs from 'fs';
@@ -64,9 +66,26 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 console.log('CORS allowed origins:', allowedOrigins.length ? allowedOrigins : 'ALL (dev)');
-// Rate limit API
+// Development request logger
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const auth = req.headers.authorization ? `${req.headers.authorization.slice(0, 20)}...` : undefined;
+    res.on('finish', () => {
+      const ms = Date.now() - start;
+      console.log(`[REQ] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms) auth:${auth ? 'yes' : 'no'}`);
+    });
+    next();
+  });
+}
+// Rate limit API (only in production)
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
-app.use('/api/', limiter);
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/', limiter);
+  console.log('Rate limiting enabled');
+} else {
+  console.log('Rate limiting disabled in development');
+}
 // Compression to save bandwidth on mobile
 app.use(compression());
 app.use(express.json());
@@ -78,6 +97,22 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/zones', zonesRoutes);
 app.use('/api/admin/zones', zonesAdminRoutes);
 app.use('/api/admin/users', usersAdminRoutes);
+
+// Lightweight health check (unauthenticated)
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// Compatibility route for client SDK: GET /api/me (same as /api/auth/me)
+app.get('/api/me', protect, async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'Utilisateur non trouvé' });
+    res.json({ id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Swagger UI at /docs
 try {
