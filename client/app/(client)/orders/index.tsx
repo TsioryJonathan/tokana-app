@@ -17,44 +17,23 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { getApiClient } from "@/lib/api/client";
+import { useToast } from "@/components/ui/Toast";
+import {
+  mapBackendOrderToUI,
+  mapBackendStatus,
+  type UIOrder as Order,
+  type OrderStatus,
+  statusLabel,
+  statusBadge,
+} from "@/lib/mappers/order";
 
-// --- Types ---
-type OrderStatus =
-  | "CREATED"
-  | "PICKED_UP"
-  | "IN_TRANSIT"
-  | "DELIVERED"
-  | "CANCELLED";
-type ServiceType = "STANDARD" | "EXPRESS";
-type Order = {
-  id: string; // identifiant interne
-  code: string; // code affiché (ex. TK-...)
-  createdAt: string; // ISO
-  from: string;
-  to: string;
-  priceAr: number;
-  service: ServiceType;
-  status: OrderStatus;
-};
+// Types and mappers centralized in app/lib/mappers/order
 
 // --- Helpers UI ---
-const statusLabel: Record<OrderStatus, string> = {
-  CREATED: "Créée",
-  PICKED_UP: "Retirée",
-  IN_TRANSIT: "En cours",
-  DELIVERED: "Livrée",
-  CANCELLED: "Annulée",
-};
 const chipStyle: Record<keyof typeof statusLabel | "ALL" | "ACTIVE", string> = {
   ALL: "bg-slate-100 text-slate-700 border-slate-200",
   ACTIVE: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  CREATED: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  PICKED_UP: "bg-blue-50 text-blue-700 border-blue-200",
-  IN_TRANSIT: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-rose-50 text-rose-700 border-rose-200",
-};
-const statusBadge: Record<OrderStatus, string> = {
   CREATED: "bg-yellow-50 text-yellow-700 border-yellow-200",
   PICKED_UP: "bg-blue-50 text-blue-700 border-blue-200",
   IN_TRANSIT: "bg-indigo-50 text-indigo-700 border-indigo-200",
@@ -70,57 +49,23 @@ function isActiveStatus(s: OrderStatus) {
   return s === "CREATED" || s === "PICKED_UP" || s === "IN_TRANSIT";
 }
 
-// --- Mock fetch avec pagination ---
-function makeMockOrders(page: number, pageSize: number): Order[] {
-  const base = (page - 1) * pageSize;
-  const statuses: OrderStatus[] = [
-    "CREATED",
-    "PICKED_UP",
-    "IN_TRANSIT",
-    "DELIVERED",
-    "CANCELLED",
-  ];
-  const areas = [
-    "Ankorondrano",
-    "Analakely",
-    "Ivandry",
-    "Isoraka",
-    "Ambatonakanga",
-    "Andohalo",
-  ];
-  return Array.from({ length: pageSize }).map((_, i) => {
-    const idx = base + i + 1;
-    const status = statuses[idx % statuses.length];
-    return {
-      id: String(idx),
-      code: `TK-202508-${String(idx).padStart(3, "0")}`,
-      createdAt: new Date(Date.now() - idx * 3_600_000).toISOString(),
-      from: areas[idx % areas.length],
-      to: areas[(idx + 2) % areas.length],
-      priceAr: 3000 + (idx % 5) * 500,
-      service: idx % 2 ? "STANDARD" : "EXPRESS",
-      status,
-    };
-  });
-}
+// --- Fetch from backend ---
 async function fetchOrders(
-  page: number,
-  pageSize = 12,
+  api: any,
   q?: string
-): Promise<{ items: Order[]; hasMore: boolean }> {
-  await new Promise((r) => setTimeout(r, 300)); // simulate network
-  let items = makeMockOrders(page, pageSize);
+): Promise<Order[]> {
+  const data = await api.orders.getApiOrders(undefined, true);
+  let items = data.map(mapBackendOrderToUI);
   if (q?.trim()) {
     const t = q.trim().toLowerCase();
     items = items.filter(
-      (o) =>
+      (o: Order) =>
         o.code.toLowerCase().includes(t) ||
         o.from.toLowerCase().includes(t) ||
         o.to.toLowerCase().includes(t)
     );
   }
-  // Simule 5 pages max
-  return { items, hasMore: page < 5 };
+  return items;
 }
 
 // --- Composants ---
@@ -249,59 +194,57 @@ function OrderRow({
 // --- Page ---
 export default function OrdersList() {
   const router = useRouter();
-  const { highlight } = useLocalSearchParams<{ highlight?: string }>();
-
+  const params = useLocalSearchParams<{ highlight?: string }>();
+  const highlight = params?.highlight || "";
+  const { showToast } = useToast();
+  const [items, setItems] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<
-    "ALL" | "ACTIVE" | "DELIVERED" | "CANCELLED"
+    keyof typeof statusLabel | "ALL" | "ACTIVE"
   >("ALL");
-  const [items, setItems] = useState<Order[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(
-    async (reset = false) => {
-      const nextPage = reset ? 1 : page;
-      if (reset) {
-        setLoading(true);
-      }
-      const res = await fetchOrders(nextPage, 12, q);
-      setHasMore(res.hasMore);
-      setItems((prev) => (reset ? res.items : [...prev, ...res.items]));
+  // API client
+  const api = useMemo(getApiClient, []);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchOrders(api, q);
+      setItems(res);
+    } catch (e) {
+      console.warn("orders list load error", e);
+      showToast("Erreur de chargement des commandes", "error");
+      setItems([]);
+    } finally {
       setLoading(false);
-    },
-    [page, q]
-  );
+    }
+  }, [api, q, showToast]);
 
   useEffect(() => {
-    load(true);
-  }, [q, filter]); // on recharge quand q ou filtre changent (filtre appliqué côté client ci-dessous)
+    load();
+  }, [q, filter, load]); // reload on search/filter change
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setPage(1);
-    await load(true);
+    await load();
     setRefreshing(false);
+    showToast("Actualisé", "success");
   }, [load]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || loading) return;
-    setPage((p) => p + 1);
-  }, [hasMore, loading]);
+    // no server pagination yet; noop
+  }, []);
 
-  useEffect(() => {
-    if (page > 1) load(false);
-  }, [page]);
+  // no page effect
 
   const filtered = useMemo(() => {
     if (filter === "ALL") return items;
     if (filter === "ACTIVE")
-      return items.filter((o) => isActiveStatus(o.status));
+      return items.filter((o: Order) => isActiveStatus(o.status));
     if (filter === "DELIVERED")
-      return items.filter((o) => o.status === "DELIVERED");
-    return items.filter((o) => o.status === "CANCELLED");
+      return items.filter((o: Order) => o.status === "DELIVERED");
+    return items.filter((o: Order) => o.status === "CANCELLED");
   }, [items, filter]);
 
   const renderHeader = (
@@ -315,7 +258,6 @@ export default function OrdersList() {
           value={q}
           onChangeText={(t) => {
             setQ(t);
-            setPage(1);
           }}
           className="ml-2 flex-1 text-[14px] text-slate-900"
           returnKeyType="search"
@@ -335,7 +277,6 @@ export default function OrdersList() {
           active={filter === "ALL"}
           onPress={() => {
             setFilter("ALL");
-            setPage(1);
           }}
         />
         <FilterChip
@@ -344,7 +285,6 @@ export default function OrdersList() {
           active={filter === "ACTIVE"}
           onPress={() => {
             setFilter("ACTIVE");
-            setPage(1);
           }}
         />
         <FilterChip
@@ -354,7 +294,6 @@ export default function OrdersList() {
           active={filter === "DELIVERED"}
           onPress={() => {
             setFilter("DELIVERED");
-            setPage(1);
           }}
         />
         <FilterChip
@@ -364,7 +303,6 @@ export default function OrdersList() {
           active={filter === "CANCELLED"}
           onPress={() => {
             setFilter("CANCELLED");
-            setPage(1);
           }}
         />
       </View>
@@ -408,8 +346,8 @@ export default function OrdersList() {
             highlight={highlight === item.id || highlight === item.code}
             onPress={() =>
               router.push({
-                pathname: "/(client)/orders/[id]",
-                params: { id: item.code },
+                pathname: "/tracking/[id]" as any,
+                params: { id: item.id },
               })
             }
           />

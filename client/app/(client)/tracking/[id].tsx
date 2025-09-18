@@ -1,36 +1,28 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
 import {
   mapBackendOrderToUI,
-  type UIOrder as Order,
-  type OrderStatus,
   mapBackendStatus,
   statusLabel,
+  type UIOrder,
+  type OrderStatus,
 } from "@/lib/mappers/order";
 
-// Types et mapping centralisés dans app/lib/mappers/order
-
-// Helpers affichage centralisés dans mappers/order
-
-function formatAr(amount: number) {
-  return `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Ar`;
-}
-
-export default function OrderDetails() {
+export default function TrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const api = useMemo(getApiClient, []);
   const { showToast } = useToast();
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [order, setOrder] = useState<UIOrder | null>(null);
   const [history, setHistory] = useState<
     { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
   >([]);
-
-  const api = useMemo(getApiClient, []);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -41,7 +33,6 @@ export default function OrderDetails() {
         const data = await api.orders.getApiOrders1(Number(id));
         const ui = mapBackendOrderToUI(data);
         if (mounted) setOrder(ui);
-        // Load history
         const h = await api.orders.getApiOrdersHistory(Number(id));
         const mapped = (h || [])
           .map((it) => ({
@@ -53,8 +44,8 @@ export default function OrderDetails() {
           .sort((a, b) => (a.at > b.at ? -1 : 1));
         if (mounted) setHistory(mapped);
       } catch (e) {
-        console.warn("order detail error", e);
-        showToast("Erreur de chargement de la commande", "error");
+        console.warn("tracking load error", e);
+        showToast("Erreur de chargement du suivi", "error");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -62,73 +53,35 @@ export default function OrderDetails() {
     return () => {
       mounted = false;
     };
-  }, [id, api, showToast]);
+  }, [api, id, showToast]);
 
   if (loading || !order) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
-        <Text className="text-slate-600">Chargement de la commande...</Text>
+        <Text className="text-slate-600">Chargement…</Text>
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-slate-50">
-      {/* Header */}
       <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
         </TouchableOpacity>
         <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">
-          Commande {order.code}
+          Suivi {order.code}
         </Text>
       </View>
 
-      {/* Contenu */}
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <Text className="text-slate-500 text-sm">Statut</Text>
+          <Text className="text-slate-500 text-sm">Statut actuel</Text>
           <Text className="mt-1 text-base font-quicksand-bold text-emerald-600">
             {statusLabel[order.status]}
           </Text>
-
-          <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Lieu de départ</Text>
-            <Text className="text-base font-quicksand-semibold text-slate-900">
-              {order.from}
-            </Text>
-          </View>
-
-          <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Lieu de destination</Text>
-            <Text className="text-base font-quicksand-semibold text-slate-900">
-              {order.to}
-            </Text>
-          </View>
-
-          <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Service</Text>
-            <Text className="text-base font-quicksand-semibold text-slate-900">
-              {order.service === "EXPRESS" ? "Express" : "Standard"}
-            </Text>
-          </View>
-
-          <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Prix</Text>
-            <Text className="text-base font-quicksand-bold text-slate-900">
-              {formatAr(order.priceAr)}
-            </Text>
-          </View>
-
-          <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Date de création</Text>
-            <Text className="text-base text-slate-900">
-              {new Date(order.createdAt).toLocaleString()}
-            </Text>
-          </View>
         </View>
 
-        {/* Historique des statuts */}
         <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
           <Text className="text-base font-quicksand-bold text-slate-900">
             Historique

@@ -2,6 +2,8 @@ import { Stack } from "expo-router";
 import "./globals.css";
 import { useFonts } from "expo-font";
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -21,10 +23,16 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(client)" options={{ headerShown: false }} />
-    </Stack>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(client)" options={{ headerShown: false }} />
+          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+          <Stack.Screen name="delivery" options={{ headerShown: false }} />
+        </Stack>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }

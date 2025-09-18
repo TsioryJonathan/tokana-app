@@ -2,10 +2,47 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { User } from '../models/User';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class AdminUsersService {
     constructor(public readonly httpRequest: BaseHttpRequest) {}
+    /**
+     * List users (admin)
+     * @param role
+     * @param q Search on name/email/phone
+     * @param page
+     * @param limit
+     * @returns any OK
+     * @throws ApiError
+     */
+    public getApiAdminUsers(
+        role?: 'client' | 'livreur' | 'admin',
+        q?: string,
+        page: number = 1,
+        limit: number = 20,
+    ): CancelablePromise<{
+        items?: Array<User>;
+        page?: number;
+        limit?: number;
+        total?: number;
+        pages?: number;
+    }> {
+        return this.httpRequest.request({
+            method: 'GET',
+            url: '/api/admin/users',
+            query: {
+                'role': role,
+                'q': q,
+                'page': page,
+                'limit': limit,
+            },
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden (admin only)`,
+            },
+        });
+    }
     /**
      * Create delivery user (livreur)
      * @param requestBody

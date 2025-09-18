@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  Image,
-  StatusBar,
-  Platform,
-  ImageSourcePropType,
-} from "react-native";
+import { View, Text, Image, ImageSourcePropType } from "react-native";
 import { useRouter } from "expo-router";
 import { assets } from "@/assets/images/assets";
 import PrimaryButton from "@/components/ui/PrimaryButton";
@@ -15,11 +7,10 @@ import GhostButton from "@/components/ui/GhostButton";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  // safe area handled by layout
+
   return (
-    <SafeAreaView className="flex-1 bg-customwhite">
-      <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
-      />
+    <View className="flex-1 bg-customwhite">
 
       <View className="h-full flex flex-col justify-between items-center gap-5 px-10">
         <View className="w-full h-[40%] flex flex-1 items-center justify-center pt-24">
@@ -32,7 +23,7 @@ export default function WelcomeScreen() {
           />
         </View>
         <View className="mt-10 items-center h-[60%] justify-evenly">
-          <View className="flex flex-col items-center justify-between mx-10">
+          <View className="flex flex-col items-center justify-between">
             <Text className="text-3xl font-quicksand-bold text-secondary tracking-wide text-center">
               Bienvenue chez Tokana
             </Text>
@@ -51,7 +42,6 @@ export default function WelcomeScreen() {
                 router.push("/(auth)/auth");
               }}
               textClassName="font-quicksand-bold"
-              className="w-fit"
             >
               Se connecter
             </PrimaryButton>
@@ -60,13 +50,12 @@ export default function WelcomeScreen() {
                 router.push("/(auth)/auth?q=register");
               }}
               textClassName="font-quicksand-bold"
-              className="w-fit"
             >
               S&apos;inscrire
             </GhostButton>
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

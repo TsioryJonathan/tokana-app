@@ -1009,6 +1009,53 @@ paths:
 
   # Admin Users
   /api/admin/users:
+    get:
+      summary: List users (admin)
+      tags: [Admin Users]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: role
+          schema: { type: string, enum: [client, livreur, admin] }
+          required: false
+        - in: query
+          name: q
+          schema: { type: string }
+          required: false
+          description: Search on name/email/phone
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+          required: false
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+          required: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  total: { type: integer }
+                  pages: { type: integer }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
     post:
       summary: Create delivery user (livreur)
       tags: [Admin Users]

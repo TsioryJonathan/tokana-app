@@ -53,6 +53,18 @@ const FirstStep = ({
       />
 
       <View className="h-2" />
+      <LabeledInput
+        label="Nombre de colis"
+        placeholder="Ex: 1"
+        keyboardType={Platform.select({
+          ios: "number-pad",
+          android: "numeric",
+        })}
+        value={parcel.parcelsCount || "1"}
+        onChangeText={(t) => setParcel({ ...parcel, parcelsCount: t })}
+      />
+
+      <View className="h-2" />
       <ToggleRow
         icon={
           <MaterialCommunityIcons

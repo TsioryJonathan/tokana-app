@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
-import { TokanaApiClient, OTPRequest } from './lib/api';
-import { getAccessToken } from './lib/auth/session';
+import { View, Text, TextInput, Button } from 'react-native';
+import { OTPRequest } from '@/lib/api';
+import { getApiClient } from '@/lib/api/client';
+import { useToast } from '@/components/ui/Toast';
 
 export default function DeliveryPage() {
-  const api = useMemo(() => new TokanaApiClient({
-    TOKEN: async () => (await getAccessToken()) || '',
-  }), []);
+  const api = useMemo(getApiClient, []);
+  const { showToast } = useToast();
 
   const [orderId, setOrderId] = useState('');
   const [channel, setChannel] = useState<OTPRequest.channel>(OTPRequest.channel.SMS);
@@ -16,14 +16,17 @@ export default function DeliveryPage() {
 
   const requestOtp = async () => {
     const id = Number(orderId);
-    if (!id) return Alert.alert('Erreur', 'Order ID invalide');
+    if (!id) {
+      showToast('Order ID invalide', 'error');
+      return;
+    }
     setLoadingReq(true);
     try {
       await api.deliveryOtp.postApiOrdersRequestOtp(id, { channel });
-      Alert.alert('OTP', 'Code envoyé');
+      showToast('Code OTP envoyé', 'success');
     } catch (err: any) {
       const msg: string = err?.body?.msg || err?.message || 'Erreur';
-      Alert.alert('Erreur', msg);
+      showToast(msg, 'error');
     } finally {
       setLoadingReq(false);
     }
@@ -31,14 +34,17 @@ export default function DeliveryPage() {
 
   const verifyOtp = async () => {
     const id = Number(orderId);
-    if (!id) return Alert.alert('Erreur', 'Order ID invalide');
+    if (!id) {
+      showToast('Order ID invalide', 'error');
+      return;
+    }
     setLoadingVerify(true);
     try {
       await api.deliveryOtp.postApiOrdersVerifyOtp(id, { code });
-      Alert.alert('OTP', 'Livraison confirmée');
+      showToast('Livraison confirmée', 'success');
     } catch (err: any) {
       const msg: string = err?.body?.msg || err?.message || 'Erreur';
-      Alert.alert('Erreur', msg);
+      showToast(msg, 'error');
     } finally {
       setLoadingVerify(false);
     }

@@ -21,3 +21,21 @@ export const validateCreateLivreur = validate(Joi.object({
   password: Joi.string().min(6).required(),
   name: Joi.string().min(1).required(),
 }));
+
+export const validateListUsersQuery = (req, res, next) => {
+  const schema = Joi.object({
+    role: Joi.string().valid('client', 'livreur', 'admin').optional(),
+    q: Joi.string().max(100).optional().allow(''),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  });
+  const { error, value } = schema.validate(req.query, { abortEarly: false, stripUnknown: true });
+  if (error) {
+    return res.status(400).json({
+      msg: 'Validation error',
+      details: error.details.map(d => ({ message: d.message, path: d.path })),
+    });
+  }
+  req.query = value;
+  next();
+};

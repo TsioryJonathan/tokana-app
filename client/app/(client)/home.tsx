@@ -6,79 +6,34 @@ import React, {
   useState,
 } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
-  StatusBar,
-  Platform,
   FlatList,
   RefreshControl,
   TouchableOpacity,
   Animated,
   Easing,
 } from "react-native";
+// safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import StatChip from "@/components/ui/StatChip";
+import FilterChip from "@/components/ui/FilterChip";
+import { getApiClient } from "@/lib/api/client";
+import { useToast } from "@/components/ui/Toast";
+import {
+  mapBackendOrderToUI,
+  type UIOrder,
+  type OrderStatus,
+  statusLabel,
+  statusBadge,
+  stepIndex,
+} from "@/lib/mappers/order";
 
-// --- Types / mocks ---
-type OrderStatus =
-  | "CREATED"
-  | "PICKED_UP"
-  | "IN_TRANSIT"
-  | "DELIVERED"
-  | "CANCELLED";
-type Order = {
-  id: string;
-  code: string;
-  createdAt: string; // ISO string
-  from: string;
-  to: string;
-  priceAr: number;
-  service: "STANDARD" | "EXPRESS";
-  status: OrderStatus;
-};
-
-const mockActiveOrders: Order[] = [
-  {
-    id: "1",
-    code: "TK-20250816-001",
-    createdAt: new Date().toISOString(),
-    from: "Ankorondrano",
-    to: "Analakely",
-    priceAr: 3500,
-    service: "STANDARD",
-    status: "IN_TRANSIT",
-  },
-  {
-    id: "2",
-    code: "TK-20250815-214",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    from: "Ivandry",
-    to: "Isoraka",
-    priceAr: 5000,
-    service: "EXPRESS",
-    status: "PICKED_UP",
-  },
-];
+// --- Types / mocks --- (removed local mocks and mappers; using shared mapper)
 
 // --- UI helpers ---
-const statusLabel: Record<OrderStatus, string> = {
-  CREATED: "Créée",
-  PICKED_UP: "Retirée",
-  IN_TRANSIT: "En cours",
-  DELIVERED: "Livrée",
-  CANCELLED: "Annulée",
-};
-
-const statusBadge: Record<OrderStatus, string> = {
-  CREATED: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  PICKED_UP: "bg-blue-50 text-blue-700 border-blue-200",
-  IN_TRANSIT: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-rose-50 text-rose-700 border-rose-200",
-};
-
 const ACTIVE = "#059669";
 
 function formatAr(amount: number) {
@@ -147,20 +102,6 @@ function SkeletonCard() {
 }
 
 // --- Progress (étapes) ---
-function stepIndex(status: OrderStatus) {
-  switch (status) {
-    case "CREATED":
-      return 0;
-    case "PICKED_UP":
-      return 1;
-    case "IN_TRANSIT":
-      return 2;
-    case "DELIVERED":
-      return 3;
-    default:
-      return -1; // CANCELLED
-  }
-}
 const stepIcons: { name: keyof typeof Ionicons.glyphMap; label: string }[] = [
   { name: "time-outline", label: "Créée" },
   { name: "cube-outline", label: "Retirée" },
@@ -213,7 +154,7 @@ function ProgressBar({ status }: { status: OrderStatus }) {
 }
 
 // --- Cards ---
-function OrderCard({ order, onPress }: { order: Order; onPress?: () => void }) {
+function OrderCard({ order, onPress }: { order: UIOrder; onPress?: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -284,78 +225,57 @@ function OrderCard({ order, onPress }: { order: Order; onPress?: () => void }) {
   );
 }
 
-// --- Stat chip ---
-function StatChip({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="flex-1 bg-white rounded-2xl px-4 py-3 mr-3 shadow-sm border border-slate-100">
-      <View className="flex-row items-center">
-        <View>{icon}</View>
-        <Text className="ml-2 text-[12px] text-slate-500 font-quicksand-medium">
-          {label}
-        </Text>
-      </View>
-      <Text className="mt-1 text-xl font-quicksand-bold text-slate-900">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-// --- Filter chips ---
 type Filter = "ALL" | "ACTIVE" | "DELIVERED" | "CANCELLED";
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      className={`mr-2 px-3 py-1.5 rounded-full border ${
-        active
-          ? "bg-emerald-50 border-emerald-300"
-          : "bg-white border-slate-200"
-      }`}
-    >
-      <Text
-        className={`text-[12px] font-quicksand-semibold ${active ? "text-emerald-700" : "text-slate-700"}`}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 export default function ClientHome() {
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<
+    "ACTIVE" | "DELIVERED" | "CANCELLED" | "ALL"
+  >("ACTIVE");
+  const [orders, setOrders] = useState<UIOrder[]>([]);
   const [todayCount, setTodayCount] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
-  const [filter, setFilter] = useState<Filter>("ACTIVE");
+
+  // API client
+  const api = useMemo(getApiClient, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 450)); // TODO API
-    setOrders(mockActiveOrders);
-    setTodayCount(3);
-    setMonthRevenue(215000);
-    setLoading(false);
-  }, []);
+    try {
+      const data = await api.orders.getApiOrders(undefined, true);
+      const ui = data.map(mapBackendOrderToUI);
+      setOrders(ui);
+
+      // Stats
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const today = ui.filter((o) => o.createdAt.slice(0, 10) === todayStr);
+      setTodayCount(today.length);
+
+      const monthKey = `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const monthDelivered = ui.filter(
+        (o) => o.status === "DELIVERED" && o.createdAt.startsWith(monthKey)
+      );
+      const revenue = monthDelivered.reduce(
+        (sum, o) => sum + (o.priceAr || 0),
+        0
+      );
+      setMonthRevenue(revenue);
+    } catch (e) {
+      console.warn("load orders error", e);
+      showToast("Erreur de chargement des commandes", "error");
+      setOrders([]);
+      setTodayCount(0);
+      setMonthRevenue(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
 
   useEffect(() => {
     load();
@@ -365,6 +285,7 @@ export default function ClientHome() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+    showToast("Actualisé", "success");
   }, [load]);
 
   const filteredOrders = useMemo(() => {
@@ -377,11 +298,7 @@ export default function ClientHome() {
   }, [orders, filter]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <StatusBar
-        barStyle={Platform.OS === "ios" ? "dark-content" : "default"}
-      />
-
+    <View className="flex-1 bg-slate-50">
       {/* Header */}
       <View className="px-5 pt-4 pb-3 flex-row items-center justify-between">
         <View className="flex-row items-center">
@@ -398,7 +315,7 @@ export default function ClientHome() {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/(client)/orders/index")}
+          onPress={() => router.push("/orders" as any)}
           activeOpacity={0.8}
         >
           <View>
@@ -412,7 +329,7 @@ export default function ClientHome() {
       {/* CTA principal */}
       <View className="px-5">
         <TouchableOpacity
-          onPress={() => router.push("/(client)/orders/new")}
+          onPress={() => router.push("/orders/new" as any)}
           activeOpacity={0.9}
           className="rounded-2xl overflow-hidden"
         >
@@ -487,7 +404,7 @@ export default function ClientHome() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => router.push("/(client)/orders/index")}
+            onPress={() => router.push("/orders" as any)}
             activeOpacity={0.8}
           >
             <View className="flex-row items-center">
@@ -524,7 +441,7 @@ export default function ClientHome() {
                   Aucune commande ici
                 </Text>
                 <TouchableOpacity
-                  onPress={() => router.push("/(client)/orders/new")}
+                  onPress={() => router.push("/orders/new" as any)}
                   className="mt-4 px-4 py-2 rounded-xl bg-slate-900"
                   activeOpacity={0.9}
                 >
@@ -542,8 +459,8 @@ export default function ClientHome() {
                 order={item}
                 onPress={() =>
                   router.push({
-                    pathname: "/(client)/orders/[id]",
-                    params: { id: item.code },
+                    pathname: "/tracking/[id]" as any,
+                    params: { id: item.id },
                   })
                 }
               />
@@ -551,6 +468,6 @@ export default function ClientHome() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

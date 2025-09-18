@@ -1,21 +1,23 @@
 import React, { useMemo, useState } from "react";
 import {
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   View,
   Text,
   TouchableOpacity,
   Image,
-  StatusBar,
   ImageBackground,
 } from "react-native";
+// safe area handled by layout
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { assets } from "@/assets/images/assets";
-import { TokanaApiClient } from "@/app/lib/api";
-import { getAccessToken, setSession } from "@/app/lib/auth/session";
+import { TokanaApiClient } from "@/lib/api";
+import { getAccessToken, setSession } from "@/lib/auth/session";
 import { router } from "expo-router";
+import Constants from "expo-constants";
+import { useToast } from "@/components/ui/Toast";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -31,6 +33,7 @@ export default function AuthScreen({
   onPressForgot,
   q,
 }: Props) {
+  // insets handled by route-group layout
   // Onglet actif
   const [activeTab, setActiveTab] = useState<"login" | "signup">(
     q === "register" ? "signup" : "login"
@@ -51,11 +54,32 @@ export default function AuthScreen({
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Toast
+  const { showToast } = useToast();
+
   // ----- API client -----
-  const api = useMemo(() => new TokanaApiClient({
-    // BASE could be moved to env later; defaults to http://localhost:5000
-    TOKEN: async () => (await getAccessToken()) ?? '',
-  }), []);
+  const api = useMemo(() => {
+    const extra = (Constants as any)?.expoConfig?.extra || {};
+    let base: string | undefined;
+    if (__DEV__) {
+      // Prefer configured dev base; on native, avoid localhost and prefer Expo host IP
+      base = extra.API_BASE_DEV;
+      const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
+      const host = hostUri ? hostUri.split(":")[0] : undefined;
+      const nativeFallback = host ? `http://${host}:5000` : "http://localhost:5000";
+      if (!base) {
+        base = Platform.select({ web: "http://localhost:5000", default: nativeFallback }) as string;
+      } else if (Platform.OS !== 'web' && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
+        base = nativeFallback;
+      }
+    } else {
+      base = extra.API_BASE_PROD || "https://api.example.com";
+    }
+    return new TokanaApiClient({
+      BASE: base!,
+      TOKEN: async () => (await getAccessToken()) ?? '',
+    });
+  }, []);
 
   // ----- Validation helpers -----
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,11 +110,14 @@ export default function AuthScreen({
       const res = await api.auth.postApiAuthLogin({ email: email.trim(), password });
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       console.log("login ok", res.user);
-      if (res.user?.role === 'admin') router.replace('/admin');
+      showToast("Connexion réussie", "success");
+      if (res.user?.role === 'admin') router.replace('/(admin)');
       else if (res.user?.role === 'livreur') router.replace('/delivery');
-      else router.replace('/');
+      else router.replace('/home');
     } catch (err: any) {
       console.warn("login error", err?.body || err?.message || err);
+      const msg: string = err?.body?.msg || err?.message || "Connexion échouée";
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -121,9 +148,10 @@ export default function AuthScreen({
       });
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       // Redirige selon le rôle (normalement client)
-      if (res.user?.role === 'admin') router.replace('/admin');
+      showToast("Inscription réussie", "success");
+      if (res.user?.role === 'admin') router.replace('/(admin)');
       else if (res.user?.role === 'livreur') router.replace('/delivery');
-      else router.replace('/');
+      else router.replace('/home');
     } catch (err: any) {
       // Map minimal errors to existing error slots without changing UI
       const msg: string = err?.body?.msg || err?.message || "Erreur d’inscription";
@@ -134,6 +162,7 @@ export default function AuthScreen({
       if (Object.keys(newErrs).length === 0) newErrs.email = msg; // fallback
       setErrors(newErrs);
       console.warn("register error", err?.body || err?.message || err);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -147,8 +176,7 @@ export default function AuthScreen({
   const goToLogin = () => setActiveTab("login");
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <View className="flex-1 bg-black">
 
       <ImageBackground
         source={assets.tana as any}
@@ -163,8 +191,18 @@ export default function AuthScreen({
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.select({ ios: "padding", android: undefined })}
+          style={{ paddingBottom: 12 }}
         >
-          <View className="px-5 py-3 flex-col justify-between h-full">
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 12,
+            }}
+          >
+          <View className="flex-col justify-between min-h-full">
             {/* HEADER (titre centré) */}
             <View className="flex flex-col justify-around items-center mt-2 h-[20%]">
               <Image
@@ -264,8 +302,9 @@ export default function AuthScreen({
               </View>
             </BlurView>
           </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
-    </SafeAreaView>
+    </View>
   );
 }
