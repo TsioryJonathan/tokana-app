@@ -87,6 +87,7 @@ Base: /api/orders (auth required unless noted per action)
       weight: number (>0),
       parcels: integer ≥1,
       cashToCollect?: integer,
+      recipientPhone?: string, // Madagascar format: +261XXXXXXXXX or 0XXXXXXXXX (3x mobile, 20 fixe)
       recipientEmail?: string,
       // for standard
       slotStart?: ISO,
@@ -95,6 +96,7 @@ Base: /api/orders (auth required unless noted per action)
   - Validations:
     - standard: must be within business order window; slotStart/slotEnd must match getStandardSlots(zoneLevel)
     - express: must be allowed by getExpressAvailability(now)
+    - recipientPhone (if provided) must match Madagascar formats: ^(\+261|0)(3[0-9]|20)\d{7}$
   - Returns 201: created order
 
 - GET /api/orders
@@ -150,6 +152,12 @@ Base: /api/orders/:id
 
 - PATCH /api/orders/:id/status with { status: 'expedie' } requires OTP verified
 
+## Notifications de statut (MVP)
+- Lors d'un changement de statut réussi via `PATCH /api/orders/:id/status`, le serveur tente d'envoyer une notification au client (best-effort, non bloquant):
+  - Préférence SMS si `recipientPhone` est fourni et valide Madagascar.
+  - Sinon, email à `recipientEmail` si présent.
+- En DEV, si les credentials SMS/SMTP ne sont pas configurés, les messages sont simplement loggués.
+
 ## Errors (common)
 - 400 Bad Request: validation errors
 - 401 Unauthorized: no/invalid token; invalid/expired refresh token
@@ -175,6 +183,21 @@ Base: /api/orders/:id
   curl -s -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" \
     -d '{"zoneLevel":"ville","type":"standard","weight":1.2,"parcels":1}' \
     http://localhost:5000/api/pricing/quote | jq
+
+- Create order (with recipientPhone):
+  curl -s -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" \
+    -d '{
+      "type":"express",
+      "zoneLevel":"ville",
+      "pickupAddress":"Analakely",
+      "dropoffAddress":"Ambohijatovo",
+      "weight":1.5,
+      "parcels":1,
+      "recipientPhone":"+261341234567",
+      "recipientEmail":"dest@example.com"
+    }' \
+    http://localhost:5000/api/orders | jq
+  # Note: en DEV, si SMS/SMTP ne sont pas configurés, les envois sont loggués.
 
 - Request OTP:
   curl -i -s -X POST -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" \
