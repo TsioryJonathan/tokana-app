@@ -86,6 +86,8 @@ export default function RegisterForm({
         <TextInput
           placeholder="Full name"
           placeholderTextColor="#F3F4F6"
+          autoComplete="name"
+          textContentType="name"
           value={fullName}
           onChangeText={setFullName}
           returnKeyType="next"
@@ -106,6 +108,8 @@ export default function RegisterForm({
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          autoComplete="email"
+          textContentType="username"
           value={email}
           onChangeText={setEmail}
           returnKeyType="next"
@@ -124,6 +128,8 @@ export default function RegisterForm({
           placeholderTextColor="#F3F4F6"
           inputMode="tel"
           keyboardType="phone-pad"
+          autoComplete="tel"
+          textContentType="telephoneNumber"
           value={phone}
           onChangeText={setPhone}
           returnKeyType="next"
@@ -141,6 +147,8 @@ export default function RegisterForm({
           placeholder="Create a password (≥ 6)"
           placeholderTextColor="#F3F4F6"
           secureTextEntry={secure}
+          autoComplete="new-password"
+          textContentType="newPassword"
           value={password}
           onChangeText={setPassword}
           returnKeyType="next"
@@ -170,6 +178,7 @@ export default function RegisterForm({
           placeholder="Confirm password"
           placeholderTextColor="#F3F4F6"
           secureTextEntry={secureConfirm}
+          autoComplete="one-time-code"
           value={confirm}
           onChangeText={setConfirm}
           returnKeyType="done"
