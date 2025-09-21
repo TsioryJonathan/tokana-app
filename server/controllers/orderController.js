@@ -16,6 +16,7 @@ const createSchema = Joi.object({
   weight: Joi.number().positive().precision(2).required(),
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
+  recipientPhone: Joi.string().pattern(/^(\+261|0)(3[0-9]|20)\d{7}$/).optional(),
   recipientEmail: Joi.string().email().optional(),
   // For standard only
   slotStart: Joi.date().iso().allow(null),
@@ -53,7 +54,7 @@ export const createOrder = async (req, res, next) => {
     const { error, value } = createSchema.validate(req.body, { abortEarly: false, convert: true });
     if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
 
-    const { type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, slotStart, slotEnd } = value;
+    const { type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, recipientPhone, slotStart, slotEnd } = value;
 
     // Slots validation
     if (type === 'standard') {
@@ -81,6 +82,7 @@ export const createOrder = async (req, res, next) => {
       priceTotal: total,
       createdBy: req.user?.id ?? null,
       recipientEmail: recipientEmail ?? null,
+      recipientPhone: recipientPhone ?? null,
       slotStart: type === 'standard' ? slotStart : null,
       slotEnd: type === 'standard' ? slotEnd : null,
     });
@@ -327,6 +329,29 @@ export const updateOrderStatus = async (req, res, next) => {
     } catch (e) {
       // Do not block main flow on history failure
     }
+    // Non-blocking customer notification (best-effort)
+    (async () => {
+      try {
+        const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+        const statusLabels = {
+          en_cours_de_traitement: "Votre commande est en cours de traitement.",
+          en_route_vers_recuperation: "Notre livreur est en route pour la récupération.",
+          en_chemin: "Votre colis est en chemin.",
+          en_chemin_pour_livraison: "Votre colis est en route pour la livraison.",
+          expedie: "Votre colis a été livré. Merci !",
+        };
+        const base = `TOKANA – Suivi commande #${order.id}: `;
+        const message = base + (statusLabels[to] || `Statut: ${to}`);
+        // Prefer SMS if recipientPhone looks valid; else email
+        if (order.recipientPhone && mgPhone.test(order.recipientPhone)) {
+          await sendSms(order.recipientPhone, message);
+        } else if (order.recipientEmail) {
+          await sendEmail(order.recipientEmail, 'Mise à jour de votre commande', message);
+        }
+      } catch (e) {
+        // Swallow errors to avoid impacting API response
+      }
+    })();
     return res.json(order);
   } catch (err) {
     next(err);
