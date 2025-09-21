@@ -204,6 +204,7 @@ export default function OrdersList() {
   const [filter, setFilter] = useState<
     keyof typeof statusLabel | "ALL" | "ACTIVE"
   >("ALL");
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -211,7 +212,13 @@ export default function OrdersList() {
     setLoading(true);
     try {
       const res = await fetchOrders(api, q);
-      setItems(res);
+      const enriched = res.map(o => {
+        if (o.service === 'EXPRESS' && (o.status === 'CREATED' || o.status === 'PICKED_UP' || o.status === 'IN_TRANSIT') && expressEta) {
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min` } as any;
+        }
+        return o as any;
+      });
+      setItems(enriched);
     } catch (e) {
       console.warn("orders list load error", e);
       showToast("Erreur de chargement des commandes", "error");
@@ -219,7 +226,7 @@ export default function OrdersList() {
     } finally {
       setLoading(false);
     }
-  }, [api, q, showToast]);
+  }, [api, q, expressEta, showToast]);
 
   useEffect(() => {
     load();
