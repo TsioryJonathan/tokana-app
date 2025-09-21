@@ -193,6 +193,10 @@ function OrderCard({ order, onPress }: { order: UIOrder; onPress?: () => void })
               {formatTime(order.createdAt)}
             </Text>
           </View>
+          {/* ETA hint for active Express orders (if available) */}
+          {order.service === "EXPRESS" && isActiveStatus(order.status) && typeof (order as any).etaHint === 'string' && (
+            <Text className="mt-1 text-[11px] text-emerald-700">{(order as any).etaHint}</Text>
+          )}
           <ProgressBar status={order.status} />
         </View>
 
@@ -238,6 +242,7 @@ export default function ClientHome() {
   const [orders, setOrders] = useState<UIOrder[]>([]);
   const [todayCount, setTodayCount] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -246,7 +251,12 @@ export default function ClientHome() {
     setLoading(true);
     try {
       const data = await api.orders.getApiOrders(undefined, true);
-      const ui = data.map(mapBackendOrderToUI);
+      const ui = data.map(mapBackendOrderToUI).map(o => {
+        if (o.service === 'EXPRESS' && isActiveStatus(o.status) && expressEta) {
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min` } as any;
+        }
+        return o as any;
+      });
       setOrders(ui);
 
       // Stats
@@ -275,6 +285,20 @@ export default function ClientHome() {
     } finally {
       setLoading(false);
     }
+  }, [api]);
+
+  // Fetch Express ETA once and reuse as hint on active Express orders
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const anyAvail: any = await api.slots.getApiSlotsExpress();
+        const min = anyAvail?.eta?.minMinutes;
+        const max = anyAvail?.eta?.maxMinutes;
+        if (mounted && typeof min === 'number' && typeof max === 'number') setExpressEta({ min, max });
+      } catch {}
+    })();
+    return () => { mounted = false; };
   }, [api]);
 
   useEffect(() => {
