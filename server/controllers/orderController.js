@@ -2,6 +2,7 @@ import Joi from 'joi';
 import Order from '../models/Order.js';
 import { computePrice } from '../services/pricingService.js';
 import OrderStatusHistory from '../models/OrderStatusHistory.js';
+import OrderRemark from '../models/OrderRemark.js';
 import { getStandardSlots, isStandardOrderWindow, getExpressAvailability } from '../services/slotService.js';
 import { sendSms } from '../services/smsService.js';
 import { sendEmail } from '../services/emailService.js';
@@ -41,12 +42,66 @@ const assignSchema = Joi.object({
   assignedTo: Joi.number().integer().allow(null).required(),
 });
 
+const remarkSchema = Joi.object({
+  text: Joi.string().min(2).max(500).required(),
+});
+
 const ALLOWED_TRANSITIONS = {
   en_cours_de_traitement: ['en_route_vers_recuperation'],
   en_route_vers_recuperation: ['en_chemin', 'en_chemin_pour_livraison'],
   en_chemin: ['en_chemin_pour_livraison'],
   en_chemin_pour_livraison: ['expedie'],
   expedie: [],
+};
+
+export const listOrderRemarks = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ msg: 'ID invalide' });
+
+    const order = await Order.findByPk(id);
+    if (!order) return res.status(404).json({ msg: 'Commande introuvable' });
+
+    // Authorization: admin or livreur can view; clients only if owner
+    const role = req.user?.role;
+    const userId = req.user?.id;
+    if (role !== 'admin' && role !== 'livreur') {
+      if (!userId || order.createdBy !== userId) {
+        return res.status(403).json({ msg: 'Accès refusé' });
+      }
+    }
+
+    const remarks = await OrderRemark.findAll({ where: { orderId: id }, order: [['createdAt', 'DESC']] });
+    return res.json(remarks);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const addOrderRemark = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ msg: 'ID invalide' });
+    const { error, value } = remarkSchema.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
+
+    const order = await Order.findByPk(id);
+    if (!order) return res.status(404).json({ msg: 'Commande introuvable' });
+
+    // Authorization: only assigned livreur or admin can add remarks
+    const role = req.user?.role;
+    const userId = req.user?.id;
+    if (role !== 'admin') {
+      if (role !== 'livreur' || order.assignedTo !== userId) {
+        return res.status(403).json({ msg: 'Non autorisé' });
+      }
+    }
+
+    const created = await OrderRemark.create({ orderId: id, text: value.text, createdBy: userId ?? null });
+    return res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const createOrder = async (req, res, next) => {
