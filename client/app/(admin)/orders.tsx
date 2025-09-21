@@ -31,27 +31,32 @@ export default function AdminOrdersPage() {
   };
 
   // ---- Admin status update ----
-  const backendStatusByUi: Record<OrderStatus, string> = {
+  const backendStatusByUi: Partial<Record<OrderStatus, string>> = {
     CREATED: 'en_cours_de_traitement',
     PICKED_UP: 'en_route_vers_recuperation',
     IN_TRANSIT: 'en_chemin',
-    DELIVERED: 'expedie',
-    CANCELLED: 'annule',
+    DELIVERED: 'expedie', // nécessite OTP vérifié côté serveur
   };
 
-  const updateStatus = async (orderId: number, uiStatus: OrderStatus) => {
+  const updateStatusBackend = async (orderId: number, backendStatus: string) => {
     setStatusBusy((m) => ({ ...m, [orderId]: true }));
     try {
-      await api.orders.patchApiOrdersStatus(orderId, { status: backendStatusByUi[uiStatus] });
-      showToast(`Statut mis à jour: ${statusLabel[uiStatus]}`, 'success');
+      await api.orders.patchApiOrdersStatus(orderId, { status: backendStatus });
+      showToast(`Statut mis à jour`, 'success');
       await load();
     } catch (e: any) {
       console.warn('status update error', e?.body || e?.message || e);
-      const msg: string = e?.body?.msg || e?.message || "Mise à jour du statut échouée";
+      const msg: string = e?.body?.msg || e?.message || 'Mise à jour du statut échouée';
       showToast(msg, 'error');
     } finally {
       setStatusBusy((m) => ({ ...m, [orderId]: false }));
     }
+  };
+
+  const updateStatus = async (orderId: number, uiStatus: OrderStatus) => {
+    const backend = backendStatusByUi[uiStatus];
+    if (!backend) return; // ignore unsupported statuses like CANCELLED
+    return updateStatusBackend(orderId, backend);
   };
 
   useEffect(() => {
@@ -151,7 +156,7 @@ export default function AdminOrdersPage() {
         </View>
         {/* Status actions */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ gap: 8 }}>
-          {(['CREATED','PICKED_UP','IN_TRANSIT','DELIVERED','CANCELLED'] as OrderStatus[]).map((ui) => {
+          {(['CREATED','PICKED_UP','IN_TRANSIT','DELIVERED'] as OrderStatus[]).map((ui) => {
             const busyS = !!statusBusy[item.id!];
             return (
               <TouchableOpacity
@@ -164,6 +169,14 @@ export default function AdminOrdersPage() {
               </TouchableOpacity>
             );
           })}
+          {/* Explicit action for 'en_chemin_pour_livraison' */}
+          <TouchableOpacity
+            className={`px-3 py-2 rounded-full border ${statusBusy[item.id!] ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}
+            disabled={!!statusBusy[item.id!]}
+            onPress={() => updateStatusBackend(item.id!, 'en_chemin_pour_livraison')}
+          >
+            <Text className="text-slate-700 text-xs font-quicksand-bold">En chemin pour la livraison</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
     );
