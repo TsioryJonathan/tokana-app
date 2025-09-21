@@ -9,6 +9,8 @@ import {
   Image,
   ImageBackground,
 } from "react-native";
+import * as Haptics from "expo-haptics";
+import { TouchableWithoutFeedback, Keyboard } from "react-native";
 // safe area handled by layout
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -111,13 +113,15 @@ export default function AuthScreen({
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       console.log("login ok", res.user);
       showToast("Connexion réussie", "success");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (res.user?.role === 'admin') router.replace('/(admin)');
-      else if (res.user?.role === 'livreur') router.replace('/delivery');
+      else if (res.user?.role === 'livreur') router.replace('/(courier)/delivery');
       else router.replace('/home');
     } catch (err: any) {
       console.warn("login error", err?.body || err?.message || err);
       const msg: string = err?.body?.msg || err?.message || "Connexion échouée";
       showToast(msg, "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -149,8 +153,9 @@ export default function AuthScreen({
       await setSession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
       // Redirige selon le rôle (normalement client)
       showToast("Inscription réussie", "success");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (res.user?.role === 'admin') router.replace('/(admin)');
-      else if (res.user?.role === 'livreur') router.replace('/delivery');
+      else if (res.user?.role === 'livreur') router.replace('/(courier)/delivery');
       else router.replace('/home');
     } catch (err: any) {
       // Map minimal errors to existing error slots without changing UI
@@ -163,6 +168,7 @@ export default function AuthScreen({
       setErrors(newErrs);
       console.warn("register error", err?.body || err?.message || err);
       showToast(msg, "error");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -170,12 +176,17 @@ export default function AuthScreen({
 
   // Navigation entre onglets (et callbacks externes facultatifs)
   const goToRegister = () => {
+    setErrors({});
     setActiveTab("signup");
     onPressRegister?.();
   };
-  const goToLogin = () => setActiveTab("login");
+  const goToLogin = () => {
+    setErrors({});
+    setActiveTab("login");
+  };
 
   return (
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
     <View className="flex-1 bg-black">
 
       <ImageBackground
@@ -306,5 +317,6 @@ export default function AuthScreen({
         </KeyboardAvoidingView>
       </ImageBackground>
     </View>
+    </TouchableWithoutFeedback>
   );
 }
