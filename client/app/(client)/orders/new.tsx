@@ -98,6 +98,7 @@ export default function NewOrderWizard() {
   const [service, setService] = useState<ServiceState>(INITIAL_SERVICE);
   const [payment, setPayment] = useState<PaymentState>(INITIAL_PAYMENT);
   const [submitting, setSubmitting] = useState(false);
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
   const price = useMemo(
     () =>
       basePrice(service.distanceKmBracket, service.service) +
@@ -170,6 +171,11 @@ export default function NewOrderWizard() {
             showToast(avail.reason || "Express indisponible", "error");
             return;
           }
+          if (avail && typeof (avail as any).eta?.minMinutes === "number" && typeof (avail as any).eta?.maxMinutes === "number") {
+            setExpressEta({ min: (avail as any).eta.minMinutes, max: (avail as any).eta.maxMinutes });
+          } else {
+            setExpressEta({ min: 60, max: 120 });
+          }
         } catch (e) {
           console.warn("express availability failed", e);
           // Conserver une UX stricte: bloquer si indisponible/inconnue
@@ -234,6 +240,8 @@ export default function NewOrderWizard() {
         dropoffAddress: recipient.address.trim(),
         weight: toNumberSafe(parcel.weightKg),
         parcels: parcelsCount,
+        cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
+        recipientPhone: recipient.phone?.trim() || undefined,
         recipientEmail: recipient.email?.trim() || undefined,
         slotStart,
         slotEnd,
@@ -284,6 +292,15 @@ export default function NewOrderWizard() {
         )}
 
         {step === 3 && <FourthStep service={service} setService={setService} />}
+
+        {/* ETA Express (affiché si service Express et dispo) */}
+        {service.service === "EXPRESS" && expressEta && (
+          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <Text className="text-[12px] text-emerald-700">
+              Livraison estimée {expressEta.min}–{expressEta.max} minutes
+            </Text>
+          </View>
+        )}
 
         {step === 4 && <FifthStep payment={payment} setPayment={setPayment} />}
 
