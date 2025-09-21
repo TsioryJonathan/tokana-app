@@ -14,6 +14,14 @@ export default function AdminUsersPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [created, setCreated] = useState<any | null>(null);
+  const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+  const canCreate = useMemo(() => {
+    if (!name.trim()) return false;
+    if (!mgPhoneRegex.test(phone.trim())) return false;
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email)) return false;
+    if (!password || password.length < 6) return false;
+    return true;
+  }, [name, phone, email, password]);
 
   // Listing state
   const [roleTab, setRoleTab] = useState<'client' | 'livreur'>('client');
@@ -31,13 +39,18 @@ export default function AdminUsersPage() {
     setLoading(true);
     setCreated(null);
     try {
+      if (!mgPhoneRegex.test(phone.trim())) {
+        showToast('Téléphone invalide. Ex: +261201234567 ou 0201234567', 'error');
+        return;
+      }
       const res = await api.adminUsers.postApiAdminUsers({ name, phone, email, password });
       setCreated(res);
       showToast('Livreur créé', 'success');
       setName(''); setPhone(''); setEmail(''); setPassword('');
     } catch (e: any) {
       console.warn('create livreur error', e);
-      showToast('Création livreur échouée', 'error');
+      const msg: string = e?.body?.msg || e?.message || 'Création livreur échouée';
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -107,10 +120,10 @@ export default function AdminUsersPage() {
         >
           <Text className="font-quicksand-bold mb-3 text-slate-900">Créer un livreur</Text>
           <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="Nom" value={name} onChangeText={setName} />
-          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" />
-          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry />
-          <TouchableOpacity className={`rounded-lg bg-emerald-600 ${loading ? 'opacity-50' : ''}`} onPress={createLivreur} disabled={loading}>
+          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" textContentType="telephoneNumber" autoComplete="tel" />
+          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-2" placeholder="Email (optionnel)" value={email} onChangeText={setEmail} keyboardType="email-address" textContentType="username" autoComplete="email" />
+          <TextInput className="border border-slate-300 rounded-lg px-3 py-2 mb-3" placeholder="Mot de passe (≥ 6)" value={password} onChangeText={setPassword} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
+          <TouchableOpacity className={`rounded-lg bg-emerald-600 ${loading || !canCreate ? 'opacity-50' : ''}`} onPress={createLivreur} disabled={loading || !canCreate}>
             <Text className="text-white text-center py-3">{loading ? 'Création…' : 'Créer'}</Text>
           </TouchableOpacity>
           {created && (
