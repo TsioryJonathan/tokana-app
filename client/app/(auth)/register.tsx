@@ -1,17 +1,8 @@
-// app/(auth)/auth.tsx
 import React, { useMemo, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
-import LoginPage from "@/components/Auth/LoginPage";
 import RegisterPage from "@/components/Auth/RegisterPage";
+import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
 
-export default function Auth() {
-  const params = useLocalSearchParams<{ q?: string | string[] }>();
-  const q = useMemo(() => {
-    const v = params.q;
-    return Array.isArray(v) ? v[0] : v;
-  }, [params.q]);
-
-  /* Register State */
+const Register = () => {
   const [fullName, setFullName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
@@ -32,10 +23,11 @@ export default function Auth() {
     }),
     [confirm, email, fullName, password, phone]
   );
+  return (
+    <AuthScreenWrapper currentScreen="register">
+      <RegisterPage {...registerProps} />
+    </AuthScreenWrapper>
+  );
+};
 
-  /* Login State */
-  const [loginEmail, setLoginEmail] = useState<string>("");
-  const [loginPassword, setLoginPassword] = useState<string>("");
-
-  return q === "register" ? <RegisterPage {...registerProps} /> : <LoginPage />;
-}
+export default Register;

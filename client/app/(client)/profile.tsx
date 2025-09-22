@@ -11,7 +11,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/Auth/LogoutButton";
 // safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -201,7 +201,9 @@ export default function Profile() {
                     <Text className="text-[12px] text-slate-600">{email}</Text>
                   ) : null}
                   {role ? (
-                    <Text className="text-[12px] text-slate-500 mt-1">{role}</Text>
+                    <Text className="text-[12px] text-slate-500 mt-1">
+                      {role}
+                    </Text>
                   ) : null}
                 </>
               ) : (
@@ -404,7 +406,7 @@ export default function Profile() {
             confirm
             className="bg-slate-900 rounded-xl text-white"
             textClassName="font-quicksand-bold"
-            onLoggedOut={() => router.replace('/(auth)/auth')}
+            onLoggedOut={() => router.replace("/(auth)/auth")}
           />
 
           <TouchableOpacity
