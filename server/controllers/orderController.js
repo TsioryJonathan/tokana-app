@@ -2,6 +2,7 @@ import Joi from 'joi';
 import Order from '../models/Order.js';
 import { computePrice } from '../services/pricingService.js';
 import OrderStatusHistory from '../models/OrderStatusHistory.js';
+import OrderRemark from '../models/OrderRemark.js';
 import { getStandardSlots, isStandardOrderWindow, getExpressAvailability } from '../services/slotService.js';
 import { sendSms } from '../services/smsService.js';
 import { sendEmail } from '../services/emailService.js';
@@ -16,6 +17,7 @@ const createSchema = Joi.object({
   weight: Joi.number().positive().precision(2).required(),
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
+  recipientPhone: Joi.string().pattern(/^(\+261|0)(3[0-9]|20)\d{7}$/).optional(),
   recipientEmail: Joi.string().email().optional(),
   // For standard only
   slotStart: Joi.date().iso().allow(null),
@@ -40,6 +42,10 @@ const assignSchema = Joi.object({
   assignedTo: Joi.number().integer().allow(null).required(),
 });
 
+const remarkSchema = Joi.object({
+  text: Joi.string().min(2).max(500).required(),
+});
+
 const ALLOWED_TRANSITIONS = {
   en_cours_de_traitement: ['en_route_vers_recuperation'],
   en_route_vers_recuperation: ['en_chemin', 'en_chemin_pour_livraison'],
@@ -48,12 +54,62 @@ const ALLOWED_TRANSITIONS = {
   expedie: [],
 };
 
+export const listOrderRemarks = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ msg: 'ID invalide' });
+
+    const order = await Order.findByPk(id);
+    if (!order) return res.status(404).json({ msg: 'Commande introuvable' });
+
+    // Authorization: admin or livreur can view; clients only if owner
+    const role = req.user?.role;
+    const userId = req.user?.id;
+    if (role !== 'admin' && role !== 'livreur') {
+      if (!userId || order.createdBy !== userId) {
+        return res.status(403).json({ msg: 'Accès refusé' });
+      }
+    }
+
+    const remarks = await OrderRemark.findAll({ where: { orderId: id }, order: [['createdAt', 'DESC']] });
+    return res.json(remarks);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const addOrderRemark = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ msg: 'ID invalide' });
+    const { error, value } = remarkSchema.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
+
+    const order = await Order.findByPk(id);
+    if (!order) return res.status(404).json({ msg: 'Commande introuvable' });
+
+    // Authorization: only assigned livreur or admin can add remarks
+    const role = req.user?.role;
+    const userId = req.user?.id;
+    if (role !== 'admin') {
+      if (role !== 'livreur' || order.assignedTo !== userId) {
+        return res.status(403).json({ msg: 'Non autorisé' });
+      }
+    }
+
+    const created = await OrderRemark.create({ orderId: id, text: value.text, createdBy: userId ?? null });
+    return res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createOrder = async (req, res, next) => {
   try {
     const { error, value } = createSchema.validate(req.body, { abortEarly: false, convert: true });
     if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
 
-    const { type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, slotStart, slotEnd } = value;
+    const { type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, recipientPhone, slotStart, slotEnd } = value;
 
     // Slots validation
     if (type === 'standard') {
@@ -81,6 +137,7 @@ export const createOrder = async (req, res, next) => {
       priceTotal: total,
       createdBy: req.user?.id ?? null,
       recipientEmail: recipientEmail ?? null,
+      recipientPhone: recipientPhone ?? null,
       slotStart: type === 'standard' ? slotStart : null,
       slotEnd: type === 'standard' ? slotEnd : null,
     });
@@ -327,6 +384,29 @@ export const updateOrderStatus = async (req, res, next) => {
     } catch (e) {
       // Do not block main flow on history failure
     }
+    // Non-blocking customer notification (best-effort)
+    (async () => {
+      try {
+        const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+        const statusLabels = {
+          en_cours_de_traitement: "Votre commande est en cours de traitement.",
+          en_route_vers_recuperation: "Notre livreur est en route pour la récupération.",
+          en_chemin: "Votre colis est en chemin.",
+          en_chemin_pour_livraison: "Votre colis est en route pour la livraison.",
+          expedie: "Votre colis a été livré. Merci !",
+        };
+        const base = `TOKANA – Suivi commande #${order.id}: `;
+        const message = base + (statusLabels[to] || `Statut: ${to}`);
+        // Prefer SMS if recipientPhone looks valid; else email
+        if (order.recipientPhone && mgPhone.test(order.recipientPhone)) {
+          await sendSms(order.recipientPhone, message);
+        } else if (order.recipientEmail) {
+          await sendEmail(order.recipientEmail, 'Mise à jour de votre commande', message);
+        }
+      } catch (e) {
+        // Swallow errors to avoid impacting API response
+      }
+    })();
     return res.json(order);
   } catch (err) {
     next(err);

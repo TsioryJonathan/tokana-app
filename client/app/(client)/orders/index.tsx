@@ -19,6 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import {
   mapBackendOrderToUI,
   mapBackendStatus,
@@ -47,6 +48,13 @@ function formatAr(n: number) {
 }
 function isActiveStatus(s: OrderStatus) {
   return s === "CREATED" || s === "PICKED_UP" || s === "IN_TRANSIT";
+}
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 // --- Fetch from backend ---
@@ -167,10 +175,15 @@ function OrderRow({
                 color="#475569"
               />
               <Text className="ml-1 text-[12px] text-slate-600">
-                {order.service === "EXPRESS" ? "Express" : "Standard"} ·{" "}
-                {new Date(order.createdAt).toLocaleString()}
+                {order.service === "EXPRESS" ? "Express" : "Standard"} · {formatTime(order.createdAt)}
               </Text>
             </View>
+            {/* ETA hint for active Express orders (if available) */}
+            {order.service === "EXPRESS" && isActiveStatus(order.status) && typeof (order as any).etaHint === 'string' && (
+              <View className="mt-1 self-start px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                <Text className="text-[10px] text-emerald-700">{(order as any).etaHint}</Text>
+              </View>
+            )}
           </View>
 
           <View className="items-end">
@@ -204,6 +217,7 @@ export default function OrdersList() {
   const [filter, setFilter] = useState<
     keyof typeof statusLabel | "ALL" | "ACTIVE"
   >("ALL");
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -211,7 +225,13 @@ export default function OrdersList() {
     setLoading(true);
     try {
       const res = await fetchOrders(api, q);
-      setItems(res);
+      const enriched = res.map(o => {
+        if (o.service === 'EXPRESS' && (o.status === 'CREATED' || o.status === 'PICKED_UP' || o.status === 'IN_TRANSIT') && expressEta) {
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min` } as any;
+        }
+        return o as any;
+      });
+      setItems(enriched);
     } catch (e) {
       console.warn("orders list load error", e);
       showToast("Erreur de chargement des commandes", "error");
@@ -219,11 +239,14 @@ export default function OrdersList() {
     } finally {
       setLoading(false);
     }
-  }, [api, q, showToast]);
+  }, [api, q, expressEta, showToast]);
 
   useEffect(() => {
     load();
   }, [q, filter, load]); // reload on search/filter change
+
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(load, 2 * 60 * 1000, true);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -23,6 +23,7 @@ export class OrdersService {
             weight: number;
             parcels: number;
             cashToCollect?: number | null;
+            recipientPhone?: string | null;
             recipientEmail?: string;
             slotStart?: string;
             slotEnd?: string;

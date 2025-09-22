@@ -107,6 +107,7 @@ components:
         weight: { type: number }
         parcels: { type: integer }
         cashToCollect: { type: integer, nullable: true }
+        recipientPhone: { type: string, nullable: true, description: "Madagascar: +261XXXXXXXXX or 0XXXXXXXXX (3x mobile, 20 landline)" }
         recipientEmail: { type: string, nullable: true }
         status: { type: string }
         assignedTo: { type: integer, nullable: true }
@@ -1228,15 +1229,22 @@ paths:
                 properties:
                   allowed: { type: boolean }
                   reason: { type: string, nullable: true }
+                  eta:
+                    type: object
+                    properties:
+                      minMinutes: { type: integer }
+                      maxMinutes: { type: integer }
               examples:
                 allowed:
                   value:
                     allowed: true
                     reason: null
+                    eta: { minMinutes: 60, maxMinutes: 120 }
                 blocked:
                   value:
                     allowed: false
                     reason: "Too late for today"
+                    eta: { minMinutes: 60, maxMinutes: 120 }
         '401':
           description: Unauthorized
           content:
@@ -1267,6 +1275,7 @@ paths:
                 weight: { type: number }
                 parcels: { type: integer }
                 cashToCollect: { type: integer, nullable: true }
+                recipientPhone: { type: string, nullable: true, description: "Madagascar: +261XXXXXXXXX or 0XXXXXXXXX (3x mobile, 20 landline)" }
                 recipientEmail: { type: string, format: email }
                 slotStart: { type: string, format: date-time }
                 slotEnd: { type: string, format: date-time }
