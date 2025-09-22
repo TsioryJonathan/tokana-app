@@ -36,6 +36,9 @@ export const validateListUsersQuery = (req, res, next) => {
       details: error.details.map(d => ({ message: d.message, path: d.path })),
     });
   }
-  req.query = value;
+  // Do not reassign req.query (getter-only in some router versions)
+  // Mutate the existing object instead
+  Object.assign(req.query, value);
   next();
 };
+
