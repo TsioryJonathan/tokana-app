@@ -30,7 +30,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(client)" options={{ headerShown: false }} />
           <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-          <Stack.Screen name="delivery" options={{ headerShown: false }} />
+          <Stack.Screen name="(courier)" options={{ headerShown: false }} />
         </Stack>
       </ToastProvider>
     </SafeAreaProvider>

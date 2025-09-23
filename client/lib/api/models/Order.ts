@@ -11,6 +11,10 @@ export type Order = {
     weight?: number;
     parcels?: number;
     cashToCollect?: number | null;
+    /**
+     * Madagascar: +261XXXXXXXXX or 0XXXXXXXXX (3x mobile, 20 landline)
+     */
+    recipientPhone?: string | null;
     recipientEmail?: string | null;
     status?: string;
     assignedTo?: number | null;

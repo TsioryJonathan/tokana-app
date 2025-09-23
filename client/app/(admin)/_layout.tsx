@@ -24,7 +24,7 @@ export default function AdminLayout() {
         if (!token) {
           if (!mounted) return;
           showToast('Veuillez vous reconnecter', 'error');
-          router.replace('/');
+          router.replace('/(auth)/auth');
           return;
         }
         // Debug: log base + token presence
@@ -60,7 +60,7 @@ export default function AdminLayout() {
           const base = getApiBase();
           showToast(`Erreur réseau API${base ? ` (${base})` : ''}`, 'error');
         }
-        router.replace('/');
+        router.replace('/(auth)/auth');
         return;
       } finally {
         if (mounted) setChecking(false);

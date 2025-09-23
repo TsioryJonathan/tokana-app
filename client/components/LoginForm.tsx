@@ -54,6 +54,8 @@ export default function LoginForm({
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          autoComplete="email"
+          textContentType="username"
           value={email}
           onChangeText={setEmail}
           returnKeyType="next"
@@ -68,6 +70,8 @@ export default function LoginForm({
           placeholder="Enter your password"
           placeholderTextColor="#F3F4F6"
           secureTextEntry={secure}
+          autoComplete="password"
+          textContentType="password"
           value={password}
           onChangeText={setPassword}
           returnKeyType="done"
@@ -89,7 +93,7 @@ export default function LoginForm({
         </Pressable>
       </View>
 
-      {/* Options sous-champs */}
+      {/* Options sous-champs (MVP: sans lien Forgot password) */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center">
           <Switch
@@ -100,16 +104,8 @@ export default function LoginForm({
           />
           <Text className="ml-2 text-white/90 font-quicksand">Remember me</Text>
         </View>
-
-        <TouchableOpacity
-          onPress={onPressForgot}
-          accessibilityRole="button"
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Text className="text-white underline font-quicksand-medium">
-            Forgot Password?
-          </Text>
-        </TouchableOpacity>
+        {/* Désactivé en MVP pour éviter la confusion */}
+        <Text className="text-white/60 font-quicksand-medium text-xs">Reset password bientôt disponible</Text>
       </View>
 
       {/* CTA principal */}
@@ -130,7 +126,7 @@ export default function LoginForm({
         </View>
       )}
 
-      {/* OU - social login */}
+      {/* OU - social login
       <View className="items-center mt-1">
         <Text className="text-white/70 font-quicksand text-xs">
           Or login with

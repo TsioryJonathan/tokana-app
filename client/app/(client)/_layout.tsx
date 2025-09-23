@@ -1,12 +1,45 @@
 // app/(client)/_layout.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, StatusBar } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
+import { getAccessToken } from "@/lib/auth/session";
+import { useRouter } from "expo-router";
 import { HomeIcon, BoxIcon, PlusCircle, User2Icon } from "lucide-react-native";
 
 export default function ClientLayout() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) {
+          if (!mounted) return;
+          router.replace('/(auth)/auth');
+          return;
+        }
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [router]);
+
+  if (checking) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top","bottom"]}>
+        <StatusBar
+          barStyle={Platform.OS === 'android' ? 'dark-content' : 'dark-content'}
+          translucent={Platform.OS === 'android'}
+          backgroundColor="transparent"
+        />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top","bottom"]}>
       <StatusBar

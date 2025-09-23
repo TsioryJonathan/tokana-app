@@ -29,18 +29,26 @@ export default function OrderDetails() {
   const [history, setHistory] = useState<
     { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
   >([]);
+  const [error, setError] = useState<string | null>(null);
 
   const api = useMemo(getApiClient, []);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!id) return;
+      if (!id) {
+        setError("Identifiant de commande manquant");
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const data = await api.orders.getApiOrders1(Number(id));
         const ui = mapBackendOrderToUI(data);
-        if (mounted) setOrder(ui);
+        if (mounted) {
+          setOrder(ui);
+          setError(null);
+        }
         // Load history
         const h = await api.orders.getApiOrdersHistory(Number(id));
         const mapped = (h || [])
@@ -52,8 +60,10 @@ export default function OrderDetails() {
           }))
           .sort((a, b) => (a.at > b.at ? -1 : 1));
         if (mounted) setHistory(mapped);
-      } catch (e) {
+      } catch (e: any) {
         console.warn("order detail error", e);
+        const msg = e?.body?.msg || e?.message || "Commande introuvable";
+        if (mounted) setError(msg);
         showToast("Erreur de chargement de la commande", "error");
       } finally {
         if (mounted) setLoading(false);
@@ -64,10 +74,52 @@ export default function OrderDetails() {
     };
   }, [id, api, showToast]);
 
-  if (loading || !order) {
+  if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <Text className="text-slate-600">Chargement de la commande...</Text>
+      </View>
+    );
+  }
+
+  if (!order) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center px-6">
+        <Text className="text-slate-900 font-quicksand-bold text-lg text-center">Commande indisponible</Text>
+        <Text className="mt-2 text-slate-600 text-center">
+          {error || "Aucune commande trouvée pour cet identifiant."}
+        </Text>
+        <View className="mt-6 flex-row gap-6">
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
+            <Text className="text-emerald-700 font-quicksand-semibold">Retour</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => {
+            setError(null);
+            setLoading(true);
+            (async () => {
+              try {
+                const data = await api.orders.getApiOrders1(Number(id));
+                const ui = mapBackendOrderToUI(data);
+                setOrder(ui);
+                setError(null);
+                const h = await api.orders.getApiOrdersHistory(Number(id));
+                const mapped = (h || []).map((it) => ({
+                  id: Number(it.id || 0),
+                  from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
+                  to: mapBackendStatus(String(it.toStatus || "")),
+                  at: String(it.changedAt || ""),
+                })).sort((a, b) => (a.at > b.at ? -1 : 1));
+                setHistory(mapped);
+              } catch (e: any) {
+                setError(e?.body?.msg || e?.message || "Commande introuvable");
+              } finally {
+                setLoading(false);
+              }
+            })();
+          }} activeOpacity={0.8}>
+            <Text className="text-emerald-700 font-quicksand-semibold">Réessayer</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
