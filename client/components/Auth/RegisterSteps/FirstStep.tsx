@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import CustomInput from "@/components/ui/CustomInput";
 import { User } from "lucide-react-native";
 import { useToast } from "@/components/ui/Toast";
+import Label from "@/components/ui/Label";
 type FirstStepProps = {
   fullName: string;
   setFullName: React.Dispatch<React.SetStateAction<string>>;
@@ -32,18 +33,18 @@ const FirstStep = ({ fullName, setFullName, setErrors }: FirstStepProps) => {
   }, [fullName, setErrors]);
   return (
     <View className="w-full flex-1 mt-10 flex flex-col justify-start gap-3 ">
-      <Text
-        className="text-start text-slate-600 font-quicksand-semibold"
-        style={{ fontSize: 16 }}
+      <label
+        className="text-start text-slate-600 font-quicksand-bold"
+        style={{ fontSize: 24 }}
       >
-        Indiquez votre nom complet pour commencer.
-      </Text>
+        Nom complet{" "}
+      </label>
 
       <CustomInput
         icon={User}
         value={fullName}
         setValue={setFullName}
-        placeholder="Nom complet"
+        placeholder="Entrer votre nom complet"
         onBlur={() => {
           validate(fullName);
         }}

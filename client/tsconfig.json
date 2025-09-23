@@ -1,10 +1,11 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "jsx": "react",
     "strict": true,
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "esModuleInterop": true
   },
   "include": [
     "**/*.ts",
@@ -12,6 +13,7 @@
     "**/*.d.ts",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
-, "metro.config.js"  ]
+    "nativewind-env.d.ts",
+    "metro.config.js"
+  ]
 }

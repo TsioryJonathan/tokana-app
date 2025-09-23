@@ -29,7 +29,7 @@ const AuthScreenWrapper = ({
   return (
     <View
       style={{ marginBottom: 30 }}
-      className="flex-1 w-screen h-full flex-col justify-between px-3"
+      className="flex-1 w-screen h-full flex-col justify-between"
     >
       <View className="flex-1 w-full">{children}</View>
       <NavigateTo {...navigateToProps} />

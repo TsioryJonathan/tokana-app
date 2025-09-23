@@ -23,7 +23,7 @@ const CustomInput = ({
 }: CustomInputProps) => {
   return (
     <View
-      className={` flex-row items-center  outline-none w-full rounded-lg px-3 py-3 bg-white ${className}`}
+      className={` flex-row items-center border-2 border-blue-600 w-full rounded-lg px-3 py-3 bg-white ${className}`}
     >
       {icon &&
         React.createElement(icon, {

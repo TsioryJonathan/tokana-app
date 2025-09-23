@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
           <View className="w-full flex flex-col items-center justify-around gap-5">
             <PrimaryButton
               onPress={() => {
-                router.push("/(auth)/auth");
+                router.push("/login");
               }}
               textClassName="font-quicksand-bold"
             >
@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
             </PrimaryButton>
             <GhostButton
               onPress={() => {
-                router.push("/(auth)/auth?q=register");
+                router.push("/register");
               }}
               textClassName="font-quicksand-bold"
             >

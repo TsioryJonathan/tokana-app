@@ -2,9 +2,6 @@ import React, { SetStateAction, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  Text,
-  TouchableWithoutFeedback,
-  Keyboard,
   View,
   ImageSourcePropType,
 } from "react-native";
@@ -14,6 +11,7 @@ import SecondStep from "./RegisterSteps/SecondStep";
 import ThirdStep from "./RegisterSteps/ThirdStep";
 import RegisterIllustration from "./RegisterIllustration";
 import { assets } from "@/assets/images/assets";
+import Stepper from "../ui/Stepper";
 
 type RegisterFormProps = {
   fullName: string;
@@ -66,17 +64,17 @@ export default function RegisterPage({
       className=" bg-customwhite flex-1"
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View className="flex-1 w-full px-5">
+      <View className="flex-1 w-full">
         {/* HEADER */}
-        <Text className="text-3xl font-quicksand-semibold text-center mt-10">
-          Creer un compte
-        </Text>
 
         {/* ILLUSTRATION */}
-        <RegisterIllustration source={illustration as ImageSourcePropType} />
+        <RegisterIllustration
+          source={illustration as ImageSourcePropType}
+        >{""}</RegisterIllustration>
 
         {/* STEP CONTENT */}
-        <View className="flex-1 justify-center items-center">
+        <Stepper steps={["a", "b", "c"]} step={step as 0 | 1 | 2} />
+        <View className="flex-1 justify-center items-center px-5">
           {step === 0 && (
             <FirstStep
               fullName={fullName}
@@ -108,7 +106,7 @@ export default function RegisterPage({
         </View>
 
         {/* STEPPER */}
-        <View className="mb-6">
+        <View className="mb-6 px-5">
           <RegisterStepper
             step={step}
             disableNext={errors !== undefined && errors !== null}

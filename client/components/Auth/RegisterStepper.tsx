@@ -1,4 +1,4 @@
-import { View, Pressable } from "react-native";
+import { View, Pressable, Text } from "react-native";
 import React from "react";
 import { ArrowBigLeft, ArrowBigRight } from "lucide-react-native";
 import { useToast } from "../ui/Toast";
@@ -23,13 +23,15 @@ const RegisterStepper = ({
   return (
     <View className="w-full flex-row items-center justify-between mb-10">
       <Pressable
-        style={{ backgroundColor: isFirstStep ? "#d1d5db" : "#3b82f6" }}
+        style={{ backgroundColor: isFirstStep ? "#d1d5db" : "#5FAE7C" }}
         onPress={() => onPressBack()}
         disabled={isFirstStep}
         className={`px-4 py-2 rounded-full font-quicksand-semibold text-white flex flex-row justify-between items-center gap-3 `}
       >
         <ArrowBigLeft size={20} color={"white"} />
-        Precedent
+        <Text className="font-quicksand-semibold text-white">
+          Precedent
+        </Text>{" "}
       </Pressable>
 
       <Pressable
@@ -41,11 +43,12 @@ const RegisterStepper = ({
             toast.showToast("Veuillez vérifier vos informations", "error");
           }
         }}
-        style={{ backgroundColor: isLastStep ? "#d1d5db" : "#3b82f6" }}
+        style={{ backgroundColor: isLastStep ? "#d1d5db" : "#5FAE7C" }}
         disabled={isLastStep}
-        className={`px-4 py-2 rounded-full font-quicksand-semibold text-white flex flex-row justify-between items-center gap-3`}
+        className={`px-4 py-2 rounded-full  flex flex-row justify-between items-center gap-3`}
       >
-        Suivant <ArrowBigRight size={20} color={"white"} />
+        <Text className="font-quicksand-semibold text-white">Suivant</Text>{" "}
+        <ArrowBigRight size={20} color={"white"} />
       </Pressable>
     </View>
   );
