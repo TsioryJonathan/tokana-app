@@ -29,7 +29,6 @@ function Stepper({
 
   return (
     <View className="w-full">
-      {/* Ligne: Node(fixe) - Connector(flex) - Node(fixe) ... */}
       <View className="flex-row items-center px-5 py-3 border-b border-slate-200">
         {steps.map((label, i) => {
           const isActive = i <= clampedStep;

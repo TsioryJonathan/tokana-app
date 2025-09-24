@@ -1,6 +1,8 @@
-import React from "react";
-import { View, TextInput } from "react-native";
+import React, { useState } from "react";
+import { View, TextInput, Pressable } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
+import { Eye, EyeOff } from "lucide-react-native";
+
 type CustomInputProps = {
   icon?: LucideIcon;
   value: string;
@@ -20,19 +22,25 @@ const CustomInput = ({
   onBlur,
   keyboardType = "default",
   className,
+  secureTextEntry = false,
 }: CustomInputProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <View
-      className={` flex-row items-center border-2 border-blue-600 w-full rounded-lg px-3 py-3 bg-white ${className}`}
+      className={`flex-row items-center border-2 border-green-800/60 w-full rounded-lg px-3 py-2 bg-white ${className}`}
     >
+      {/* Icône principale (ex: User, Mail, Phone) */}
       {icon &&
         React.createElement(icon, {
           size: 20,
           color: "#9ca3af",
-          className: "mr-2",
+          style: { marginRight: 8 },
         })}
+
+      {/* Champ texte */}
       <TextInput
-        className="flex-1 text-base text-gray-800 outline-none "
+        className="flex-1 text-lg text-gray-800"
         value={value}
         onChangeText={setValue}
         placeholder={placeholder}
@@ -41,7 +49,21 @@ const CustomInput = ({
         underlineColorAndroid="transparent"
         accessibilityLabel={placeholder}
         onBlur={onBlur}
+        secureTextEntry={secureTextEntry && !showPassword} // toggle entre caché / visible
+        autoCapitalize="none"
+        autoCorrect={false}
       />
+
+      {/* Icône toggle password */}
+      {secureTextEntry && (
+        <Pressable onPress={() => setShowPassword((prev) => !prev)}>
+          {showPassword ? (
+            <Eye size={20} color="#9ca3af" />
+          ) : (
+            <EyeOff size={20} color="#9ca3af" />
+          )}
+        </Pressable>
+      )}
     </View>
   );
 };

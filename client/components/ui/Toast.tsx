@@ -68,7 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* Toast container */}
       <View
         pointerEvents="none"
-        style={{ position: "absolute", left: 0, right: 0, top: 10 }}
+        style={{ position: "absolute", left: 0, right: 0, top: 55 }}
       >
         {toasts.map((t) => (
           <ToastItem key={t.id} message={t.message} type={t.type} />

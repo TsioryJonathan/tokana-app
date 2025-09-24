@@ -1,10 +1,5 @@
 import React, { SetStateAction, useMemo, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  View,
-  ImageSourcePropType,
-} from "react-native";
+import { Platform, View, ImageSourcePropType } from "react-native";
 import RegisterStepper from "./RegisterStepper";
 import FirstStep from "./RegisterSteps/FirstStep";
 import SecondStep from "./RegisterSteps/SecondStep";
@@ -12,6 +7,7 @@ import ThirdStep from "./RegisterSteps/ThirdStep";
 import RegisterIllustration from "./RegisterIllustration";
 import { assets } from "@/assets/images/assets";
 import Stepper from "../ui/Stepper";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type RegisterFormProps = {
   fullName: string;
@@ -59,20 +55,27 @@ export default function RegisterPage({
     }
   }, [step]);
 
+  const canSubmit = useMemo(() => {
+    return (
+      fullName.trim().length >= 3 &&
+      email.trim().length >= 3 &&
+      (phone.trim().length === 0 ||
+        /^(\+261|0)(3[0-9]|20)\d{7}$/.test(phone.trim())) &&
+      password.length >= 6 &&
+      password === confirm
+    );
+  }, [fullName, email, phone, password, confirm]);
+
   return (
-    <KeyboardAvoidingView
-      className=" bg-customwhite flex-1"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View className="flex-1 w-full">
-        {/* HEADER */}
-
-        {/* ILLUSTRATION */}
-        <RegisterIllustration
-          source={illustration as ImageSourcePropType}
-        >{""}</RegisterIllustration>
-
-        {/* STEP CONTENT */}
+    <View className="flex-1">
+      <KeyboardAwareScrollView
+        className="bg-customwhite flex-1 mt-10"
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Illustration + Step content */}
+        <RegisterIllustration source={illustration as ImageSourcePropType} />
         <Stepper steps={["a", "b", "c"]} step={step as 0 | 1 | 2} />
         <View className="flex-1 justify-center items-center px-5">
           {step === 0 && (
@@ -104,19 +107,27 @@ export default function RegisterPage({
             />
           )}
         </View>
+      </KeyboardAwareScrollView>
 
-        {/* STEPPER */}
-        <View className="mb-6 px-5">
-          <RegisterStepper
-            step={step}
-            disableNext={errors !== undefined && errors !== null}
-            onPressBack={handlePressBack}
-            onPressNext={handlePressNext}
-            isFirstStep={step === 0}
-            isLastStep={step === 2}
-          />
-        </View>
+      {/* FOOTER FIXE */}
+      <View className="absolute bottom-0 left-0 right-0 px-5 pb-6 bg-customwhite">
+        <RegisterStepper
+          step={step}
+          disableNext={errors !== undefined && errors !== null}
+          onPressBack={handlePressBack}
+          onPressNext={handlePressNext}
+          isFirstStep={step === 0}
+          isLastStep={step === 2}
+          canSubmit={canSubmit}
+          onLastStep={
+            onSubmit
+              ? onSubmit
+              : () => {
+                  console.log(fullName, email, password);
+                }
+          }
+        />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

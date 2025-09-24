@@ -3,7 +3,9 @@
     "jsx": "react",
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
     "esModuleInterop": true
   },
@@ -15,5 +17,6 @@
     "expo-env.d.ts",
     "nativewind-env.d.ts",
     "metro.config.js"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

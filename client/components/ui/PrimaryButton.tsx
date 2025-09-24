@@ -1,3 +1,4 @@
+import React from "react";
 import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
 
 function PrimaryButton({
@@ -31,6 +32,7 @@ function PrimaryButton({
       className={`w-full items-center justify-center rounded-xl py-3 ${
         isDisabled ? "bg-accent" : "bg-primary"
       } ${className}`}
+      style={{ width: "100%" }}
     >
       {loading ? (
         <ActivityIndicator />

@@ -1,24 +1,14 @@
-import { ImageBackground, ImageSourcePropType, View } from "react-native";
-import React, { ReactNode } from "react";
+import { Image, ImageSourcePropType, View } from "react-native";
+import React from "react";
 
-const RegisterIllustration = ({
-  source,
-  children,
-}: {
-  source: ImageSourcePropType;
-  children: ReactNode;
-}) => {
+const RegisterIllustration = ({ source }: { source: ImageSourcePropType }) => {
   return (
-    <View className="w-full items-center justify-center">
-      <ImageBackground
+    <View className="w-full items-center justify-center    bg-green-200/30">
+      <Image
         source={source}
-        style={{ width: "100%", aspectRatio: 1, height: 400 }}
+        style={{ width: "100%", aspectRatio: 1, height: 350 }}
         resizeMode="contain"
-        className="bg-green-200/30"
-        imageStyle={{ borderRadius: 16 }}
-      >
-        {children}
-      </ImageBackground>
+      />
     </View>
   );
 };
