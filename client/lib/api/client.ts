@@ -16,10 +16,12 @@ export function getApiClient(): TokanaApiClient {
   let base: string | undefined;
   if (__DEV__) {
     base = extra.API_BASE_DEV;
+
     const hostUri = (Constants as any)?.expoConfig?.hostUri as
       | string
       | undefined;
     const host = hostUri ? hostUri.split(":")[0] : undefined;
+    
     const nativeFallback = host
       ? `http://${host}:5000`
       : "http://localhost:5000";
@@ -42,7 +44,7 @@ export function getApiClient(): TokanaApiClient {
   }
   currentBase = base!;
   cached = new TokanaApiClient({
-    BASE: base!,
+    BASE: currentBase,
     TOKEN: async () => (await getAccessToken()) ?? "",
   });
   return cached;

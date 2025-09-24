@@ -31,7 +31,7 @@ export class TokanaApiClient {
     HttpRequest: HttpRequestConstructor = FetchHttpRequest
   ) {
     this.request = new HttpRequest({
-      BASE: "http://localhost:5000",
+      BASE: config?.BASE ?? "http://localhost:5000",
       VERSION: config?.VERSION ?? "1.0.0",
       WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
       CREDENTIALS: config?.CREDENTIALS ?? "include",
@@ -41,6 +41,7 @@ export class TokanaApiClient {
       HEADERS: config?.HEADERS,
       ENCODE_PATH: config?.ENCODE_PATH,
     });
+
     this.adminUsers = new AdminUsersService(this.request);
     this.adminZones = new AdminZonesService(this.request);
     this.auth = new AuthService(this.request);

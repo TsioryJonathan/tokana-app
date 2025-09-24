@@ -1,12 +1,13 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React from "react";
+import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
+import LoginPage from "@/components/Auth/LoginPage";
 
 const login = () => {
   return (
-    <View>
-      <Text>login</Text>
-    </View>
-  )
-}
+    <AuthScreenWrapper currentScreen="login">
+      <LoginPage />
+    </AuthScreenWrapper>
+  );
+};
 
-export default login
+export default login;
