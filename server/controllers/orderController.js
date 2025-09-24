@@ -19,6 +19,7 @@ const createSchema = Joi.object({
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
   recipientPhone: Joi.string().pattern(mgPhone).optional(),
+
   recipientEmail: Joi.string().email().optional(),
   // Optional enrichments
   category: Joi.string().valid('ENVELOPE', 'SMALL', 'MEDIUM', 'LARGE').optional(),
