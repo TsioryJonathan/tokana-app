@@ -52,6 +52,14 @@ const FirstStep = ({
         right={<Text className="ml-2 text-[12px] text-slate-500">kg</Text>}
       />
 
+      {Number(parcel.weightKg) > 5 ? (
+        <View className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
+          <Text className="text-[12px] text-amber-800">
+            Poids supérieur à 5 kg: un traitement manuel peut être nécessaire selon disponibilité. Des instructions vous seront communiquées.
+          </Text>
+        </View>
+      ) : null}
+
       <View className="h-2" />
       <LabeledInput
         label="Nombre de colis"

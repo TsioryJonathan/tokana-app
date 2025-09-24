@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useToast } from "@/components/ui/Toast";
 import {
   mapBackendOrderToUI,
@@ -30,6 +31,7 @@ export default function OrderDetails() {
     { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   const api = useMemo(getApiClient, []);
 
@@ -56,9 +58,9 @@ export default function OrderDetails() {
             id: Number(it.id || 0),
             from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
             to: mapBackendStatus(String(it.toStatus || "")),
-            at: String(it.changedAt || ""),
+            at: String((it as any).createdAt || ""),
           }))
-          .sort((a, b) => (a.at > b.at ? -1 : 1));
+          .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
         if (mounted) setHistory(mapped);
       } catch (e: any) {
         console.warn("order detail error", e);
@@ -72,7 +74,10 @@ export default function OrderDetails() {
     return () => {
       mounted = false;
     };
-  }, [id, api, showToast]);
+  }, [id, api, showToast, reloadTick]);
+
+  // Auto-refresh every 2 minutes while on screen
+  useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, true);
 
   if (loading) {
     return (
@@ -107,8 +112,8 @@ export default function OrderDetails() {
                   id: Number(it.id || 0),
                   from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
                   to: mapBackendStatus(String(it.toStatus || "")),
-                  at: String(it.changedAt || ""),
-                })).sort((a, b) => (a.at > b.at ? -1 : 1));
+                  at: String((it as any).createdAt || ""),
+                })).sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
                 setHistory(mapped);
               } catch (e: any) {
                 setError(e?.body?.msg || e?.message || "Commande introuvable");

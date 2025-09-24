@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useToast } from "@/components/ui/Toast";
 import {
   mapBackendOrderToUI,
@@ -47,9 +48,9 @@ export default function TrackingScreen() {
             id: Number(it.id || 0),
             from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
             to: mapBackendStatus(String(it.toStatus || "")),
-            at: String(it.changedAt || ""),
+            at: String((it as any).createdAt || ""),
           }))
-          .sort((a, b) => (a.at > b.at ? -1 : 1));
+          .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
         if (mounted) setHistory(mapped);
         // ETA Express (affichage pour service Express)
         if (ui?.service === 'EXPRESS') {
@@ -80,19 +81,21 @@ export default function TrackingScreen() {
     };
   }, [api, id, showToast, reloadTick]);
 
+  // Auto-refresh every 2 minutes while on screen
+  useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, true);
   // Auto-refresh ETA for Express orders every 2 minutes while mounted
   useEffect(() => {
     let timer: any;
     if (order?.service === 'EXPRESS') {
       const refresh = async () => {
         try {
-          const avail: any = await api.slots.getApiSlotsExpress();
+          const avail = await api.slots.getApiSlotsExpress();
           const min = avail?.eta?.minMinutes;
           const max = avail?.eta?.maxMinutes;
           if (typeof min === 'number' && typeof max === 'number') setEta({ min, max });
         } catch {}
       };
-      // initial gentle refresh shortly after mount
+      refresh();
       timer = setInterval(refresh, 2 * 60 * 1000);
     }
     return () => {

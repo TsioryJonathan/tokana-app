@@ -1229,15 +1229,22 @@ paths:
                 properties:
                   allowed: { type: boolean }
                   reason: { type: string, nullable: true }
+                  eta:
+                    type: object
+                    properties:
+                      minMinutes: { type: integer }
+                      maxMinutes: { type: integer }
               examples:
                 allowed:
                   value:
                     allowed: true
                     reason: null
+                    eta: { minMinutes: 60, maxMinutes: 120 }
                 blocked:
                   value:
                     allowed: false
                     reason: "Too late for today"
+                    eta: { minMinutes: 60, maxMinutes: 120 }
         '401':
           description: Unauthorized
           content:

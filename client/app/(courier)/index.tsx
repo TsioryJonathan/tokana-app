@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicat
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getApiClient } from '@/lib/api/client';
+import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
 import { mapBackendOrderToUI, statusBadge, statusLabel, type UIOrder } from '@/lib/mappers/order';
 
 const ACTIVE_COLOR = '#059669';
@@ -35,6 +36,9 @@ export default function CourierTasks() {
     load();
   }, [load]);
 
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(load, 2 * 60 * 1000, true);
+  
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load();

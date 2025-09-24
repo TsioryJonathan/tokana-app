@@ -9,6 +9,7 @@ import { sendEmail } from '../services/emailService.js';
 import User from '../models/User.js';
 import crypto from 'crypto';
 
+const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 const createSchema = Joi.object({
   type: Joi.string().valid('standard', 'express').required(),
   zoneLevel: Joi.string().valid('ville', 'peripherie', 'super-peripherie').required(),
@@ -17,8 +18,20 @@ const createSchema = Joi.object({
   weight: Joi.number().positive().precision(2).required(),
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
-  recipientPhone: Joi.string().pattern(/^(\+261|0)(3[0-9]|20)\d{7}$/).optional(),
+  recipientPhone: Joi.string().pattern(mgPhone).optional(),
+
   recipientEmail: Joi.string().email().optional(),
+  // Optional enrichments
+  category: Joi.string().valid('ENVELOPE', 'SMALL', 'MEDIUM', 'LARGE').optional(),
+  fragile: Joi.boolean().optional(),
+  bulky: Joi.boolean().optional(),
+  pickupName: Joi.string().min(2).max(120).optional(),
+  pickupPhone: Joi.string().pattern(mgPhone).optional(),
+  dropoffName: Joi.string().min(2).max(120).optional(),
+  notes: Joi.string().min(0).max(1000).allow('').optional(),
+  pickupLocalityId: Joi.string().optional(),
+  dropoffLocalityId: Joi.string().optional(),
+  needReturn: Joi.boolean().optional(),
   // For standard only
   slotStart: Joi.date().iso().allow(null),
   slotEnd: Joi.date().iso().allow(null),
@@ -109,7 +122,23 @@ export const createOrder = async (req, res, next) => {
     const { error, value } = createSchema.validate(req.body, { abortEarly: false, convert: true });
     if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
 
-    const { type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, recipientPhone, slotStart, slotEnd } = value;
+    const { type, pickupAddress, dropoffAddress, weight, parcels, cashToCollect, recipientEmail, recipientPhone, slotStart, slotEnd } = value;
+
+    // Derive zoneLevel from dropoffLocalityId if provided (source of truth)
+    let zoneLevel = value.zoneLevel;
+    const locId = value.dropoffLocalityId;
+    if (locId) {
+      // If DB IDs used later, resolve via associations; for now, parse synthetic IDs like 'ville:...'
+      const prefix = String(locId).split(':')[0];
+      if (prefix === 'ville' || prefix === 'peripherie' || prefix === 'super-peripherie') {
+        zoneLevel = prefix;
+      }
+      // Future: resolve from DB when numeric ID
+      // try {
+      //   const locality = await Locality.findByPk(Number(locId), { include: { model: Axis, as: 'axis', include: { model: Zone, as: 'zone' } } });
+      //   if (locality?.axis?.zone?.key) zoneLevel = locality.axis.zone.key;
+      // } catch {}
+    }
 
     // Slots validation
     if (type === 'standard') {
@@ -131,6 +160,12 @@ export const createOrder = async (req, res, next) => {
       zoneLevel,
       pickupAddress,
       dropoffAddress,
+      pickupName: value.pickupName ?? null,
+      pickupPhone: value.pickupPhone ?? null,
+      dropoffName: value.dropoffName ?? null,
+      notes: value.notes ?? null,
+      pickupLocalityId: value.pickupLocalityId ?? null,
+      dropoffLocalityId: value.dropoffLocalityId ?? null,
       weight,
       parcels,
       cashToCollect: cashToCollect ?? null,

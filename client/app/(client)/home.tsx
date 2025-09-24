@@ -22,6 +22,7 @@ import StatChip from "@/components/ui/StatChip";
 import FilterChip from "@/components/ui/FilterChip";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import {
   mapBackendOrderToUI,
   type UIOrder,
@@ -195,7 +196,9 @@ function OrderCard({ order, onPress }: { order: UIOrder; onPress?: () => void })
           </View>
           {/* ETA hint for active Express orders (if available) */}
           {order.service === "EXPRESS" && isActiveStatus(order.status) && typeof (order as any).etaHint === 'string' && (
-            <Text className="mt-1 text-[11px] text-emerald-700">{(order as any).etaHint}</Text>
+            <View className="mt-1 self-start px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+              <Text className="text-[10px] text-emerald-700">{(order as any).etaHint}</Text>
+            </View>
           )}
           <ProgressBar status={order.status} />
         </View>
@@ -253,7 +256,7 @@ export default function ClientHome() {
       const data = await api.orders.getApiOrders(undefined, true);
       const ui = data.map(mapBackendOrderToUI).map(o => {
         if (o.service === 'EXPRESS' && isActiveStatus(o.status) && expressEta) {
-          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min` } as any;
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min (indicatif)` } as any;
         }
         return o as any;
       });
@@ -292,9 +295,9 @@ export default function ClientHome() {
     let mounted = true;
     (async () => {
       try {
-        const anyAvail: any = await api.slots.getApiSlotsExpress();
-        const min = anyAvail?.eta?.minMinutes;
-        const max = anyAvail?.eta?.maxMinutes;
+        const avail = await api.slots.getApiSlotsExpress();
+        const min = avail?.eta?.minMinutes;
+        const max = avail?.eta?.maxMinutes;
         if (mounted && typeof min === 'number' && typeof max === 'number') setExpressEta({ min, max });
       } catch {}
     })();
@@ -304,6 +307,9 @@ export default function ClientHome() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(load, 2 * 60 * 1000, true);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

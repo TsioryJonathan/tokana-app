@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-nativ
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getApiClient, getApiBase } from '@/lib/api/client';
+import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
 import { useToast } from '@/components/ui/Toast';
 import {
   mapBackendOrderToUI,
@@ -41,9 +42,9 @@ export default function CourierOrderDetail() {
           id: Number(it.id || 0),
           from: it.fromStatus ? mapBackendStatus(it.fromStatus) : null,
           to: mapBackendStatus(String(it.toStatus || '')),
-          at: String(it.changedAt || ''),
+          at: String((it as any).createdAt || ''),
         }))
-        .sort((a, b) => (a.at > b.at ? -1 : 1));
+        .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
       setHistory(mapped);
     } catch (e) {
       console.warn('[courier order] load error', e);
@@ -57,12 +58,15 @@ export default function CourierOrderDetail() {
     reload();
   }, [reload]);
 
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(reload, 2 * 60 * 1000, true);
+
   const loadEtaIfExpress = useCallback(async (svc: UIOrder['service']) => {
     if (svc !== 'EXPRESS') { setEta(null); return; }
     try {
-      const anyAvail: any = await api.slots.getApiSlotsExpress();
-      const min = anyAvail?.eta?.minMinutes;
-      const max = anyAvail?.eta?.maxMinutes;
+      const avail = await api.slots.getApiSlotsExpress();
+      const min = avail?.eta?.minMinutes;
+      const max = avail?.eta?.maxMinutes;
       if (typeof min === 'number' && typeof max === 'number') setEta({ min, max });
       else setEta({ min: 60, max: 120 });
     } catch {

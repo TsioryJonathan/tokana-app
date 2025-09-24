@@ -1,33 +1,14 @@
 // app/(client)/_layout.tsx
-import React, { useEffect, useState } from "react";
-import { Platform, StatusBar } from "react-native";
+import React from "react";
+import { Platform, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
-import { getAccessToken } from "@/lib/auth/session";
-import { useRouter } from "expo-router";
+import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import { HomeIcon, BoxIcon, PlusCircle, User2Icon } from "lucide-react-native";
 
 export default function ClientLayout() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const token = await getAccessToken();
-        if (!token) {
-          if (!mounted) return;
-          router.replace('/(auth)/auth');
-          return;
-        }
-      } finally {
-        if (mounted) setChecking(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [router]);
+  const { checking } = useAuthGuard({ requireAuth: true });
 
   if (checking) {
     return (
@@ -37,6 +18,10 @@ export default function ClientLayout() {
           translucent={Platform.OS === 'android'}
           backgroundColor="transparent"
         />
+        <SafeAreaView className="flex-1 items-center justify-center">
+          <ActivityIndicator color="#059669" size="large" />
+          <></>
+        </SafeAreaView>
       </SafeAreaView>
     );
   }

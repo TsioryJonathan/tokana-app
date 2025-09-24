@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, RefreshControl, ScrollView } from 'react-native';
 import { getApiClient } from '@/lib/api/client';
 import { useToast } from '@/components/ui/Toast';
+import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
 import type { Order } from '@/lib/api/models/Order';
 import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
 
@@ -62,6 +63,9 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(load, 2 * 60 * 1000, true);
 
   const onRefresh = async () => {
     setRefreshing(true);
