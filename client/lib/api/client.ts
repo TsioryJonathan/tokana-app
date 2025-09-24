@@ -1,6 +1,11 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { TokanaApiClient } from "@/lib/api";
+import { FetchHttpRequest } from "@/lib/api/core/FetchHttpRequest";
+import type { OpenAPIConfig } from "@/lib/api/core/OpenAPI";
+import type { ApiRequestOptions } from "@/lib/api/core/ApiRequestOptions";
+import type { CancelablePromise } from "@/lib/api/core/CancelablePromise";
+import { clearSession } from "@/lib/auth/session";
 import { getAccessToken } from "@/lib/auth/session";
 
 let cached: TokanaApiClient | null = null;
@@ -31,9 +36,38 @@ export function getApiClient(): TokanaApiClient {
     base = extra.API_BASE_PROD || "https://api.example.com";
   }
   currentBase = base!;
-  cached = new TokanaApiClient({
-    BASE: base!,
-    TOKEN: async () => (await getAccessToken()) ?? "",
-  });
+  // Custom HttpRequest to handle 401 globally
+  class HttpRequestWith401 extends FetchHttpRequest {
+    constructor(config: OpenAPIConfig) {
+      super(config);
+    }
+    public override request<T>(options: ApiRequestOptions): CancelablePromise<T> {
+      const p = super.request<T>(options) as unknown as Promise<T>;
+      const handled = p.catch(async (err: unknown) => {
+        const status = (err as any)?.status;
+        if (status === 401) {
+          try {
+            await clearSession();
+            // Lazy import to avoid cyclic deps in non-Expo environments
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              const { router } = require("expo-router");
+              router.replace("/(auth)/auth" as any);
+            } catch {}
+          } catch {}
+        }
+        throw err;
+      });
+      return handled as unknown as CancelablePromise<T>;
+    }
+  }
+
+  cached = new TokanaApiClient(
+    {
+      BASE: base!,
+      TOKEN: async () => (await getAccessToken()) ?? "",
+    },
+    HttpRequestWith401 as any
+  );
   return cached;
 }

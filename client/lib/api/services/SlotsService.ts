@@ -35,6 +35,10 @@ export class SlotsService {
     public getApiSlotsExpress(): CancelablePromise<{
         allowed?: boolean;
         reason?: string | null;
+        eta?: {
+            minMinutes?: number;
+            maxMinutes?: number;
+        };
     }> {
         return this.httpRequest.request({
             method: 'GET',
