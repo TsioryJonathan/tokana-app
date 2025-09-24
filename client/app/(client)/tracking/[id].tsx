@@ -90,13 +90,13 @@ export default function TrackingScreen() {
     if (order?.service === 'EXPRESS') {
       const refresh = async () => {
         try {
-          const avail: any = await api.slots.getApiSlotsExpress();
+          const avail = await api.slots.getApiSlotsExpress();
           const min = avail?.eta?.minMinutes;
           const max = avail?.eta?.maxMinutes;
           if (typeof min === 'number' && typeof max === 'number') setEta({ min, max });
         } catch {}
       };
-      // initial gentle refresh shortly after mount
+      refresh();
       timer = setInterval(refresh, 2 * 60 * 1000);
     }
     return () => {

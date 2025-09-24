@@ -64,9 +64,9 @@ export default function CourierOrderDetail() {
   const loadEtaIfExpress = useCallback(async (svc: UIOrder['service']) => {
     if (svc !== 'EXPRESS') { setEta(null); return; }
     try {
-      const anyAvail: any = await api.slots.getApiSlotsExpress();
-      const min = anyAvail?.eta?.minMinutes;
-      const max = anyAvail?.eta?.maxMinutes;
+      const avail = await api.slots.getApiSlotsExpress();
+      const min = avail?.eta?.minMinutes;
+      const max = avail?.eta?.maxMinutes;
       if (typeof min === 'number' && typeof max === 'number') setEta({ min, max });
       else setEta({ min: 60, max: 120 });
     } catch {

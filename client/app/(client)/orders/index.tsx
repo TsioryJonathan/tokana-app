@@ -22,7 +22,6 @@ import { useToast } from "@/components/ui/Toast";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import {
   mapBackendOrderToUI,
-  mapBackendStatus,
   type UIOrder as Order,
   type OrderStatus,
   statusLabel,
@@ -227,7 +226,7 @@ export default function OrdersList() {
       const res = await fetchOrders(api, q);
       const enriched = res.map(o => {
         if (o.service === 'EXPRESS' && (o.status === 'CREATED' || o.status === 'PICKED_UP' || o.status === 'IN_TRANSIT') && expressEta) {
-          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min` } as any;
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min (indicatif)` } as any;
         }
         return o as any;
       });

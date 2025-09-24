@@ -295,9 +295,9 @@ export default function ClientHome() {
     let mounted = true;
     (async () => {
       try {
-        const anyAvail: any = await api.slots.getApiSlotsExpress();
-        const min = anyAvail?.eta?.minMinutes;
-        const max = anyAvail?.eta?.maxMinutes;
+        const avail = await api.slots.getApiSlotsExpress();
+        const min = avail?.eta?.minMinutes;
+        const max = avail?.eta?.maxMinutes;
         if (mounted && typeof min === 'number' && typeof max === 'number') setExpressEta({ min, max });
       } catch {}
     })();

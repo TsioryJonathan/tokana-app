@@ -18,6 +18,18 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  pickupName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  pickupPhone: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  dropoffName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   weight: {
     type: DataTypes.FLOAT,
     allowNull: false,
@@ -27,6 +39,20 @@ const Order = sequelize.define('Order', {
     allowNull: false,
     defaultValue: 1,
   },
+  category: {
+    type: DataTypes.ENUM('ENVELOPE', 'SMALL', 'MEDIUM', 'LARGE'),
+    allowNull: true,
+  },
+  fragile: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  },
+  bulky: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  },
   cashToCollect: {
     type: DataTypes.INTEGER,
     allowNull: true,
@@ -34,6 +60,10 @@ const Order = sequelize.define('Order', {
   priceTotal: {
     type: DataTypes.INTEGER,
     allowNull: false,
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
   createdBy: {
     type: DataTypes.INTEGER,
@@ -49,6 +79,14 @@ const Order = sequelize.define('Order', {
     allowNull: true,
   },
   recipientEmail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  pickupLocalityId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  dropoffLocalityId: {
     type: DataTypes.STRING,
     allowNull: true,
   },
@@ -80,6 +118,11 @@ const Order = sequelize.define('Order', {
   slotEnd: {
     type: DataTypes.DATE,
     allowNull: true, // only for standard
+  },
+  needReturn: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
   },
   status: {
     type: DataTypes.ENUM(

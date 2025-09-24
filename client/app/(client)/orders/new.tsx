@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ import {
   ServiceState,
 } from "@/types/createorder.type";
 import { formatAr, toNumberSafe } from "@/utils/price.helper";
+import type { LocalityItem } from "@/lib/hooks/useLocalities";
+import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -109,6 +111,16 @@ export default function NewOrderWizard() {
   // API client
   const api = useMemo(getApiClient, []);
 
+  // Locality selection
+  const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
+  const [selectedDropoffLocality, setSelectedDropoffLocality] = useState<LocalityItem | null>(null);
+  useEffect(() => {
+    if (!selectedDropoffLocality) return;
+    const z = selectedDropoffLocality.zoneLevel;
+    const bracket = z === 'ville' ? '<5' : z === 'peripherie' ? '5-10' : '10-20';
+    setService((s) => ({ ...s, distanceKmBracket: bracket }));
+  }, [selectedDropoffLocality]);
+
   const toZoneLevel = (bracket: ServiceState["distanceKmBracket"]): "ville" | "peripherie" | "super-peripherie" => {
     if (bracket === "<5") return "ville";
     if (bracket === "5-10") return "peripherie";
@@ -174,6 +186,9 @@ export default function NewOrderWizard() {
     if (step === 0) {
       if (toNumberSafe(parcel.weightKg) <= 0)
         errs.push("Poids du colis invalide");
+      const n = toNumberSafe(parcel.parcelsCount || "1");
+      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
+        errs.push("Nombre de colis doit être un entier ≥ 1");
     }
     if (step === 1) {
       if (!sender.name.trim()) errs.push("Nom expéditeur requis");
@@ -186,6 +201,10 @@ export default function NewOrderWizard() {
       if (!mgPhoneRegex.test(recipient.phone.trim()))
         errs.push("Téléphone destinataire invalide");
       if (!recipient.address.trim()) errs.push("Adresse destinataire requise");
+    }
+    if (step === 3) {
+      // Service: exiger la localité de livraison pour éviter toute ambiguïté de zone
+      if (!selectedDropoffLocality) errs.push("Sélectionnez la localité de livraison");
     }
     // Étape paiement: non bloquante (en implémentation)
     return errs;
@@ -306,15 +325,22 @@ export default function NewOrderWizard() {
         type,
         zoneLevel,
         pickupAddress: sender.address.trim(),
+        pickupName: sender.name.trim() || undefined,
+        pickupPhone: sender.phone.trim() || undefined,
         dropoffAddress: recipient.address.trim(),
+        dropoffName: recipient.name.trim() || undefined,
         weight: toNumberSafe(parcel.weightKg),
         parcels: parcelsCount,
         cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
+        notes: (payment.notes || '').trim() || undefined,
         recipientPhone: recipient.phone?.trim() || undefined,
         recipientEmail: recipient.email?.trim() || undefined,
         slotStart,
         slotEnd,
-      });
+        // Optional fields for future server-side zone derivation
+        ...(selectedPickupLocality ? { pickupLocalityId: selectedPickupLocality.id } : {}),
+        ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
+      } as any);
       resetForm();
       showToast("Commande créée", "success");
       // Navigate to tracking with created id for MVP
@@ -355,12 +381,28 @@ export default function NewOrderWizard() {
         {step === 0 && <FirstStep parcel={parcel} setParcel={setParcel} />}
 
         {step === 1 && <SecondStep sender={sender} setSender={setSender} />}
+        {step === 1 && (
+          <LocalitySelector
+            selected={selectedPickupLocality}
+            onSelect={(loc) => setSelectedPickupLocality(loc)}
+            onReset={() => setSelectedPickupLocality(null)}
+            label="Localité de collecte (optionnel)"
+          />
+        )}
 
         {step === 2 && (
           <ThirdStep recipient={recipient} setRecipient={setRecipient} />
         )}
 
-        {step === 3 && <FourthStep service={service} setService={setService} />}
+        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!selectedDropoffLocality} />}
+        {step === 3 && (
+          <LocalitySelector
+            selected={selectedDropoffLocality}
+            onSelect={(loc) => setSelectedDropoffLocality(loc)}
+            onReset={() => setSelectedDropoffLocality(null)}
+            label="Localité de livraison"
+          />
+        )}
         {/* Service hints based on selection */}
         {step === 3 && (
           <View className="mt-2 flex-row items-center">
@@ -413,7 +455,7 @@ export default function NewOrderWizard() {
             ) : quoteError ? (
               <Text className="text-[12px] text-rose-700">{quoteError}</Text>
             ) : (
-              <Text className="text-[12px] text-slate-500">Indique le poids et la zone pour obtenir le devis</Text>
+              <Text className="text-[12px] text-slate-500">Indique le poids et la localité/zone pour obtenir le devis</Text>
             )}
             {serverQuote && !serverQuote.manual && (
               <Text className="mt-0.5 text-[11px] text-slate-500">

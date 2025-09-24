@@ -25,6 +25,14 @@ const FifthStep = ({
         </Text>
       </View>
       <LabeledInput
+        label="Montant à encaisser (Ar)"
+        placeholder="Ex: 12000"
+        keyboardType="numeric"
+        value={payment.codAmountAr}
+        onChangeText={(t) => setPayment({ ...payment, codAmountAr: t })}
+      />
+      <View className="h-2" />
+      <LabeledInput
         label="Instructions / notes"
         placeholder="Code portail, repère..."
         value={payment.notes}

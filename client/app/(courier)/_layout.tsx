@@ -1,44 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, StatusBar, View, Text } from 'react-native';
+import React from 'react';
+import { Platform, StatusBar, View, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { getAccessToken } from '@/lib/auth/session';
-import { getApiClient } from '@/lib/api/client';
+import { Stack } from 'expo-router';
+import { useAuthGuard } from '@/lib/hooks/useAuthGuard';
 
 export default function CourierLayout() {
-  const router = useRouter();
-  const api = getApiClient();
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const token = await getAccessToken();
-        if (!token) {
-          if (!mounted) return;
-          router.replace('/(auth)/auth');
-          return;
-        }
-        // Optional role check: allow 'livreur' or 'admin'
-        try {
-          const me = await api.me.getApiMe();
-          if (!mounted) return;
-          if (me.role !== 'livreur' && me.role !== 'admin') {
-            router.replace('/');
-            return;
-          }
-        } catch {
-          if (!mounted) return;
-          router.replace('/');
-          return;
-        }
-      } finally {
-        if (mounted) setChecking(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [api, router]);
+  const { checking } = useAuthGuard({ requireAuth: true, allowedRoles: ['livreur', 'admin'] });
 
   if (checking) {
     return (
@@ -49,7 +16,8 @@ export default function CourierLayout() {
           backgroundColor="transparent"
         />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#475569' }}>Chargement…</Text>
+          <ActivityIndicator color="#059669" size="large" />
+          <Text style={{ color: '#475569', marginTop: 8 }}>Chargement…</Text>
         </View>
       </SafeAreaView>
     );
