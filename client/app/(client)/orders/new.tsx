@@ -26,6 +26,7 @@ import {
 import { formatAr, toNumberSafe } from "@/utils/price.helper";
 import type { LocalityItem } from "@/lib/hooks/useLocalities";
 import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
+import OrderReviewModal from "@/components/CreateOrder/OrderReviewModal";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -107,6 +108,7 @@ export default function NewOrderWizard() {
     contactPhone?: string | null;
   } | null>(null);
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
+  const [showReview, setShowReview] = useState(false);
   // Local estimation removed to avoid confusion; we rely solely on server quote
   // API client
   const api = useMemo(getApiClient, []);
@@ -217,7 +219,7 @@ export default function NewOrderWizard() {
       return;
     }
     if (step < steps.length - 1) setStep((s) => (s + 1) as Step);
-    else submit();
+    else setShowReview(true);
   };
   const goPrev = () => {
     if (step > 0) setStep((s) => (s - 1) as Step);
@@ -329,12 +331,16 @@ export default function NewOrderWizard() {
         pickupPhone: sender.phone.trim() || undefined,
         dropoffAddress: recipient.address.trim(),
         dropoffName: recipient.name.trim() || undefined,
+        category: parcel.category,
+        fragile: !!parcel.fragile,
+        bulky: !!parcel.bulky,
         weight: toNumberSafe(parcel.weightKg),
         parcels: parcelsCount,
         cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
         notes: (payment.notes || '').trim() || undefined,
         recipientPhone: recipient.phone?.trim() || undefined,
         recipientEmail: recipient.email?.trim() || undefined,
+        needReturn: !!service.needReturn,
         slotStart,
         slotEnd,
         // Optional fields for future server-side zone derivation
@@ -515,6 +521,24 @@ export default function NewOrderWizard() {
           </View>
         </View>
       </ScrollView>
+      {/* Review modal */}
+      <OrderReviewModal
+        visible={showReview}
+        onClose={() => setShowReview(false)}
+        onConfirm={() => {
+          setShowReview(false);
+          submit();
+        }}
+        sender={sender}
+        recipient={recipient}
+        parcel={parcel}
+        service={service}
+        payment={payment}
+        pickupLocality={selectedPickupLocality}
+        dropoffLocality={selectedDropoffLocality}
+        zoneLevel={toZoneLevel(service.distanceKmBracket)}
+        priceTotal={serverQuote?.total ?? null}
+      />
     </View>
   );
 }
