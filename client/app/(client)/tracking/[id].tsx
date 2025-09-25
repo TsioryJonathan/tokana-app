@@ -83,7 +83,6 @@ export default function TrackingScreen() {
 
   // Auto-refresh every 2 minutes while on screen
   useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, true);
-
   // Auto-refresh ETA for Express orders every 2 minutes while mounted
   useEffect(() => {
     let timer: any;

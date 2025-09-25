@@ -440,6 +440,15 @@ export default function NewOrderWizard() {
           </View>
         )}
 
+        {/* ETA Express (affiché si service Express et dispo) */}
+        {service.service === "EXPRESS" && expressEta && (
+          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <Text className="text-[12px] text-emerald-700">
+              Livraison estimée {expressEta.min}–{expressEta.max} minutes
+            </Text>
+          </View>
+        )}
+
         {step === 4 && <FifthStep payment={payment} setPayment={setPayment} />}
 
         {/* Footer: devis serveur + actions (responsive vertical) */}
