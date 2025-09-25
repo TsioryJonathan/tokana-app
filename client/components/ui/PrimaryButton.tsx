@@ -29,7 +29,7 @@ function PrimaryButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       testID={testID}
-      className={`w-full items-center justify-center rounded-xl py-3 ${
+      className={`w-full items-center justify-center rounded-xl py-4 ${
         isDisabled ? "bg-accent" : "bg-primary"
       } ${className}`}
       style={{ width: "100%" }}
@@ -37,7 +37,9 @@ function PrimaryButton({
       {loading ? (
         <ActivityIndicator />
       ) : (
-        <Text className={` font-semibold ${textClassName}`}>{children}</Text>
+        <Text className={` font-semibold text-white ${textClassName}`}>
+          {children}
+        </Text>
       )}
     </TouchableOpacity>
   );

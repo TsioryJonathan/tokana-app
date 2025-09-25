@@ -1,10 +1,5 @@
 import React, { SetStateAction, useMemo, useState } from "react";
-import {
-  View,
-  ImageSourcePropType,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, ImageSourcePropType, Platform } from "react-native";
 import RegisterStepper from "./RegisterStepper";
 import FirstStep from "./RegisterSteps/FirstStep";
 import SecondStep from "./RegisterSteps/SecondStep";
@@ -72,74 +67,67 @@ export default function RegisterPage({
   }, [fullName, email, phone, password, confirm]);
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-customwhite"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
-    >
-      <View className="flex-1 justify-between mt-10">
-        {/* Contenu scrollable */}
-        <KeyboardAwareScrollView
-          enableOnAndroid
-          extraScrollHeight={20}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          <RegisterIllustration source={illustration as ImageSourcePropType} />
-          <Stepper steps={["a", "b", "c"]} step={step as 0 | 1 | 2} />
+    <View className="flex-1 bg-customwhite">
+      <KeyboardAwareScrollView
+        className="flex-1"
+        enableOnAndroid
+        extraScrollHeight={Platform.OS === "ios" ? 80 : 100}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }}
+      >
+        <RegisterIllustration source={illustration as ImageSourcePropType} />
+        <Stepper steps={["a", "b", "c"]} step={step as 0 | 1 | 2} />
 
-          <View className="flex-1 justify-center items-center px-5">
-            {step === 0 && (
-              <FirstStep
-                fullName={fullName}
-                setFullName={setFullName}
-                errors={errors}
-                setErrors={setErrors}
-              />
-            )}
-            {step === 1 && (
-              <SecondStep
-                email={email}
-                phone={phone}
-                setEmail={setEmail}
-                setPhone={setPhone}
-                errors={errors}
-                setErrors={setErrors}
-              />
-            )}
-            {step === 2 && (
-              <ThirdStep
-                password={password}
-                confirm={confirm}
-                setPassword={setPassword}
-                setConfirm={setConfirm}
-                errors={errors}
-                setErrors={setErrors}
-              />
-            )}
-          </View>
-        </KeyboardAwareScrollView>
-
-        {/* Footer fixe mais dans le flux normal */}
-        <View className="px-5 pb-6 bg-customwhite">
-          <RegisterStepper
-            step={step}
-            disableNext={errors !== undefined && errors !== null}
-            onPressBack={handlePressBack}
-            onPressNext={handlePressNext}
-            isFirstStep={step === 0}
-            isLastStep={step === 2}
-            canSubmit={canSubmit}
-            onLastStep={
-              onSubmit
-                ? onSubmit
-                : () => {
-                    console.log(fullName, email, password);
-                  }
-            }
-          />
+        <View className="flex-1 justify-center items-center px-5">
+          {step === 0 && (
+            <FirstStep
+              fullName={fullName}
+              setFullName={setFullName}
+              errors={errors}
+              setErrors={setErrors}
+            />
+          )}
+          {step === 1 && (
+            <SecondStep
+              email={email}
+              phone={phone}
+              setEmail={setEmail}
+              setPhone={setPhone}
+              errors={errors}
+              setErrors={setErrors}
+            />
+          )}
+          {step === 2 && (
+            <ThirdStep
+              password={password}
+              confirm={confirm}
+              setPassword={setPassword}
+              setConfirm={setConfirm}
+              errors={errors}
+              setErrors={setErrors}
+            />
+          )}
         </View>
+      </KeyboardAwareScrollView>
+
+      <View className="absolute bottom-0 left-0 right-0 px-5 pb-6 bg-customwhite">
+        <RegisterStepper
+          step={step}
+          disableNext={errors !== undefined && errors !== null}
+          onPressBack={handlePressBack}
+          onPressNext={handlePressNext}
+          isFirstStep={step === 0}
+          isLastStep={step === 2}
+          canSubmit={canSubmit}
+          onLastStep={
+            onSubmit
+              ? onSubmit
+              : () => {
+                  console.log(fullName, email, password);
+                }
+          }
+        />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

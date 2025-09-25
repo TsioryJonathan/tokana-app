@@ -22,7 +22,7 @@ const Register = () => {
       const res = await api.auth.postApiAuthRegister({
         email: email.trim(),
         phone: phone.trim() || undefined,
-        password,
+        password: password,
         name: fullName.trim(),
       });
       await setSession({
@@ -37,6 +37,8 @@ const Register = () => {
       if (res.user?.role === "admin") router.replace("/(admin)");
       else router.replace("/(client)/home");
     } catch (err: any) {
+      console.log(err);
+
       const msg: string =
         err?.body?.msg || err?.message || "Erreur d’inscription";
       const newErrs: Record<string, string> = {};

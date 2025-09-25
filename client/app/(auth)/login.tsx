@@ -35,7 +35,7 @@ const Login = () => {
         refreshToken: res.refreshToken,
         user: res.user,
       });
-      showToast("Inscription réussie", "success");
+      showToast("Connexion réussie", "success");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => {}
       );

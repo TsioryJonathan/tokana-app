@@ -406,7 +406,7 @@ export default function Profile() {
             confirm
             className="bg-slate-900 rounded-xl text-white"
             textClassName="font-quicksand-bold"
-            onLoggedOut={() => router.replace("/(auth)/auth")}
+            onLoggedOut={() => router.replace("/(auth)/login")}
           />
 
           <TouchableOpacity
