@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getApiClient } from '@/lib/api/client';
 import type { Order } from '@/lib/api/models/Order';
 import { useToast } from '@/components/ui/Toast';
+import { OTPRequest } from '@/lib/api/models/OTPRequest';
 
 export default function AdminOrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -56,6 +57,45 @@ export default function AdminOrderDetail() {
       showToast(e?.body?.msg || 'Assignation échouée', 'error');
     } finally {
       setAssignBusy(false);
+    }
+  };
+
+  // --- Admin OTP assistance (support) ---
+  const [otpReqBusy, setOtpReqBusy] = useState(false);
+  const [otpVerifyBusy, setOtpVerifyBusy] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+
+  const requestOtp = async (channel: OTPRequest['channel']) => {
+    if (!Number.isFinite(orderId)) return;
+    setOtpReqBusy(true);
+    try {
+      await api.deliveryOtp.postApiOrdersRequestOtp(orderId, { channel });
+      showToast(`OTP envoyé (${channel.toUpperCase()})`, 'success');
+    } catch (e: any) {
+      const msg: string = e?.body?.msg || e?.message || 'Demande OTP échouée';
+      showToast(msg, 'error');
+    } finally {
+      setOtpReqBusy(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!Number.isFinite(orderId)) return;
+    const code = otpCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      showToast('Code OTP invalide (6 chiffres)', 'error');
+      return;
+    }
+    setOtpVerifyBusy(true);
+    try {
+      await api.deliveryOtp.postApiOrdersVerifyOtp(orderId, { code });
+      showToast('OTP vérifié', 'success');
+      setOtpCode('');
+    } catch (e: any) {
+      const msg: string = e?.body?.msg || e?.message || 'Vérification OTP échouée';
+      showToast(msg, 'error');
+    } finally {
+      setOtpVerifyBusy(false);
     }
   };
 
@@ -133,6 +173,9 @@ export default function AdminOrderDetail() {
             {(o?.slotStart || o?.slotEnd) && (
               <Text className="text-slate-700">Créneau: {o?.slotStart || '—'} → {o?.slotEnd || '—'}</Text>
             )}
+            {typeof o?.otpVerified === 'boolean' ? (
+              <Text className="text-[12px] text-slate-500 mt-1">OTP: {o.otpVerified ? 'Vérifié' : 'Non vérifié'}</Text>
+            ) : null}
           </>
         ); })()}
       </View>
@@ -191,6 +234,34 @@ export default function AdminOrderDetail() {
               <Text className="text-slate-700 text-xs font-quicksand-bold">{s}</Text>
             </TouchableOpacity>
           ))}
+        </View>
+      </View>
+
+      <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-8">
+        <Text className="font-quicksand-bold text-slate-900 mb-2">Assistance OTP (Admin)</Text>
+        <Text className="text-slate-600 mb-2">Utilisez uniquement en support au livreur/destinataire.</Text>
+        <View className="flex-row flex-wrap gap-2">
+          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.SMS)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
+            <Text className="text-slate-700 text-xs font-quicksand-bold">Envoyer OTP (SMS)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.EMAIL)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
+            <Text className="text-slate-700 text-xs font-quicksand-bold">Envoyer OTP (Email)</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="mt-3">
+          <Text className="text-slate-700 mb-1">Vérifier un code</Text>
+          <TextInput
+            value={otpCode}
+            onChangeText={setOtpCode}
+            placeholder="ex: 123456"
+            keyboardType="number-pad"
+            className="border border-slate-300 rounded-lg px-3 py-2"
+          />
+          <View className="mt-2">
+            <TouchableOpacity disabled={otpVerifyBusy || !/^\d{6}$/.test(otpCode)} onPress={verifyOtp} className={`self-start px-3 py-2 rounded-full border ${otpVerifyBusy || !/^\d{6}$/.test(otpCode) ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
+              <Text className="text-slate-700 text-xs font-quicksand-bold">Vérifier OTP</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </ScrollView>
