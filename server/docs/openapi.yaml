@@ -112,6 +112,7 @@ components:
         status: { type: string }
         assignedTo: { type: integer, nullable: true }
         createdBy: { type: integer }
+        otpVerified: { type: boolean, description: "Whether the delivery OTP has been verified for this order" }
     OrderStatusHistory:
       type: object
       properties:
