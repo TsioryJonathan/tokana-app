@@ -5,10 +5,12 @@ import { useToast } from '@/components/ui/Toast';
 import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
 import type { Order } from '@/lib/api/models/Order';
 import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
+import { useRouter } from 'expo-router';
 
 export default function AdminOrdersPage() {
   const api = useMemo(getApiClient, []);
   const { showToast } = useToast();
+  const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,6 +135,14 @@ export default function AdminOrdersPage() {
         <Text className="text-slate-600 mt-1">{item.pickupAddress} → {item.dropoffAddress}</Text>
         <Text className="text-slate-600 mt-1">Poids: {item.weight}kg · Colis: {item.parcels}</Text>
         <Text className="text-slate-600 mt-1">Assigné à: {item.assignedTo ?? '—'}</Text>
+        <View className="mt-2">
+          <TouchableOpacity
+            className="self-start px-3 py-1.5 rounded-full bg-slate-100 border border-slate-300"
+            onPress={() => router.push({ pathname: '/(admin)/orders/[id]' as any, params: { id: String(item.id) } })}
+          >
+            <Text className="text-slate-700 text-xs font-quicksand-bold">Voir</Text>
+          </TouchableOpacity>
+        </View>
         <View className="mt-2 flex-row items-center gap-2">
           <TextInput
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2"
