@@ -13,6 +13,11 @@ export default function RootLayout() {
     QuicksandLight: require("../assets/fonts/QuicksandLight.ttf"),
     QuicksandMedium: require("../assets/fonts/QuicksandMedium.ttf"),
     QuicksandSemiBold: require("../assets/fonts/QuicksandSemiBold.ttf"),
+    ClashGrotesk: require("../assets/fonts/ClashGrotesk-Regular.otf"),
+    ClashGroteskBold: require("../assets/fonts/ClashGrotesk-Bold.otf"),
+    ClashGroteskLight: require("../assets/fonts/ClashGrotesk-Light.otf"),
+    ClashGroteskMedium: require("../assets/fonts/ClashGrotesk-Medium.otf"),
+    ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
 
   if (!fontsLoaded) {

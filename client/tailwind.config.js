@@ -17,6 +17,11 @@ module.exports = {
         "quicksand-medium": ["QuicksandMedium"],
         "quicksand-semibold": ["QuicksandSemiBold"],
         "quicksand-bold": ["QuicksandBold"],
+        clash: ["ClashGrotesk"],
+        "clash-bold": ["ClashGroteskBold"],
+        "clash-medium": ["ClashGroteskMedium"],
+        "clash-semibold": ["ClashGroteskSemibold"],
+        "clash-light": ["ClashGroteskLight"],
 
         sans: ["Quicksand"],
       },

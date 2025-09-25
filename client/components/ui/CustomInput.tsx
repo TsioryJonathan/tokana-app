@@ -28,7 +28,7 @@ const CustomInput = ({
 
   return (
     <View
-      className={`flex-row items-center border-2 border-green-800/60 w-full rounded-lg px-3 py-2 bg-white ${className}`}
+      className={`flex-row items-center w-full rounded-lg px-3 py-2 bg-white font-quicksand ${className}`}
     >
       {/* Icône principale (ex: User, Mail, Phone) */}
       {icon &&
@@ -40,7 +40,7 @@ const CustomInput = ({
 
       {/* Champ texte */}
       <TextInput
-        className="flex-1 text-lg text-gray-800"
+        className="flex-1 text-lg text-gray-800 font-quicksand"
         value={value}
         onChangeText={setValue}
         placeholder={placeholder}

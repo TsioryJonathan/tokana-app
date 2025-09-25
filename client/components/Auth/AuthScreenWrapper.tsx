@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 import React, { useMemo } from "react";
 import { RelativePathString } from "expo-router";
 import NavigateTo from "./NavigateTo";
@@ -28,8 +28,9 @@ const AuthScreenWrapper = ({
 
   return (
     <KeyboardAvoidingView
-      style={{ marginBottom: 30 }}
+      style={{ marginBottom: 40 }}
       className="flex-1 w-screen h-full flex-col justify-between"
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View className="flex-1 w-full">{children}</View>
       <NavigateTo {...navigateToProps} />

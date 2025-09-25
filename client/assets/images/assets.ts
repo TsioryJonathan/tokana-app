@@ -7,11 +7,14 @@ import signInMockup from "./signInMockup.png";
 import registerStepOne from "./firstStep-Photoroom.png";
 import registerStepTwo from "./secondStep-Photoroom.png";
 import registerStepThird from "./thirdStep-Photoroom.png";
+import welcome from "./welcome.png";
+
 export const assets = {
   logo,
   deliveryGuyMockup,
   deliveryGuy,
   tana,
+  welcome,
   registerMockup,
   signInMockup,
   registerStepOne,
