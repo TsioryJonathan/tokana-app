@@ -5,8 +5,7 @@ import { FetchHttpRequest } from "@/lib/api/core/FetchHttpRequest";
 import type { OpenAPIConfig } from "@/lib/api/core/OpenAPI";
 import type { ApiRequestOptions } from "@/lib/api/core/ApiRequestOptions";
 import type { CancelablePromise } from "@/lib/api/core/CancelablePromise";
-import { clearSession } from "@/lib/auth/session";
-import { getAccessToken } from "@/lib/auth/session";
+import { clearSession, getAccessToken } from "@/lib/auth/session";
 
 let cached: TokanaApiClient | null = null;
 let currentBase: string | null = null;
@@ -21,27 +20,38 @@ export function getApiClient(): TokanaApiClient {
   let base: string | undefined;
   if (__DEV__) {
     base = extra.API_BASE_DEV;
-    const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
+
+    const hostUri = (Constants as any)?.expoConfig?.hostUri as
+      | string
+      | undefined;
     const host = hostUri ? hostUri.split(":")[0] : undefined;
-    const nativeFallback = host ? `http://${host}:5000` : "http://localhost:5000";
+
+    const nativeFallback = host
+      ? `http://${host}:5000`
+      : "http://localhost:5000";
     if (!base) {
-      base = Platform.select({ web: "http://localhost:5000", default: nativeFallback }) as string;
-    } else if (Platform.OS !== 'web' && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
+      base = Platform.select({
+        web: "http://localhost:5000",
+        default: nativeFallback,
+      }) as string;
+    } else if (
+      Platform.OS !== "web" &&
+      /(^|\/)localhost(?=[:/]|$)/.test(base)
+    ) {
       base = nativeFallback;
     }
     // Debug log in development
-    // eslint-disable-next-line no-console
-    console.log('[TokanaApi] BASE (dev):', base, '| hostUri:', hostUri);
+
+    console.log("[TokanaApi] BASE (dev):", base, "| hostUri:", hostUri);
   } else {
     base = extra.API_BASE_PROD || "https://api.example.com";
   }
   currentBase = base!;
   // Custom HttpRequest to handle 401 globally
   class HttpRequestWith401 extends FetchHttpRequest {
-    constructor(config: OpenAPIConfig) {
-      super(config);
-    }
-    public override request<T>(options: ApiRequestOptions): CancelablePromise<T> {
+    public override request<T>(
+      options: ApiRequestOptions
+    ): CancelablePromise<T> {
       const p = super.request<T>(options) as unknown as Promise<T>;
       const handled = p.catch(async (err: unknown) => {
         const status = (err as any)?.status;
@@ -50,7 +60,6 @@ export function getApiClient(): TokanaApiClient {
             await clearSession();
             // Lazy import to avoid cyclic deps in non-Expo environments
             try {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
               const { router } = require("expo-router");
               router.replace("/(auth)/auth" as any);
             } catch {}

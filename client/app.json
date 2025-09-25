@@ -17,12 +17,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "resize",
+      "softwareKeyboardLayoutMode": "pan",
       "usesCleartextTraffic": true
     },
     "androidStatusBar": {
       "barStyle": "light-content",
-      "backgroundColor": "#00000000",
+      "backgroundColor": "#ffffff",
       "translucent": true,
       "hidden": false
     },
@@ -44,7 +44,7 @@
       ]
     ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.0.220:5000",
+      "API_BASE_DEV": "http://192.168.43.214:5000",
       "API_BASE_PROD": "https://api.example.com"
     },
     "experiments": {

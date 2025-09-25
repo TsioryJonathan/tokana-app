@@ -4,14 +4,14 @@ import { useRouter } from "expo-router";
 import { assets } from "@/assets/images/assets";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 import GhostButton from "@/components/ui/GhostButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
   // safe area handled by layout
 
   return (
-    <View className="flex-1 bg-customwhite">
-
+    <SafeAreaView className="flex-1 bg-customwhite">
       <View className="h-full flex flex-col justify-between items-center gap-5 px-10">
         <View className="w-full h-[40%] flex flex-1 items-center justify-center pt-24">
           <Image
@@ -36,10 +36,10 @@ export default function WelcomeScreen() {
             </Text>
           </View>
 
-          <View className="w-full flex flex-col items-center justify-around gap-5">
+          <View className="w-screen flex flex-col items-center justify-around gap-5 px-10">
             <PrimaryButton
               onPress={() => {
-                router.push("/(auth)/auth");
+                router.push("/login");
               }}
               textClassName="font-quicksand-bold"
             >
@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
             </PrimaryButton>
             <GhostButton
               onPress={() => {
-                router.push("/(auth)/auth?q=register");
+                router.push("/register");
               }}
               textClassName="font-quicksand-bold"
             >
@@ -56,6 +56,6 @@ export default function WelcomeScreen() {
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

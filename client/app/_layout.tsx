@@ -4,7 +4,7 @@ import { useFonts } from "expo-font";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "@/components/ui/Toast";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getAccessToken } from "@/lib/auth/session";
 
 export default function RootLayout() {
@@ -14,6 +14,11 @@ export default function RootLayout() {
     QuicksandLight: require("../assets/fonts/QuicksandLight.ttf"),
     QuicksandMedium: require("../assets/fonts/QuicksandMedium.ttf"),
     QuicksandSemiBold: require("../assets/fonts/QuicksandSemiBold.ttf"),
+    ClashGrotesk: require("../assets/fonts/ClashGrotesk-Regular.otf"),
+    ClashGroteskBold: require("../assets/fonts/ClashGrotesk-Bold.otf"),
+    ClashGroteskLight: require("../assets/fonts/ClashGrotesk-Light.otf"),
+    ClashGroteskMedium: require("../assets/fonts/ClashGrotesk-Medium.otf"),
+    ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
   const [authChecked, setAuthChecked] = useState(false);
   const segments = useSegments();
