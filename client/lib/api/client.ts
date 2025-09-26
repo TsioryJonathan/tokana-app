@@ -60,8 +60,9 @@ export function getApiClient(): TokanaApiClient {
             await clearSession();
             // Lazy import to avoid cyclic deps in non-Expo environments
             try {
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
               const { router } = require("expo-router");
-              router.replace("/(auth)/auth" as any);
+              router.replace("/" as any);
             } catch {}
           } catch {}
         }

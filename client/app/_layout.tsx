@@ -30,9 +30,8 @@ export default function RootLayout() {
     (async () => {
       try {
         const token = await getAccessToken();
-        const root = segments?.[0];
         if (!token) {
-          if (root !== "(auth)") router.replace("/(auth)/auth" as any);
+          router.replace("/" as any);
         }
       } finally {
         if (mounted) setAuthChecked(true);
