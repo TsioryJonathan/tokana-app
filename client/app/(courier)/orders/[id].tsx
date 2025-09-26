@@ -29,6 +29,9 @@ export default function CourierOrderDetail() {
   const [remarks, setRemarks] = useState<Array<{ id: number; text: string; createdAt: string; createdBy?: number | null }>>([]);
   const [loadingRemarks, setLoadingRemarks] = useState(false);
   const [newRemark, setNewRemark] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [isOutForDelivery, setIsOutForDelivery] = useState(false);
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -36,6 +39,8 @@ export default function CourierOrderDetail() {
     try {
       const data = await api.orders.getApiOrders1(Number(id));
       setOrder(mapBackendOrderToUI(data));
+      setIsOutForDelivery(String((data as any).status) === 'en_chemin_pour_livraison');
+      setOtpVerified(Boolean((data as any).otpVerified));
       const h = await api.orders.getApiOrdersHistory(Number(id));
       const mapped = (h || [])
         .map((it) => ({
@@ -170,8 +175,24 @@ export default function CourierOrderDetail() {
 
   const verifyOtp = async () => {
     if (!id) return;
-    // Pour MVP: vérif via écran OTP dédié (/(courier)/delivery) ou ajouter un prompt plus tard
-    router.push('/(courier)/delivery' as any);
+    const code = otpCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      showToast('Code OTP invalide (6 chiffres)', 'error');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.deliveryOtp.postApiOrdersVerifyOtp(Number(id), { code });
+      showToast('OTP vérifié, vous pouvez marquer expédié', 'success');
+      setOtpCode('');
+      setOtpVerified(true);
+      await reload();
+    } catch (err: any) {
+      const msg: string = err?.body?.msg || err?.message || 'Erreur OTP';
+      showToast(msg, 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading || !order) {
@@ -210,6 +231,7 @@ export default function CourierOrderDetail() {
           {typeof (order as any).cashToCollect === 'number' ? (
             <Text className="text-slate-600 text-sm">À encaisser: {(order as any).cashToCollect.toLocaleString()} Ar</Text>
           ) : null}
+          <Text className="mt-1 text-[12px] text-slate-500">OTP: {otpVerified ? 'Vérifié' : 'Non vérifié'}</Text>
         </View>
 
         <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
@@ -227,27 +249,41 @@ export default function CourierOrderDetail() {
                 <TouchableOpacity disabled={!canToOutForDelivery || submitting} onPress={() => updateStatus('en_chemin_pour_livraison')}>
                   <Text className={`${canToOutForDelivery && !submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>En chemin pour la livraison</Text>
                 </TouchableOpacity>
-                <TouchableOpacity disabled={!canToExpedie || submitting} onPress={() => updateStatus('expedie')}>
-                  <Text className={`${canToExpedie && !submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Expédié</Text>
+                <TouchableOpacity disabled={!canToExpedie || submitting || !otpVerified} onPress={() => updateStatus('expedie')}>
+                  <Text className={`${canToExpedie && !submitting && otpVerified ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Expédié</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View>
-              <Text className="text-slate-700 font-quicksand-semibold">OTP Livraison</Text>
-              <View className="mt-2 flex-row flex-wrap gap-8">
-                <TouchableOpacity disabled={submitting} onPress={() => requestOtp(OTPRequest.channel.SMS)}>
-                  <Text className={`${!submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Demander OTP (SMS)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity disabled={submitting} onPress={() => requestOtp(OTPRequest.channel.EMAIL)}>
-                  <Text className={`${!submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Demander OTP (Email)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity disabled={submitting} onPress={verifyOtp}>
-                  <Text className={`${!submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Vérifier OTP</Text>
-                </TouchableOpacity>
+            {isOutForDelivery && (
+              <View>
+                <Text className="text-slate-700 font-quicksand-semibold">OTP Livraison</Text>
+                <View className="mt-2 flex-row flex-wrap gap-8">
+                  <TouchableOpacity disabled={submitting} onPress={() => requestOtp(OTPRequest.channel.SMS)}>
+                    <Text className={`${!submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Demander OTP (SMS)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity disabled={submitting} onPress={() => requestOtp(OTPRequest.channel.EMAIL)}>
+                    <Text className={`${!submitting ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Demander OTP (Email)</Text>
+                  </TouchableOpacity>
+                </View>
+                <View className="mt-3">
+                  <Text className="text-slate-600 text-sm">Code OTP</Text>
+                  <TextInput
+                    value={otpCode}
+                    onChangeText={setOtpCode}
+                    placeholder="ex: 123456"
+                    keyboardType="number-pad"
+                    className="mt-1 border border-slate-200 rounded-xl px-3 py-2 text-[14px] text-slate-900"
+                  />
+                  <View className="mt-2 flex-row gap-8">
+                    <TouchableOpacity disabled={submitting || !/^\d{6}$/.test(otpCode)} onPress={verifyOtp}>
+                      <Text className={`${!submitting && /^\d{6}$/.test(otpCode) ? 'text-emerald-700' : 'text-slate-400'} font-quicksand-semibold`}>Vérifier OTP</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Text className="text-[12px] text-slate-500 mt-2">L’OTP est disponible au statut “En chemin pour la livraison”. {otpVerified ? 'OTP vérifié.' : 'Vérifiez l’OTP pour activer “Expédié”.'}</Text>
               </View>
-              <Text className="text-[12px] text-slate-500 mt-2">L’OTP est permis seulement au statut “En chemin pour la livraison”.</Text>
-            </View>
+            )}
           </View>
         </View>
 

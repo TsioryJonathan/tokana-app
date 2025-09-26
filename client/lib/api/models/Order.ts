@@ -19,6 +19,10 @@ export type Order = {
     status?: string;
     assignedTo?: number | null;
     createdBy?: number;
+    /**
+     * Whether the delivery OTP has been verified for this order
+     */
+    otpVerified?: boolean;
 };
 export namespace Order {
     export enum type {
