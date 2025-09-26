@@ -21,9 +21,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+
+
 dotenv.config();
 const app = express();
 
+app.set("trust proxy", 1);
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
@@ -94,7 +97,7 @@ if (process.env.NODE_ENV !== "production") {
 // Rate limit API (only in production)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
 });
