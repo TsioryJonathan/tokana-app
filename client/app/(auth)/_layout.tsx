@@ -9,7 +9,9 @@ export default function AuthLayout() {
     clash: require("../../assets/fonts/ClashGrotesk-Regular.otf"),
   });
 
-  if (!loaded) return null;
+  if (!loaded) {
+    return null;
+  }
   return (
     <Stack
       screenOptions={{

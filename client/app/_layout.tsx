@@ -20,6 +20,9 @@ export default function RootLayout() {
     ClashGroteskMedium: require("../assets/fonts/ClashGrotesk-Medium.otf"),
     ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
+
+  
+
   const [authChecked, setAuthChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
@@ -30,8 +33,10 @@ export default function RootLayout() {
     (async () => {
       try {
         const token = await getAccessToken();
-        if (!token) {
-          router.replace("/" as any);
+        const root = segments?.[0];
+
+        if (!token && root !== "(auth)") {
+          router.replace("/");
         }
       } finally {
         if (mounted) setAuthChecked(true);
@@ -42,7 +47,7 @@ export default function RootLayout() {
     };
   }, [segments, router]);
 
-  if (!fontsLoaded || !authChecked) {
+  if (!fontsLoaded) {
     return (
       <SafeAreaProvider>
         <ToastProvider>

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import * as Haptics from "expo-haptics";
 
 const Login = () => {
+
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
