@@ -95,7 +95,7 @@ export default function LoginPage({
           accessibilityRole="button"
         >
           <Text className="text-primary font-quicksand text-sm underline">
-            Forgot password?
+           Mot de passe oublié ?
           </Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>

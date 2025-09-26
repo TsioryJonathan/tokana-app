@@ -4,8 +4,9 @@ import { useFonts } from "expo-font";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "@/components/ui/Toast";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getAccessToken } from "@/lib/auth/session";
+import { getApiClient } from "@/lib/api/client";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -21,11 +22,31 @@ export default function RootLayout() {
     ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
 
-  
-
   const [authChecked, setAuthChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
+  const api = useMemo(getApiClient, []);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const token = await getAccessToken();
+
+        if (token) {
+          const me = await api.me.getApiMe();
+          if (me.role === "admin") router.replace("/(admin)");
+          else if (me.role === "livreur") router.replace("/(courier)");
+          else router.replace("/(client)/home");
+        } else {
+          router.replace("/");
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+    };
+
+    check();
+  }, []);
 
   // Minimal guard to avoid flashing protected content before we know auth state
   useEffect(() => {
@@ -39,7 +60,9 @@ export default function RootLayout() {
           router.replace("/");
         }
       } finally {
-        if (mounted) setAuthChecked(true);
+        if (mounted) {
+          setAuthChecked(true);
+        }
       }
     })();
     return () => {
@@ -47,7 +70,7 @@ export default function RootLayout() {
     };
   }, [segments, router]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !authChecked) {
     return (
       <SafeAreaProvider>
         <ToastProvider>

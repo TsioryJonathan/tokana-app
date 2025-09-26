@@ -17,10 +17,10 @@ export function getApiBase(): string | null {
 export function getApiClient(): TokanaApiClient {
   if (cached) return cached;
   const extra = (Constants as any)?.expoConfig?.extra || {};
+
   let base: string | undefined;
   if (__DEV__) {
     base = extra.API_BASE_DEV;
-
     const hostUri = (Constants as any)?.expoConfig?.hostUri as
       | string
       | undefined;
@@ -44,7 +44,7 @@ export function getApiClient(): TokanaApiClient {
 
     console.log("[TokanaApi] BASE (dev):", base, "| hostUri:", hostUri);
   } else {
-    base = extra.API_BASE_PROD || "https://api.example.com";
+    base = extra.API_BASE_PROD || "https://tokana-app.onrender.com";
   }
   currentBase = base!;
   // Custom HttpRequest to handle 401 globally
@@ -71,6 +71,7 @@ export function getApiClient(): TokanaApiClient {
       return handled as unknown as CancelablePromise<T>;
     }
   }
+
 
   cached = new TokanaApiClient(
     {

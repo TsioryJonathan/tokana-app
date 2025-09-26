@@ -30,14 +30,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/tokana.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -45,7 +45,7 @@
       ]
     ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.43.214:5000",
+      "API_BASE_DEV": "https://tokana-app.onrender.com",
       "API_BASE_PROD": "https://tokana-app.onrender.com",
       "router": {},
       "eas": {
