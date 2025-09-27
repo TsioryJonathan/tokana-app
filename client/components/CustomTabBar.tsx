@@ -4,11 +4,16 @@ import { View, TouchableOpacity, Text } from "react-native";
 import { HomeIcon, BoxIcon, PlusCircle, User2Icon } from "lucide-react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
+type CustomBottomTabBarProps = BottomTabBarProps & {
+  whereToSlice: number;
+};
+
 export default function CustomTabBar({
   state,
   descriptors,
   navigation,
-}: BottomTabBarProps) {
+  whereToSlice,
+}: CustomBottomTabBarProps) {
   return (
     <View
       style={{
@@ -25,13 +30,14 @@ export default function CustomTabBar({
         elevation: 5,
       }}
     >
-      {state.routes.slice(0,3).map((route, index) => {
+      {state.routes.slice(0, whereToSlice).map((route, index) => {
         const isFocused = state.index === index;
 
         let Icon = HomeIcon;
         if (route.name === "orders/index") Icon = BoxIcon;
         if (route.name === "orders/new") Icon = PlusCircle;
-        if (route.name === "profile") Icon = User2Icon;
+        if (route.name.includes("profile")) Icon = User2Icon;
+        if (route.name.includes("delivery")) Icon = BoxIcon;
 
         const onPress = () => {
           const event = navigation.emit({

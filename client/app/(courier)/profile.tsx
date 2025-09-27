@@ -12,7 +12,6 @@ import {
   Image,
 } from "react-native";
 import LogoutButton from "@/components/Auth/LogoutButton";
-// safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
@@ -231,92 +230,99 @@ export default function Profile() {
         </View>
 
         {/* Paiements */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-          <SectionHeader
-            icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
-            title="Paiements – Mobile Money"
-          />
-          <PaymentRow
-            icon={
-              <MaterialCommunityIcons
-                name="cellphone-nfc"
-                size={18}
-                color="#0F172A"
-              />
-            }
-            brand="MVola"
-            linked={linkedPayments.MVOLA}
-            onToggle={() => toggleLink("MVOLA")}
-          />
-          <View className="h-2" />
-          <PaymentRow
-            icon={
-              <MaterialCommunityIcons
-                name="cellphone-nfc"
-                size={18}
-                color="#0F172A"
-              />
-            }
-            brand="Airtel Money"
-            linked={linkedPayments.AIRTEL}
-            onToggle={() => toggleLink("AIRTEL")}
-          />
-          <View className="h-2" />
-          <PaymentRow
-            icon={
-              <MaterialCommunityIcons
-                name="cellphone-nfc"
-                size={18}
-                color="#0F172A"
-              />
-            }
-            brand="Orange Money"
-            linked={linkedPayments.ORANGE}
-            onToggle={() => toggleLink("ORANGE")}
-          />
-          <Text className="mt-2 text-[11px] text-slate-500">
-            Liez vos comptes Mobile Money pour des paiements et remboursements
-            rapides.
-          </Text>
-        </View>
+        {role === "client" ? (
+          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+            <SectionHeader
+              icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
+              title="Paiements – Mobile Money"
+            />
+            <PaymentRow
+              icon={
+                <MaterialCommunityIcons
+                  name="cellphone-nfc"
+                  size={18}
+                  color="#0F172A"
+                />
+              }
+              brand="MVola"
+              linked={linkedPayments.MVOLA}
+              onToggle={() => toggleLink("MVOLA")}
+            />
+            <View className="h-2" />
+            <PaymentRow
+              icon={
+                <MaterialCommunityIcons
+                  name="cellphone-nfc"
+                  size={18}
+                  color="#0F172A"
+                />
+              }
+              brand="Airtel Money"
+              linked={linkedPayments.AIRTEL}
+              onToggle={() => toggleLink("AIRTEL")}
+            />
+            <View className="h-2" />
+            <PaymentRow
+              icon={
+                <MaterialCommunityIcons
+                  name="cellphone-nfc"
+                  size={18}
+                  color="#0F172A"
+                />
+              }
+              brand="Orange Money"
+              linked={linkedPayments.ORANGE}
+              onToggle={() => toggleLink("ORANGE")}
+            />
+            <Text className="mt-2 text-[11px] text-slate-500">
+              Liez vos comptes Mobile Money pour des paiements et remboursements
+              rapides.
+            </Text>
+          </View>
+        ) : null}
 
         {/* Carnet d’adresses */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-          <SectionHeader
-            icon={
-              <Ionicons name="location-outline" size={16} color="#0F172A" />
-            }
-            title="Carnet d’adresses"
-          />
-          {addresses.map((a) => (
-            <View
-              key={a.id}
-              className="flex-row items-start justify-between px-3 py-3 rounded-xl border border-slate-200 mb-2"
-            >
-              <View className="flex-1">
-                <Text className="font-quicksand-semibold text-slate-900">
-                  {a.label}
-                </Text>
-                <Text className="text-[12px] text-slate-600 mt-1">
-                  {a.detail}
-                </Text>
+        {role === "client" && (
+          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+            <SectionHeader
+              icon={
+                <Ionicons name="location-outline" size={16} color="#0F172A" />
+              }
+              title="Carnet d’adresses"
+            />
+            {addresses.map((a) => (
+              <View
+                key={a.id}
+                className="flex-row items-start justify-between px-3 py-3 rounded-xl border border-slate-200 mb-2"
+              >
+                <View className="flex-1">
+                  <Text className="font-quicksand-semibold text-slate-900">
+                    {a.label}
+                  </Text>
+                  <Text className="text-[12px] text-slate-600 mt-1">
+                    {a.detail}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => removeAddress(a.id)}
+                  hitSlop={8}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => removeAddress(a.id)} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          <TouchableOpacity
-            onPress={addAddress}
-            activeOpacity={0.85}
-            className="mt-1 flex-row items-center self-start"
-          >
-            <Ionicons name="add-circle-outline" size={18} color="#059669" />
-            <Text className="ml-1 text-emerald-700 font-quicksand-semibold">
-              Ajouter une adresse
-            </Text>
-          </TouchableOpacity>
-        </View>
+            ))}
+            <TouchableOpacity
+              onPress={addAddress}
+              activeOpacity={0.85}
+              className="mt-1 flex-row items-center self-start"
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#059669" />
+              <Text className="ml-1 text-emerald-700 font-quicksand-semibold">
+                Ajouter une adresse
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Notifications & sécurité */}
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">

@@ -70,7 +70,7 @@ export default function RootLayout() {
     };
   }, [segments, router]);
 
-  if (!fontsLoaded || !authChecked) {
+  if (!fontsLoaded) {
     return (
       <SafeAreaProvider>
         <ToastProvider>

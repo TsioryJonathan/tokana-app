@@ -39,7 +39,7 @@ export default function ClientLayout() {
       />
       <CreateOrderButton />
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={(props) => <CustomTabBar {...props} whereToSlice={3} />}
         screenOptions={{
           headerShown: false,
         }}
