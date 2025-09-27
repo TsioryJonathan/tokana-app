@@ -34,8 +34,7 @@ export default function CourierTasks() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.orders.getApiOrders();
-      console.log(data);
+      const data = await api.orders.getApiOrders("me", undefined);
       setItems((data || []).map(mapBackendOrderToUI));
     } catch (e) {
       console.warn("[courier] list error", e);

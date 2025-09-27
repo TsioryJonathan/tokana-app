@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/Toast";
 import * as Haptics from "expo-haptics";
 
 const Login = () => {
-
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -24,7 +23,7 @@ const Login = () => {
   );
 
   const api = useMemo(getApiClient, []);
-  
+
   const onSubmit = async () => {
     try {
       setLoading(true);
@@ -42,6 +41,7 @@ const Login = () => {
         () => {}
       );
       if (res.user?.role === "admin") router.replace("/(admin)");
+      if (res.user?.role === "livreur") router.replace("/(courier)");
       else router.replace("/(client)/home");
     } catch (err: any) {
       const msg: string =

@@ -52,7 +52,7 @@ export default function Profile() {
   const [linkedPayments, setLinkedPayments] = useState<
     Record<MobileMoney, boolean>
   >({
-    MVOLA: true,
+    MVOLA: false,
     AIRTEL: false,
     ORANGE: false,
   });
@@ -234,7 +234,7 @@ export default function Profile() {
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
           <SectionHeader
             icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
-            title="Paiements – Mobile Money"
+            title="Paiements – Mobile Money (En cours de developpement)"
           />
           <PaymentRow
             icon={
@@ -509,6 +509,7 @@ function PaymentRow({
         className={`px-3 py-1.5 rounded-full ${
           linked ? "bg-emerald-50" : "bg-slate-100"
         }`}
+        disabled
       >
         <Text
           className={`text-[12px] font-quicksand-semibold ${
