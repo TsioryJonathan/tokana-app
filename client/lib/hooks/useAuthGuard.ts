@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
-import { getAccessToken } from '@/lib/auth/session';
-import { getApiClient } from '@/lib/api/client';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { getAccessToken } from "@/lib/auth/session";
+import { getApiClient } from "@/lib/api/client";
 
 export type UseAuthGuardOptions = {
   requireAuth?: boolean; // default true
-  allowedRoles?: Array<'client' | 'livreur' | 'admin'>; // optional
+  allowedRoles?: ("client" | "livreur" | "admin")[]; // optional
 };
 
-export function useAuthGuard(options: UseAuthGuardOptions = { requireAuth: true }) {
+export function useAuthGuard(
+  options: UseAuthGuardOptions = { requireAuth: true }
+) {
   const { requireAuth = true, allowedRoles } = options;
   const router = useRouter();
   const api = useMemo(getApiClient, []);
@@ -22,7 +24,7 @@ export function useAuthGuard(options: UseAuthGuardOptions = { requireAuth: true 
         const token = await getAccessToken();
         if (requireAuth && !token) {
           if (!mounted) return;
-          router.replace('/(auth)/auth' as any);
+          router.replace("/(auth)/login" as any);
           return;
         }
         if (token && Array.isArray(allowedRoles) && allowedRoles.length > 0) {
@@ -31,12 +33,12 @@ export function useAuthGuard(options: UseAuthGuardOptions = { requireAuth: true 
             if (!mounted) return;
             setMe(profile);
             if (!allowedRoles.includes(profile.role as any)) {
-              router.replace('/' as any);
+              router.replace("/" as any);
               return;
             }
           } catch {
             if (!mounted) return;
-            router.replace('/' as any);
+            router.replace("/" as any);
             return;
           }
         }
@@ -47,7 +49,12 @@ export function useAuthGuard(options: UseAuthGuardOptions = { requireAuth: true 
     return () => {
       mounted = false;
     };
-  }, [api, router, requireAuth, Array.isArray(allowedRoles) ? allowedRoles.join('|') : '']);
+  }, [
+    api,
+    router,
+    requireAuth,
+    Array.isArray(allowedRoles) ? allowedRoles.join("|") : "",
+  ]);
 
   return { checking, me } as const;
 }

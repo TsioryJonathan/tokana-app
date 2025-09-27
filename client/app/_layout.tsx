@@ -35,8 +35,11 @@ export default function RootLayout() {
         if (token) {
           const me = await api.me.getApiMe();
           if (me.role === "admin") router.replace("/(admin)");
-          else if (me.role === "livreur") router.replace("/(courier)");
-          else router.replace("/(client)/home");
+          else if (me.role === "livreur") {
+            router.replace("/(courier)");
+          } else if (me.role === "client") {
+            router.replace("/(client)/home");
+          }
         } else {
           router.replace("/");
         }

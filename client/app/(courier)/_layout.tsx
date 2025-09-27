@@ -17,8 +17,6 @@ export default function CourierLayout() {
     allowedRoles: ["livreur", "admin"],
   });
 
-  console.log("Courrir");
-
   if (checking) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={["top", "bottom"]}>

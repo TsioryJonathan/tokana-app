@@ -1,7 +1,15 @@
 // components/CustomTabBar.tsx
 import React from "react";
 import { View, TouchableOpacity, Text } from "react-native";
-import { HomeIcon, BoxIcon, PlusCircle, User2Icon } from "lucide-react-native";
+import {
+  HomeIcon,
+  BoxIcon,
+  PlusCircle,
+  User2Icon,
+  LocateFixed,
+  UserCog2Icon,
+  Bike,
+} from "lucide-react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 type CustomBottomTabBarProps = BottomTabBarProps & {
@@ -34,10 +42,12 @@ export default function CustomTabBar({
         const isFocused = state.index === index;
 
         let Icon = HomeIcon;
-        if (route.name === "orders/index") Icon = BoxIcon;
+        if (route.name.includes("orders")) Icon = BoxIcon;
         if (route.name === "orders/new") Icon = PlusCircle;
         if (route.name.includes("profile")) Icon = User2Icon;
         if (route.name.includes("delivery")) Icon = BoxIcon;
+        if (route.name.includes("zones")) Icon = LocateFixed;
+        if (route.name.includes("users")) Icon = Bike;
 
         const onPress = () => {
           const event = navigation.emit({
