@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo, useState } from "react";
 import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
 import LoginPage from "@/components/Auth/LoginPage";
@@ -40,9 +41,15 @@ const Login = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => {}
       );
-      if (res.user?.role === "admin") router.replace("/(admin)");
-      if (res.user?.role === "livreur") router.replace("/(courier)");
-      else router.replace("/(client)/home");
+      if (res.user?.role === "admin") {
+        router.replace("/(admin)");
+      } else if (res.user?.role === "livreur") {
+        router.replace("/(courier)");
+      } else if (res.user?.role === "client") {
+        router.replace("/(client)/home");
+      } else {
+        router.replace("/");
+      }
     } catch (err: any) {
       const msg: string =
         err?.body?.msg || err?.message || "Erreur de connexion";

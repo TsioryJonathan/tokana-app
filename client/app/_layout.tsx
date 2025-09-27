@@ -22,7 +22,7 @@ export default function RootLayout() {
     ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const [, setAuthChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
   const api = useMemo(getApiClient, []);
@@ -49,6 +49,7 @@ export default function RootLayout() {
     };
 
     check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Minimal guard to avoid flashing protected content before we know auth state

@@ -1,20 +1,12 @@
 import React from "react";
-import { Link, Stack, Tabs, usePathname, type Href } from "expo-router";
-import {
-  View,
-  Text,
-  Platform,
-  StatusBar,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { Tabs } from "expo-router";
+import { Text, Platform, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 import CustomTabBar from "@/components/CustomTabBar";
 
 export default function AdminLayout() {
-  const pathname = usePathname();
-  const { checking, me } = useAuthGuard({
+  const { checking } = useAuthGuard({
     requireAuth: true,
     allowedRoles: ["admin"],
   });
