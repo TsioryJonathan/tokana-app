@@ -135,6 +135,8 @@ app.get("/api/me", protect, async (req, res, next) => {
       role: user.role,
       name: user.name,
       phone: user.phone,
+      phoneVerifiedAt: user.phoneVerifiedAt,
+      emailVerifiedAt: user.emailVerifiedAt,
     });
   } catch (err) {
     next(err);
