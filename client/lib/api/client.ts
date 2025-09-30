@@ -55,6 +55,7 @@ export function getApiClient(): TokanaApiClient {
       const p = super.request<T>(options) as unknown as Promise<T>;
       const handled = p.catch(async (err: unknown) => {
         const status = (err as any)?.status;
+        const body = (err as any)?.body;
         if (status === 401) {
           try {
             await clearSession();
@@ -65,6 +66,16 @@ export function getApiClient(): TokanaApiClient {
               router.replace("/" as any);
             } catch {}
           } catch {}
+        } else if (status === 403) {
+          // If backend requires verified phone, redirect user to verification flow
+          const msg: string | undefined = typeof body?.msg === 'string' ? body.msg : undefined;
+          if (msg && /téléphone non vérifié/i.test(msg)) {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              const { router } = require("expo-router");
+              router.push("/(auth)/verify" as any);
+            } catch {}
+          }
         }
         throw err;
       });

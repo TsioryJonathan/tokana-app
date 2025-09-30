@@ -6,12 +6,13 @@ import { getApiClient } from "@/lib/api/client";
 export type UseAuthGuardOptions = {
   requireAuth?: boolean; // default true
   allowedRoles?: ("client" | "livreur" | "admin")[]; // optional
+  requireVerifiedPhone?: boolean; // when true, redirect unverified users to /(auth)/verify
 };
 
 export function useAuthGuard(
   options: UseAuthGuardOptions = { requireAuth: true }
 ) {
-  const { requireAuth = true, allowedRoles } = options;
+  const { requireAuth = true, allowedRoles, requireVerifiedPhone = false } = options;
   const router = useRouter();
   const api = useMemo(getApiClient, []);
   const [checking, setChecking] = useState(true);
@@ -27,13 +28,17 @@ export function useAuthGuard(
           router.replace("/(auth)/login" as any);
           return;
         }
-        if (token && Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+        if (token && (Array.isArray(allowedRoles) && allowedRoles.length > 0 || requireVerifiedPhone)) {
           try {
             const profile = await api.me.getApiMe();
             if (!mounted) return;
             setMe(profile);
-            if (!allowedRoles.includes(profile.role as any)) {
+            if (Array.isArray(allowedRoles) && allowedRoles.length > 0 && !allowedRoles.includes(profile.role as any)) {
               router.replace("/" as any);
+              return;
+            }
+            if (requireVerifiedPhone && profile.role === 'client' && !profile.phoneVerifiedAt) {
+              router.replace("/(auth)/verify" as any);
               return;
             }
           } catch {

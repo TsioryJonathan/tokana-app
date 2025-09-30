@@ -3,7 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type Order = {
-    [x: string]: any;
     id?: number;
     type?: Order.type;
     zoneLevel?: Order.zoneLevel;

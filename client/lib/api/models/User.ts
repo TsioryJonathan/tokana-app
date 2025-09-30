@@ -5,7 +5,12 @@
 export type User = {
     id?: number;
     email?: string | null;
+    /**
+     * Stored normalized E.164 format for Madagascar: +261(3x|20)xxxxxxx
+     */
     phone?: string | null;
+    phoneVerifiedAt?: string | null;
+    emailVerifiedAt?: string | null;
     name?: string | null;
     role?: User.role;
 };
