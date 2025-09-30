@@ -56,11 +56,14 @@ export default function RegisterPage({
   }, [step]);
 
   const canSubmit = useMemo(() => {
+    const emailTrim = email.trim();
+    const phoneTrim = phone.trim();
+    const emailValid = emailTrim.length >= 3 && emailTrim.includes("@");
+    const phoneValid = /^(\+261|0)(3[0-9]|20)\d{7}$/.test(phoneTrim);
+    const hasAtLeastOneContact = emailValid || phoneValid;
     return (
       fullName.trim().length >= 3 &&
-      email.trim().length >= 3 &&
-      (phone.trim().length === 0 ||
-        /^(\+261|0)(3[0-9]|20)\d{7}$/.test(phone.trim())) &&
+      hasAtLeastOneContact &&
       password.length >= 6 &&
       password === confirm
     );

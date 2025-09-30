@@ -23,39 +23,33 @@ const SecondStep = ({
   setErrors,
 }: SecondStepProps) => {
   const toast = useToast();
-  const validateEmail = (email: string) => {
-    if (!email || email.trim().length < 3 || !email.includes("@")) {
-      setErrors({ 1: "Email Invalide" });
-      toast.showToast("L'email est invalide", "error");
-    }
-  };
 
-  const validatePhone = (phone: string) => {
-    /* Madagascar Phone number */
+  useEffect(() => {
+    const emailTrim = email?.trim() ?? "";
+    const phoneTrim = phone?.trim() ?? "";
+    const emailValid = emailTrim.length === 0 || (emailTrim.length >= 3 && emailTrim.includes("@"));
     const phoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
-    if (!phone || !phoneRegex.test(phone)) {
-      setErrors({ 2: "Numéro de téléphone invalide" });
-      toast.showToast("Le numéro de téléphone est invalide", "error");
-    }
-  };
-  useEffect(() => {
-    if (email && email.trim().length >= 3) {
-      setErrors(null);
-    } else if (!email && email.trim().length === 0) {
-      setErrors({ 1: "Le nom complet doit contenir au moins 3 caractères." });
-    }
-  }, [email, setErrors]);
+    const phoneValid = phoneTrim.length === 0 || phoneRegex.test(phoneTrim);
 
-  useEffect(() => {
-    if (phone) {
-      const phoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
-      if (phoneRegex.test(phone)) {
-        setErrors(null);
-      }
-    } else if (!phone && phone.trim().length === 0) {
-      setErrors({ 2: "Le numéro de téléphone est requis." });
+    const hasAtLeastOne = emailTrim.length > 0 || phoneTrim.length > 0;
+    const nextErrors: Record<number, string> = {};
+
+    if (!hasAtLeastOne) {
+      nextErrors[1] = "Saisissez au moins un email ou un numéro.";
     }
-  }, [phone, setErrors]);
+    if (emailTrim.length > 0 && !emailValid) {
+      nextErrors[1] = "Email invalide";
+    }
+    if (phoneTrim.length > 0 && !phoneValid) {
+      nextErrors[2] = "Numéro de téléphone invalide";
+    }
+
+    if (Object.keys(nextErrors).length === 0) {
+      setErrors(null);
+    } else {
+      setErrors(nextErrors);
+    }
+  }, [email, phone, setErrors]);
   return (
     <View className="w-full flex-1 mt-10 flex flex-col justify-start gap-3 ">
       <Text
@@ -72,9 +66,6 @@ const SecondStep = ({
           setValue={setEmail}
           placeholder="Votre email"
           keyboardType="email-address"
-          onBlur={() => {
-            validateEmail(email);
-          }}
         />
 
         <CustomInput
@@ -83,9 +74,6 @@ const SecondStep = ({
           setValue={setPhone}
           placeholder="Votre numéro"
           keyboardType="phone-pad"
-          onBlur={() => {
-            validatePhone(phone);
-          }}
         />
       </View>
     </View>
