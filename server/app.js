@@ -137,6 +137,8 @@ app.get("/api/me", protect, async (req, res, next) => {
       phone: user.phone,
       phoneVerifiedAt: user.phoneVerifiedAt,
       emailVerifiedAt: user.emailVerifiedAt,
+      accountOtpExpiresAt: user.accountOtpExpiresAt,
+      accountOtpChannel: user.accountOtpChannel,
     });
   } catch (err) {
     next(err);

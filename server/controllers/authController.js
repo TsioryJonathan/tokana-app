@@ -113,12 +113,12 @@ export const register = async (req, res, next) => {
         await sendSms(phone, msg);
         user.accountOtpChannel = "sms";
         const maskPhone = (p) => p ? p.replace(/(\+?\d{2,3})(\d+)(\d{2})$/, (_, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`) : null;
-        otpInfo = { channel: 'sms', to: maskPhone(phone) };
+        otpInfo = { channel: 'sms', to: maskPhone(phone), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
       } else if (email) {
         await sendEmail(email, "Votre code Tokana", msg);
         user.accountOtpChannel = "email";
         const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
-        otpInfo = { channel: 'email', to: maskEmail(email) };
+        otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
       }
       await user.save();
     } catch (e) {
