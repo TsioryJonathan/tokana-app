@@ -33,7 +33,18 @@ components:
       properties:
         id: { type: integer }
         email: { type: string, nullable: true }
-        phone: { type: string, nullable: true }
+        phone:
+          type: string
+          nullable: true
+          description: "Stored normalized E.164 format for Madagascar: +261(3x|20)xxxxxxx"
+        phoneVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        emailVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
         name: { type: string, nullable: true }
         role: { type: string, enum: [client, livreur, admin] }
     ZonePublicResponse:
@@ -185,7 +196,9 @@ paths:
               type: object
               properties:
                 email: { type: string }
-                phone: { type: string }
+                phone:
+                  type: string
+                  description: "Accepts local 0(3x|20)xxxxxxx or +261..., stored as +261..."
                 password: { type: string }
                 name: { type: string, nullable: true }
               anyOf:
@@ -202,17 +215,27 @@ paths:
                   user: { $ref: '#/components/schemas/User' }
                   token: { type: string }
                   refreshToken: { type: string }
+                  otp:
+                    type: object
+                    nullable: true
+                    description: "Present when an OTP has been auto-sent after registration"
+                    properties:
+                      channel: { type: string, enum: [sms, email] }
+                      to: { type: string, nullable: true, description: "Masked destination" }
               examples:
                 sample:
                   value:
                     user:
                       id: 12
                       email: "client@example.com"
-                      phone: null
+                      phone: "+261341234567"
                       name: "Client Test"
                       role: "client"
                     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                     refreshToken: "1|df4a9b7e..."
+                    otp:
+                      channel: "sms"
+                      to: "+26134******67"
         '409':
           description: Conflict (email or phone already registered)
           content:
@@ -343,6 +366,90 @@ paths:
                 noToken:
                   value:
                     msg: "Unauthorized"
+
+  /api/auth/request-otp:
+    post:
+      summary: Request account OTP (phone/email verification)
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg: { type: string }
+                  to: { type: string, nullable: true }
+                  channel: { type: string, enum: [sms, email] }
+        '400':
+          description: Bad Request (missing destination or invalid phone/email)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Too Many Requests (cooldown window in effect)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+          headers:
+            Retry-After:
+              description: Seconds until a new request is allowed
+              schema: { type: string }
+
+  /api/auth/verify-otp:
+    post:
+      summary: Verify account OTP (mark phone/email as verified)
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerify'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg: { type: string }
+                  phoneVerifiedAt: { type: string, format: date-time, nullable: true }
+                  emailVerifiedAt: { type: string, format: date-time, nullable: true }
+        '400':
+          description: Bad Request (invalid or expired OTP / none active)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Too Many Requests (temporary lockout due to failed attempts)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+          headers:
+            Retry-After:
+              description: Seconds until verification is allowed again
+              schema: { type: string }
 
   # Me
   /api/me:
