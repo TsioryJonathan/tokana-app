@@ -9,9 +9,11 @@ type CustomInputProps = {
   setValue: React.Dispatch<React.SetStateAction<string>>;
   placeholder: string;
   secureTextEntry?: boolean;
-  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
+  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad" | "number-pad";
   onBlur?: () => void;
   className?: string;
+  maxLength?: number;
+  inputRef?: React.RefObject<TextInput | null>;
 };
 
 const CustomInput = ({
@@ -23,6 +25,8 @@ const CustomInput = ({
   keyboardType = "default",
   className,
   secureTextEntry = false,
+  maxLength,
+  inputRef,
 }: CustomInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -46,12 +50,14 @@ const CustomInput = ({
         placeholder={placeholder}
         placeholderTextColor="#9ca3af"
         keyboardType={keyboardType}
+        maxLength={maxLength}
         underlineColorAndroid="transparent"
         accessibilityLabel={placeholder}
         onBlur={onBlur}
         secureTextEntry={secureTextEntry && !showPassword} // toggle entre caché / visible
         autoCapitalize="none"
         autoCorrect={false}
+        ref={inputRef as any}
       />
 
       {/* Icône toggle password */}
