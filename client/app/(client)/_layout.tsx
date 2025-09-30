@@ -13,7 +13,7 @@ import CreateOrderButton from "@/components/CreateOrderButton";
 
 export default function ClientLayout() {
   const insets = useSafeAreaInsets();
-  const { checking } = useAuthGuard({ requireAuth: true });
+  const { checking } = useAuthGuard({ requireAuth: true, requireVerifiedPhone: true });
 
   if (checking) {
     return (

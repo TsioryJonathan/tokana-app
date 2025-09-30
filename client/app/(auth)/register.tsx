@@ -19,11 +19,14 @@ const Register = () => {
 
   const onSubmit = async () => {
     try {
+      const emailTrim = email.trim();
+      const phoneTrim = phone.trim();
+      const nameTrim = fullName.trim();
       const res = await api.auth.postApiAuthRegister({
-        email: email.trim(),
-        phone: phone.trim() || undefined,
+        email: emailTrim || undefined,
+        phone: phoneTrim || undefined,
         password: password,
-        name: fullName.trim(),
+        name: nameTrim,
       });
       await setSession({
         token: res.token,
@@ -34,8 +37,12 @@ const Register = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => {}
       );
-      if (res.user?.role === "admin") router.replace("/(admin)");
-      else router.replace("/(client)/home");
+      if (res.user?.role === "admin") {
+        router.replace("/(admin)");
+      } else {
+        // Guide the user to verification flow right after signup
+        router.replace("/(auth)/verify" as any);
+      }
     } catch (err: any) {
 
       const msg: string =

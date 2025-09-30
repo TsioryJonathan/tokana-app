@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 
 const Login = () => {
   const router = useRouter();
-  const [email, setEmail] = useState<string>("");
+  const [identifier, setIdentifier] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
@@ -19,8 +19,8 @@ const Login = () => {
   const { showToast } = useToast();
 
   const canSubmit = useMemo(
-    () => email.length > 0 && password.length >= 6 && !loading,
-    [email, password, loading]
+    () => identifier.length > 0 && password.length >= 6 && !loading,
+    [identifier, password, loading]
   );
 
   const api = useMemo(getApiClient, []);
@@ -28,10 +28,12 @@ const Login = () => {
   const onSubmit = async () => {
     try {
       setLoading(true);
-      const res = await api.auth.postApiAuthLogin({
-        email: email.trim(),
-        password: password.trim(),
-      });
+      const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+      const id = identifier.trim();
+      const payload = mgPhone.test(id)
+        ? { phone: id, password: password.trim() }
+        : { email: id, password: password.trim() };
+      const res = await api.auth.postApiAuthLogin(payload as any);
       await setSession({
         token: res.token,
         refreshToken: res.refreshToken,
@@ -67,8 +69,9 @@ const Login = () => {
     <AuthScreenWrapper currentScreen="login">
       <LoginPage
         canSubmit={canSubmit}
-        email={email}
-        setEmail={setEmail}
+        // Re-use the same input for email or phone
+        email={identifier}
+        setEmail={setIdentifier}
         password={password}
         setPassword={setPassword}
         loading={loading}
