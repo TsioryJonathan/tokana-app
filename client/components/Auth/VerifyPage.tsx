@@ -148,7 +148,7 @@ export default function VerifyPage({
           </Text>
         )}
         <TouchableOpacity
-          disabled={!canSubmit || showExpiryWarning}
+          // disabled={!canSubmit || showExpiryWarning}
           onPress={onPressVerify}
           className={`w-full py-4 rounded-lg items-center mt-4 ${canSubmit && !showExpiryWarning ? "bg-primary" : "bg-gray-300"}`}
         >

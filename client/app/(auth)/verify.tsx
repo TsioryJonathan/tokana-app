@@ -1,11 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useState as useStateAlias,
+} from "react";
 import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
 import { useToast } from "@/components/ui/Toast";
 import { getApiClient } from "@/lib/api/client";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import VerifyPage from "@/components/Auth/VerifyPage";
-import { useRef, useState as useStateAlias } from "react";
+
 import { TextInput } from "react-native";
 
 export default function Verify() {
@@ -19,7 +25,7 @@ export default function Verify() {
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [smsCooldown, setSmsCooldown] = useState(0);
   const [emailCooldown, setEmailCooldown] = useState(0);
-  const [lastChannel, setLastChannel] = useState<'sms' | 'email' | null>(null);
+  const [lastChannel, setLastChannel] = useState<"sms" | "email" | null>(null);
   const [maskedTo, setMaskedTo] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [expiresInSec, setExpiresInSec] = useState(0);
@@ -34,8 +40,13 @@ export default function Verify() {
     [code, loadingVerify, expiresInSec]
   );
 
-  const maskPhone = (p: string) => p.replace(/(\+?\d{2,3})(\d+)(\d{2})$/, (_m, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`);
-  const maskEmail = (e: string) => e.replace(/(^.).*(@.*$)/, (_m, a, b) => `${a}***${b}`);
+  const maskPhone = (p: string) =>
+    p.replace(
+      /(\+?\d{2,3})(\d+)(\d{2})$/,
+      (_m, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`
+    );
+  const maskEmail = (e: string) =>
+    e.replace(/(^.).*(@.*$)/, (_m, a, b) => `${a}***${b}`);
 
   useEffect(() => {
     let active = true;
@@ -50,12 +61,15 @@ export default function Verify() {
         setCanSendEmail(!!hasEmail);
 
         // Initialize last channel and masked destination if server has info
-        const serverChannel = (me as any)?.accountOtpChannel as 'sms' | 'email' | undefined;
-        if (serverChannel === 'sms' && hasPhone) {
-          setLastChannel('sms');
+        const serverChannel = (me as any)?.accountOtpChannel as
+          | "sms"
+          | "email"
+          | undefined;
+        if (serverChannel === "sms" && hasPhone) {
+          setLastChannel("sms");
           setMaskedTo(maskPhone(String(me.phone)));
-        } else if (serverChannel === 'email' && hasEmail) {
-          setLastChannel('email');
+        } else if (serverChannel === "email" && hasEmail) {
+          setLastChannel("email");
           setMaskedTo(maskEmail(String(me.email)));
         } else if (hasPhone) {
           setMaskedTo(maskPhone(String(me.phone)));
@@ -75,13 +89,18 @@ export default function Verify() {
         }
       } catch {}
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [api]);
 
   useEffect(() => {
     if (!expiresAt) return;
     const tick = () => {
-      const diff = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+      const diff = Math.max(
+        0,
+        Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
+      );
       setExpiresInSec(diff);
     };
     tick();
@@ -95,7 +114,9 @@ export default function Verify() {
       setCode("");
       if (!expiredNotified) {
         showToast("OTP expiré, renvoyez un code.", "error");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+          () => {}
+        );
         setExpiredNotified(true);
       }
     } else if (expiresInSec > 0 && expiredNotified) {
@@ -114,7 +135,7 @@ export default function Verify() {
 
   const requestOtp = async (channel: "sms" | "email") => {
     try {
-      channel === "sms" ? setLoadingSms(true) : setLoadingEmail(true);
+      // channel === "sms" ? setLoadingSms(true) : setLoadingEmail(true);
       const res = await api.auth.postApiAuthRequestOtp({ channel } as any);
       const dest = (res as any)?.to || "";
       setLastChannel(channel);
@@ -127,17 +148,24 @@ export default function Verify() {
       // Bring attention to timer and field
       setScrollToTopSignal((v) => v + 1);
       requestAnimationFrame(() => codeInputRef.current?.focus());
-      showToast(`OTP envoyé via ${channel.toUpperCase()} ${dest ? `à ${dest}` : ""}`.trim(), "success");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      showToast(
+        `OTP envoyé via ${channel.toUpperCase()} ${dest ? `à ${dest}` : ""}`.trim(),
+        "success"
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {}
+      );
     } catch (err: any) {
       const msg: string = err?.body?.msg || err?.message || "Échec d'envoi OTP";
       const retry = Number(err?.body?.retryAfter || 0);
       if (err?.status === 429 && retry > 0) {
-        if (channel === 'sms') setSmsCooldown(retry);
+        if (channel === "sms") setSmsCooldown(retry);
         else setEmailCooldown(retry);
       }
       showToast(msg, "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => {}
+      );
     } finally {
       setLoadingSms(false);
       setLoadingEmail(false);
@@ -148,13 +176,17 @@ export default function Verify() {
     try {
       if (expiresInSec === 0) {
         showToast("CODE expiré, renvoyez un code.", "error");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+          () => {}
+        );
         return;
       }
       setLoadingVerify(true);
       await api.auth.postApiAuthVerifyOtp({ code } as any);
       showToast("Compte vérifié", "success");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {}
+      );
       // Fetch role to route appropriately
       let role: string | undefined;
       try {
@@ -167,7 +199,9 @@ export default function Verify() {
     } catch (err: any) {
       const msg: string = err?.body?.msg || err?.message || "OTP invalide";
       showToast(msg, "error");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => {}
+      );
     } finally {
       setLoadingVerify(false);
     }
@@ -182,9 +216,9 @@ export default function Verify() {
         loadingVerify={loadingVerify}
         onPressVerify={onVerify}
         loadingSms={loadingSms}
-        onPressSendSms={() => requestOtp('sms')}
+        onPressSendSms={() => requestOtp("sms")}
         loadingEmail={loadingEmail}
-        onPressSendEmail={() => requestOtp('email')}
+        onPressSendEmail={() => requestOtp("email")}
         smsCooldown={smsCooldown}
         emailCooldown={emailCooldown}
         lastChannel={lastChannel}

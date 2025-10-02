@@ -26,8 +26,8 @@ const ThirdStep = ({
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
   useEffect(() => {
-    const passwdRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+
     const strengthPassword = (pwd: string) => {
       if (pwd && !passwdRegex.test(pwd)) {
         setStrengthError(

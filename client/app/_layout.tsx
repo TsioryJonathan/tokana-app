@@ -1,12 +1,12 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import "./globals.css";
 import { useFonts } from "expo-font";
-import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAccessToken } from "@/lib/auth/session";
 import { getApiClient } from "@/lib/api/client";
+import CustomSplashScreen from "@/components/CustomSplashScreen";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -22,6 +22,7 @@ export default function RootLayout() {
     ClashGroteskSemibold: require("../assets/fonts/ClashGrotesk-Semibold.otf"),
   });
 
+  const [showSplash, setShowSplash] = useState(true);
   const [, setAuthChecked] = useState(false);
   const segments = useSegments();
   const router = useRouter();
@@ -52,7 +53,6 @@ export default function RootLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Minimal guard to avoid flashing protected content before we know auth state
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -74,13 +74,18 @@ export default function RootLayout() {
     };
   }, [segments, router]);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  if (!fontsLoaded || showSplash) {
     return (
       <SafeAreaProvider>
         <ToastProvider>
-          <View className="flex-1 items-center justify-center bg-customwhite">
-            <ActivityIndicator size="large" />
-          </View>
+          <CustomSplashScreen />
         </ToastProvider>
       </SafeAreaProvider>
     );
