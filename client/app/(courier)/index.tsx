@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
+import { useToast } from "@/components/ui/Toast";
 import {
   mapBackendOrderToUI,
   statusBadge,
@@ -27,18 +29,33 @@ function formatAr(n: number) {
 export default function CourierTasks() {
   const api = useMemo(getApiClient, []);
   const router = useRouter();
+  const isFocused = useIsFocused();
+  const { showToast } = useToast();
   const [items, setItems] = useState<UIOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdated) return null;
+    try {
+      return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      // Fallback simple HH:MM
+      const h = lastUpdated.getHours().toString().padStart(2, '0');
+      const m = lastUpdated.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+  }, [lastUpdated]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.orders.getApiOrders("me", undefined);
       setItems((data || []).map(mapBackendOrderToUI));
+      setLastUpdated(new Date());
     } catch (e) {
       console.warn("[courier] list error", e);
-      setItems([]);
+      showToast("Erreur de chargement", "error");
     } finally {
       setLoading(false);
     }
@@ -48,8 +65,17 @@ export default function CourierTasks() {
     load();
   }, [load]);
 
-  // Auto-refresh every 2 minutes
-  useAutoRefresh(load, 2 * 60 * 1000, true);
+  // Trigger an immediate refresh when the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      // no cleanup required
+      return () => {};
+    }, [load])
+  );
+
+  // Auto-refresh every 2 minutes, only when screen is focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -63,9 +89,11 @@ export default function CourierTasks() {
         <Text className="text-lg font-quicksand-bold text-slate-900">
           Mes courses
         </Text>
-        <Text className="text-[12px] text-slate-500">
-          Commandes qui me sont assignées {loading ? "· Chargement…" : ""}
-        </Text>
+        <View className="flex-row items-center">
+          <Text className="text-[12px] text-slate-500">
+            Commandes qui me sont assignées {loading ? "· Chargement…" : ""}
+          </Text>
+        </View>
       </View>
       {loading && items.length === 0 ? (
         <View className="flex-1 items-center justify-center">
@@ -77,6 +105,15 @@ export default function CourierTasks() {
           data={items}
           keyExtractor={(it) => it.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+          ListHeaderComponent={
+            lastUpdatedText ? (
+              <View className="items-end mb-2">
+                <Text className="text-[11px] text-slate-400">
+                  Dernière mise à jour: {lastUpdatedText}
+                </Text>
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
