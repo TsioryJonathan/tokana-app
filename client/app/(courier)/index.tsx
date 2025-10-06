@@ -34,12 +34,25 @@ export default function CourierTasks() {
   const [items, setItems] = useState<UIOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdated) return null;
+    try {
+      return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      // Fallback simple HH:MM
+      const h = lastUpdated.getHours().toString().padStart(2, '0');
+      const m = lastUpdated.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+  }, [lastUpdated]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.orders.getApiOrders("me", undefined);
       setItems((data || []).map(mapBackendOrderToUI));
+      setLastUpdated(new Date());
     } catch (e) {
       console.warn("[courier] list error", e);
       showToast("Erreur de chargement", "error");
@@ -76,9 +89,11 @@ export default function CourierTasks() {
         <Text className="text-lg font-quicksand-bold text-slate-900">
           Mes courses
         </Text>
-        <Text className="text-[12px] text-slate-500">
-          Commandes qui me sont assignées {loading ? "· Chargement…" : ""}
-        </Text>
+        <View className="flex-row items-center">
+          <Text className="text-[12px] text-slate-500">
+            Commandes qui me sont assignées {loading ? "· Chargement…" : ""}
+          </Text>
+        </View>
       </View>
       {loading && items.length === 0 ? (
         <View className="flex-1 items-center justify-center">
@@ -90,6 +105,15 @@ export default function CourierTasks() {
           data={items}
           keyExtractor={(it) => it.id}
           contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+          ListHeaderComponent={
+            lastUpdatedText ? (
+              <View className="items-end mb-2">
+                <Text className="text-[11px] text-slate-400">
+                  Dernière mise à jour: {lastUpdatedText}
+                </Text>
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
