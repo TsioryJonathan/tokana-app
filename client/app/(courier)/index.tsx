@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
@@ -27,6 +28,7 @@ function formatAr(n: number) {
 export default function CourierTasks() {
   const api = useMemo(getApiClient, []);
   const router = useRouter();
+  const isFocused = useIsFocused();
   const [items, setItems] = useState<UIOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,8 +50,17 @@ export default function CourierTasks() {
     load();
   }, [load]);
 
-  // Auto-refresh every 2 minutes
-  useAutoRefresh(load, 2 * 60 * 1000, true);
+  // Trigger an immediate refresh when the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      // no cleanup required
+      return () => {};
+    }, [load])
+  );
+
+  // Auto-refresh every 2 minutes, only when screen is focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
