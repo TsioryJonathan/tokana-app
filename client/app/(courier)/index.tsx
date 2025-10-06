@@ -12,6 +12,7 @@ import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
+import { useToast } from "@/components/ui/Toast";
 import {
   mapBackendOrderToUI,
   statusBadge,
@@ -29,6 +30,7 @@ export default function CourierTasks() {
   const api = useMemo(getApiClient, []);
   const router = useRouter();
   const isFocused = useIsFocused();
+  const { showToast } = useToast();
   const [items, setItems] = useState<UIOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,7 +42,7 @@ export default function CourierTasks() {
       setItems((data || []).map(mapBackendOrderToUI));
     } catch (e) {
       console.warn("[courier] list error", e);
-      setItems([]);
+      showToast("Erreur de chargement", "error");
     } finally {
       setLoading(false);
     }
