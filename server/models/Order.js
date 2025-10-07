@@ -18,6 +18,14 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  dropoffLat: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  dropoffLng: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
   pickupName: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -141,6 +149,7 @@ const Order = sequelize.define('Order', {
     { fields: ['status'] },
     { fields: ['createdBy'] },
     { fields: ['assignedTo'] },
+    { fields: ['dropoffLat', 'dropoffLng'] },
   ],
 });
 
