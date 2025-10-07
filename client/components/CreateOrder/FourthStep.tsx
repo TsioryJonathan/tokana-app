@@ -9,9 +9,11 @@ import { ServiceState } from "@/types/createorder.type";
 const FourthStep = ({
   service,
   setService,
+  lockDistance,
 }: {
   service: ServiceState;
   setService: Dispatch<SetStateAction<ServiceState>>;
+  lockDistance?: boolean;
 }) => {
   return (
     <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
@@ -33,24 +35,27 @@ const FourthStep = ({
         />
       </View>
 
-      <Text className="mb-1 text-[12px] text-slate-600">Distance estimée</Text>
-      <View className="flex-row">
+      <Text className="mb-1 text-[12px] text-slate-600">Distance estimée {lockDistance ? '(verrouillée par localité)' : ''}</Text>
+      <View className={`flex-row ${lockDistance ? 'opacity-60' : ''}`}>
         <Chip
           label="< 5 km"
           active={service.distanceKmBracket === "<5"}
-          onPress={() => setService({ ...service, distanceKmBracket: "<5" })}
+          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "<5" }); }}
         />
         <Chip
           label="5 – 10 km"
           active={service.distanceKmBracket === "5-10"}
-          onPress={() => setService({ ...service, distanceKmBracket: "5-10" })}
+          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "5-10" }); }}
         />
         <Chip
           label="10 – 20 km"
           active={service.distanceKmBracket === "10-20"}
-          onPress={() => setService({ ...service, distanceKmBracket: "10-20" })}
+          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "10-20" }); }}
         />
       </View>
+      {lockDistance ? (
+        <Text className="mt-1 text-[11px] text-slate-500">Zone fixée automatiquement par la localité de livraison.</Text>
+      ) : null}
 
       <View className="h-2" />
       <ToggleRow

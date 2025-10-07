@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
-import PrimaryButton from "./ui/PrimaryButton";
+import PrimaryButton from "../ui/PrimaryButton";
 
 type LoginFormProps = {
   email: string;

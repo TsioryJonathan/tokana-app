@@ -1,17 +1,28 @@
 import React from "react";
-import { Platform, StatusBar } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
+
+import { useFonts } from "expo-font";
 
 export default function AuthLayout() {
+  const [loaded] = useFonts({
+    quicksand: require("../../assets/fonts/QuicksandRegular.ttf"),
+    clash: require("../../assets/fonts/ClashGrotesk-Regular.otf"),
+  });
+
+  if (!loaded) {
+    return null;
+  }
   return (
-    <SafeAreaView className="flex-1 bg-black" edges={["top","bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent={Platform.OS === 'android'}
-        backgroundColor="transparent"
-      />
-      <Slot />
-    </SafeAreaView>
+    <Stack
+      screenOptions={{
+        headerTransparent: true,
+        headerShadowVisible: false,
+        headerBackVisible: true,
+      }}
+    >
+      <Stack.Screen name="login" options={{ title: "" }} />
+      <Stack.Screen name="register" options={{ title: "" }} />
+      <Stack.Screen name="verify" options={{ title: "" }} />
+    </Stack>
   );
 }

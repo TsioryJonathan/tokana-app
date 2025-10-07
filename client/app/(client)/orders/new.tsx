@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -23,12 +23,10 @@ import {
   SenderState,
   ServiceState,
 } from "@/types/createorder.type";
-import {
-  basePrice,
-  computeSurcharges,
-  formatAr,
-  toNumberSafe,
-} from "@/utils/price.helper";
+import { formatAr, toNumberSafe } from "@/utils/price.helper";
+import type { LocalityItem } from "@/lib/hooks/useLocalities";
+import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
+import OrderReviewModal from "@/components/CreateOrder/OrderReviewModal";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -98,25 +96,101 @@ export default function NewOrderWizard() {
   const [service, setService] = useState<ServiceState>(INITIAL_SERVICE);
   const [payment, setPayment] = useState<PaymentState>(INITIAL_PAYMENT);
   const [submitting, setSubmitting] = useState(false);
-  const price = useMemo(
-    () =>
-      basePrice(service.distanceKmBracket, service.service) +
-      computeSurcharges(parcel, service),
-    [parcel, service]
-  );
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [serverQuote, setServerQuote] = useState<{
+    total?: number;
+    pickup?: number;
+    delivery?: number;
+    express?: number;
+    manual?: boolean;
+    instructions?: string | null;
+    contactPhone?: string | null;
+  } | null>(null);
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  // Local estimation removed to avoid confusion; we rely solely on server quote
   // API client
   const api = useMemo(getApiClient, []);
+
+  // Locality selection
+  const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
+  const [selectedDropoffLocality, setSelectedDropoffLocality] = useState<LocalityItem | null>(null);
+  useEffect(() => {
+    if (!selectedDropoffLocality) return;
+    const z = selectedDropoffLocality.zoneLevel;
+    const bracket = z === 'ville' ? '<5' : z === 'peripherie' ? '5-10' : '10-20';
+    setService((s) => ({ ...s, distanceKmBracket: bracket }));
+  }, [selectedDropoffLocality]);
 
   const toZoneLevel = (bracket: ServiceState["distanceKmBracket"]): "ville" | "peripherie" | "super-peripherie" => {
     if (bracket === "<5") return "ville";
     if (bracket === "5-10") return "peripherie";
     return "super-peripherie";
   };
+
+  // Fetch real-time server quote when inputs change (zone/type/weight/parcels)
+  React.useEffect(() => {
+    const zoneLevel = toZoneLevel(service.distanceKmBracket);
+    const type = service.service === "EXPRESS" ? "express" : "standard";
+    const parcelsCount = Math.max(1, toNumberSafe(parcel.parcelsCount || "1"));
+    const weight = toNumberSafe(parcel.weightKg);
+    if (!weight || weight <= 0) {
+      setServerQuote(null);
+      setQuoteError(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setQuoteLoading(true);
+      setQuoteError(null);
+      try {
+        const zoneEnum =
+          zoneLevel === "ville"
+            ? PricingQuoteRequest.zoneLevel.VILLE
+            : zoneLevel === "peripherie"
+            ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+            : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+        const typeEnum =
+          type === "express"
+            ? PricingQuoteRequest.type.EXPRESS
+            : PricingQuoteRequest.type.STANDARD;
+        const quote = await api.pricing.postApiPricingQuote({
+          zoneLevel: zoneEnum,
+          type: typeEnum,
+          weight,
+          parcels: parcelsCount,
+        });
+        if (cancelled) return;
+        setServerQuote({
+          total: quote?.priceTotal ?? undefined,
+          pickup: quote?.fees?.pickupFee ?? undefined,
+          delivery: quote?.fees?.deliveryFee ?? undefined,
+          express: quote?.fees?.expressSurcharge ?? undefined,
+          manual: !!quote?.requiresManualHandling,
+          instructions: quote?.instructions ?? null,
+          contactPhone: (quote as any)?.contactPhone ?? null,
+        });
+      } catch (e: any) {
+        if (cancelled) return;
+        setServerQuote(null);
+        setQuoteError(e?.body?.msg || e?.message || "Devis indisponible");
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, service.distanceKmBracket, service.service, parcel.weightKg, parcel.parcelsCount]);
   const validateCurrent = (): string[] => {
     const errs: string[] = [];
     if (step === 0) {
       if (toNumberSafe(parcel.weightKg) <= 0)
         errs.push("Poids du colis invalide");
+      const n = toNumberSafe(parcel.parcelsCount || "1");
+      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
+        errs.push("Nombre de colis doit être un entier ≥ 1");
     }
     if (step === 1) {
       if (!sender.name.trim()) errs.push("Nom expéditeur requis");
@@ -130,6 +204,10 @@ export default function NewOrderWizard() {
         errs.push("Téléphone destinataire invalide");
       if (!recipient.address.trim()) errs.push("Adresse destinataire requise");
     }
+    if (step === 3) {
+      // Service: exiger la localité de livraison pour éviter toute ambiguïté de zone
+      if (!selectedDropoffLocality) errs.push("Sélectionnez la localité de livraison");
+    }
     // Étape paiement: non bloquante (en implémentation)
     return errs;
   };
@@ -141,7 +219,7 @@ export default function NewOrderWizard() {
       return;
     }
     if (step < steps.length - 1) setStep((s) => (s + 1) as Step);
-    else submit();
+    else setShowReview(true);
   };
   const goPrev = () => {
     if (step > 0) setStep((s) => (s - 1) as Step);
@@ -152,6 +230,19 @@ export default function NewOrderWizard() {
     const errs = validateCurrent();
     if (errs.length) {
       showToast(errs.join("\n"), "error");
+      return;
+    }
+    // Require a valid server quote before proceeding to avoid confusion
+    if (quoteLoading) {
+      showToast("Calcul du devis en cours…", "info");
+      return;
+    }
+    if (!serverQuote || serverQuote.total == null) {
+      showToast("Devis indisponible. Vérifie le poids, la zone et réessaie.", "error");
+      return;
+    }
+    if (serverQuote.manual) {
+      showToast(serverQuote.instructions || "Traitement manuel requis. Contactez le support.", "info");
       return;
     }
     try {
@@ -169,6 +260,11 @@ export default function NewOrderWizard() {
           if (avail && avail.allowed === false) {
             showToast(avail.reason || "Express indisponible", "error");
             return;
+          }
+          if (avail && typeof (avail as any).eta?.minMinutes === "number" && typeof (avail as any).eta?.maxMinutes === "number") {
+            setExpressEta({ min: (avail as any).eta.minMinutes, max: (avail as any).eta.maxMinutes });
+          } else {
+            setExpressEta({ min: 60, max: 120 });
           }
         } catch (e) {
           console.warn("express availability failed", e);
@@ -231,13 +327,26 @@ export default function NewOrderWizard() {
         type,
         zoneLevel,
         pickupAddress: sender.address.trim(),
+        pickupName: sender.name.trim() || undefined,
+        pickupPhone: sender.phone.trim() || undefined,
         dropoffAddress: recipient.address.trim(),
+        dropoffName: recipient.name.trim() || undefined,
+        category: parcel.category,
+        fragile: !!parcel.fragile,
+        bulky: !!parcel.bulky,
         weight: toNumberSafe(parcel.weightKg),
         parcels: parcelsCount,
+        cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
+        notes: (payment.notes || '').trim() || undefined,
+        recipientPhone: recipient.phone?.trim() || undefined,
         recipientEmail: recipient.email?.trim() || undefined,
+        needReturn: !!service.needReturn,
         slotStart,
         slotEnd,
-      });
+        // Optional fields for future server-side zone derivation
+        ...(selectedPickupLocality ? { pickupLocalityId: selectedPickupLocality.id } : {}),
+        ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
+      } as any);
       resetForm();
       showToast("Commande créée", "success");
       // Navigate to tracking with created id for MVP
@@ -278,32 +387,120 @@ export default function NewOrderWizard() {
         {step === 0 && <FirstStep parcel={parcel} setParcel={setParcel} />}
 
         {step === 1 && <SecondStep sender={sender} setSender={setSender} />}
+        {step === 1 && (
+          <LocalitySelector
+            selected={selectedPickupLocality}
+            onSelect={(loc) => setSelectedPickupLocality(loc)}
+            onReset={() => setSelectedPickupLocality(null)}
+            label="Localité de collecte (optionnel)"
+          />
+        )}
 
         {step === 2 && (
           <ThirdStep recipient={recipient} setRecipient={setRecipient} />
         )}
 
-        {step === 3 && <FourthStep service={service} setService={setService} />}
+        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!selectedDropoffLocality} />}
+        {step === 3 && (
+          <LocalitySelector
+            selected={selectedDropoffLocality}
+            onSelect={(loc) => setSelectedDropoffLocality(loc)}
+            onReset={() => setSelectedDropoffLocality(null)}
+            label="Localité de livraison"
+          />
+        )}
+        {/* Service hints based on selection */}
+        {step === 3 && (
+          <View className="mt-2 flex-row items-center">
+            {service.service === "EXPRESS" ? (
+              <View className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+                <Text className="text-[11px] text-emerald-700">⚡ Express: 06:00–15:00 (jour même, selon dispo)</Text>
+              </View>
+            ) : (
+              <View className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
+                <Text className="text-[11px] text-slate-700">
+                  {(() => {
+                    const z = toZoneLevel(service.distanceKmBracket);
+                    if (z === "ville") return "Standard (demain): 10:00–17:00";
+                    if (z === "peripherie") return "Standard (demain): 12:00–17:00";
+                    return "Standard (demain): 14:00–17:00";
+                  })()}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ETA Express (affiché si service Express et dispo) */}
+        {service.service === "EXPRESS" && expressEta && (
+          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <Text className="text-[12px] text-emerald-700">
+              Livraison estimée {expressEta.min}–{expressEta.max} minutes
+            </Text>
+          </View>
+        )}
+
+        {/* ETA Express (affiché si service Express et dispo) */}
+        {service.service === "EXPRESS" && expressEta && (
+          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <Text className="text-[12px] text-emerald-700">
+              Livraison estimée {expressEta.min}–{expressEta.max} minutes
+            </Text>
+          </View>
+        )}
 
         {step === 4 && <FifthStep payment={payment} setPayment={setPayment} />}
 
-        {/* Footer: prix + actions */}
-        <View className="mt-4 flex-row items-center justify-between">
+        {/* Footer: devis serveur + actions (responsive vertical) */}
+        <View className="mt-4">
+          {/* Devis serveur */}
           <View>
-            <Text className="text-[12px] text-slate-500">Estimation</Text>
-            <Text className="text-xl font-quicksand-bold text-slate-900">
-              {formatAr(price)}
-            </Text>
+            <Text className="text-[12px] text-slate-500">Devis</Text>
+            {quoteLoading ? (
+              <View>
+                <View className="mt-1 h-5 w-40 bg-slate-200 rounded" />
+                <View className="mt-1 h-3 w-64 bg-slate-100 rounded" />
+              </View>
+            ) : serverQuote?.manual ? (
+              <Text className="text-[12px] text-amber-700">
+                {serverQuote.instructions || "Traitement manuel requis. Contactez le support."}
+              </Text>
+            ) : serverQuote?.total != null ? (
+              <Text className="text-xl font-quicksand-bold text-emerald-700">{formatAr(serverQuote.total)}</Text>
+            ) : quoteError ? (
+              <Text className="text-[12px] text-rose-700">{quoteError}</Text>
+            ) : (
+              <Text className="text-[12px] text-slate-500">Indique le poids et la localité/zone pour obtenir le devis</Text>
+            )}
+            {serverQuote && !serverQuote.manual && (
+              <Text className="mt-0.5 text-[11px] text-slate-500">
+                {`Pickup: ${serverQuote.pickup ? formatAr(serverQuote.pickup) : '—'} · Livraison: ${serverQuote.delivery ? formatAr(serverQuote.delivery) : '—'} · Express: ${serverQuote.express ? formatAr(serverQuote.express) : '—'}`}
+              </Text>
+            )}
           </View>
 
-          <View className="flex-row">
+          {/* Manual handling prominent banner */}
+          {serverQuote?.manual && (
+            <View className="mt-3 p-3 rounded-xl border border-amber-300 bg-amber-50">
+              <Text className="text-[12px] text-amber-800 font-quicksand-semibold">Traitement manuel requis</Text>
+              {serverQuote.instructions ? (
+                <Text className="mt-1 text-[12px] text-amber-800">{serverQuote.instructions}</Text>
+              ) : null}
+              {serverQuote.contactPhone ? (
+                <Text className="mt-1 text-[12px] text-amber-800">Contact: {serverQuote.contactPhone}</Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* Actions */}
+          <View className="mt-3">
             {step > 0 && (
               <TouchableOpacity
                 onPress={goPrev}
                 activeOpacity={0.9}
-                className="mr-2 px-4 py-3 rounded-xl bg-slate-200"
+                className="w-full px-4 py-3 rounded-xl bg-slate-200 mb-2"
               >
-                <Text className="font-quicksand-bold text-slate-800">
+                <Text className="text-center font-quicksand-bold text-slate-800">
                   Précédent
                 </Text>
               </TouchableOpacity>
@@ -311,11 +508,11 @@ export default function NewOrderWizard() {
             <TouchableOpacity
               onPress={goNext}
               activeOpacity={0.9}
-              disabled={submitting}
-              className={`px-5 py-3 rounded-xl ${submitting ? "bg-emerald-300" : "bg-emerald-600"}`}
+              disabled={submitting || quoteLoading || !serverQuote || serverQuote?.manual}
+              className={`w-full px-5 py-3 rounded-xl ${submitting || quoteLoading || !serverQuote || serverQuote?.manual ? "bg-emerald-300" : "bg-emerald-600"}`}
             >
-              <View className="flex-row items-center">
-                <Text className="text-white font-quicksand-bold">
+              <View className="flex-row items-center justify-center">
+                <Text className="text-white font-quicksand-bold mr-1">
                   {step < steps.length - 1 ? "Suivant" : submitting ? "Envoi…" : "Confirmer"}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -324,6 +521,24 @@ export default function NewOrderWizard() {
           </View>
         </View>
       </ScrollView>
+      {/* Review modal */}
+      <OrderReviewModal
+        visible={showReview}
+        onClose={() => setShowReview(false)}
+        onConfirm={() => {
+          setShowReview(false);
+          submit();
+        }}
+        sender={sender}
+        recipient={recipient}
+        parcel={parcel}
+        service={service}
+        payment={payment}
+        pickupLocality={selectedPickupLocality}
+        dropoffLocality={selectedDropoffLocality}
+        zoneLevel={toZoneLevel(service.distanceKmBracket)}
+        priceTotal={serverQuote?.total ?? null}
+      />
     </View>
   );
 }

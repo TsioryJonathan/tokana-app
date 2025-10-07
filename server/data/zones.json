@@ -1,0 +1,106 @@
+{
+  "ville": {
+    "label": "TANA-VILLE",
+    "axes": {
+      "nord": [
+        "Analamahitsy",
+        "Androhibe"
+      ],
+      "est": [
+        "Mahazo",
+        "Mandroseza Pont",
+        "Saropody Pont",
+        "Ankorondrano"
+      ],
+      "sud": [
+        "Tanjombato Pont",
+        "Anosy"
+      ],
+      "ouest": [
+        "Ampasika",
+        "Marche art malagasy digue"
+      ],
+      "nord_ouest": [
+        "Andranomena",
+        "Soavimasondro"
+      ]
+    }
+  },
+  "peripherie": {
+    "label": "PERIPHERIE",
+    "axes": {
+      "nord": [
+        "Ankadikely Ilafy",
+        "Masindrano Ambatobe",
+        "Ambohidratrimo"
+      ],
+      "est": [
+        "Ambohimahitsy",
+        "By-pass"
+      ],
+      "sud": [
+        "Tanjombato Forello",
+        "Iavoloha rond-point"
+      ],
+      "sud_ouest": [
+        "Anosizato",
+        "Ampatipataka Pont"
+      ],
+      "ouest": [
+        "Itaosy Cite",
+        "Itaosy Hopital",
+        "Ivato Aeroport"
+      ],
+      "nord_ouest": [
+        "Talatamaty Tsena",
+        "Ivato Aeroport"
+      ]
+    }
+  },
+  "super-peripherie": {
+    "label": "SUPER-PERIPHERIE",
+    "axes": {
+      "nord": [
+        "Anosy Avaratra",
+        "Antananarivo",
+        "Belanitra Ilafy",
+        "Namehana",
+        "Ambohitreminagna",
+        "Lazaina",
+        "Antsampandrano",
+        "Ambohibe Ilafy"
+      ],
+      "est": [
+        "Ambohimangakely Jovena double",
+        "Alasora",
+        "Ambohimanambola",
+        "Dorodosy"
+      ],
+      "sud": [
+        "Soavina",
+        "Bevalala",
+        "Ambohijanaka",
+        "Amboanjobe"
+      ],
+      "sud_ouest": [
+        "Alakamisy Espace Somarano",
+        "Ambohimangidy",
+        "Ambohimiadana",
+        "Ambodiafontsy",
+        "Malaza"
+      ],
+      "ouest": [
+        "Ambohidradrereto CEG",
+        "Andohatantjona",
+        "Ambohimandroso",
+        "Ambohitrimanjaka Ambany",
+        "Imerintsiatosika"
+      ],
+      "nord_ouest": [
+        "Bureau commune Ambohidratimro",
+        "Anjomakely",
+        "Ambatolampy Tsihamahfotsy3"
+      ]
+    }
+  }
+}

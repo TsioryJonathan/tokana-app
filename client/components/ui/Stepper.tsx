@@ -1,38 +1,104 @@
+import React, { useMemo } from "react";
 import { Text, View } from "react-native";
-export const steps = [
-  "Colis",
-  "Expéditeur",
-  "Destinataire",
-  "Service",
-  "Paiement",
-] as const;
-export type Step = 0 | 1 | 2 | 3 | 4;
-function Stepper({ step }: { step: Step }) {
+
+export type Step = number;
+
+type StepperProps = {
+  step: Step; // index courant (0-based)
+  steps: string[]; // libellés
+  showLabels?: boolean;
+  size?: number; // diamètre des pastilles
+  thickness?: number; // épaisseur des connecteurs
+  activeColor?: string;
+  inactiveColor?: string;
+};
+
+function Stepper({
+  step,
+  steps,
+  showLabels = false,
+  size = 28,
+  thickness = 2,
+  activeColor = "#059669", // emerald-600
+  inactiveColor = "#E5E7EB", // slate-200
+}: StepperProps) {
+  const clampedStep = useMemo(
+    () => Math.max(0, Math.min(step, Math.max(steps.length - 1, 0))),
+    [step, steps.length]
+  );
+
   return (
-    <View className="flex-row items-center justify-center px-5 py-3 bg-white border-b border-slate-200">
-      {steps.map((label, i) => {
-        const active = i <= step;
-        return (
-          <View key={label} className="flex-row items-center">
-            <View
-              className={`w-7 h-7 rounded-full items-center justify-center ${
-                active ? "bg-emerald-600" : "bg-slate-200"
-              }`}
-            >
-              <Text
-                className={`text-[12px] ${active ? "text-white" : "text-slate-600"} font-quicksand-bold`}
-              >
-                {i + 1}
-              </Text>
-            </View>
-            {i < steps.length - 1 && (
+    <View className="w-full">
+      <View className="flex-row items-center px-5 py-3 border-b border-slate-200">
+        {steps.map((label, i) => {
+          const isActive = i <= clampedStep;
+          const connectorActive = i < clampedStep;
+
+          return (
+            <React.Fragment key={`step-node-${i}`}>
+              {/* Pastille (taille fixe) */}
               <View
-                className={`w-8 h-[2px] mx-1 ${i < step ? "bg-emerald-600" : "bg-slate-200"}`}
-              />
-            )}
-          </View>
-        );
-      })}
+                style={{
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  backgroundColor: isActive ? activeColor : inactiveColor,
+                }}
+                className="items-center justify-center"
+                accessibilityRole="summary"
+                accessibilityLabel={`Étape ${i + 1} ${isActive ? "complétée" : "en attente"}`}
+              >
+                <Text
+                  className="font-quicksand-bold"
+                  style={{
+                    fontSize: 12,
+                    color: isActive ? "#ffffff" : "#475569", // slate-600
+                  }}
+                >
+                  {i + 1}
+                </Text>
+              </View>
+
+              {/* Connecteur (flex-1) entre pastilles, pas après la dernière */}
+              {i < steps.length - 1 && (
+                <View
+                  className="mx-1"
+                  style={{
+                    flex: 1,
+                    height: thickness,
+                    backgroundColor: connectorActive
+                      ? activeColor
+                      : inactiveColor,
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      {/* Libellés optionnels alignés sous chaque pastille */}
+      {showLabels && (
+        <View className="flex-row items-start px-5 mt-2">
+          {steps.map((label, i) => {
+            const isActive = i <= clampedStep;
+            return (
+              <React.Fragment key={`step-label-${i}`}>
+                <View style={{ width: size }} className="items-center">
+                  <Text
+                    numberOfLines={1}
+                    className={`${isActive ? "text-emerald-700" : "text-slate-500"} text-xs`}
+                    style={{ textAlign: "center" }}
+                  >
+                    {label}
+                  </Text>
+                </View>
+                {i < steps.length - 1 && <View style={{ flex: 1 }} />}
+              </React.Fragment>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }

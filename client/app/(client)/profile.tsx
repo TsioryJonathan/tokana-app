@@ -11,7 +11,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/Auth/LogoutButton";
 // safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -52,7 +52,7 @@ export default function Profile() {
   const [linkedPayments, setLinkedPayments] = useState<
     Record<MobileMoney, boolean>
   >({
-    MVOLA: true,
+    MVOLA: false,
     AIRTEL: false,
     ORANGE: false,
   });
@@ -92,7 +92,6 @@ export default function Profile() {
       showToast("Vérifie tes informations", "error");
       return;
     }
-    // Backend actuel: pas de route de mise à jour de profil (seulement GET /api/me)
     showToast("Mise à jour du profil bientôt disponible", "info");
   };
 
@@ -201,7 +200,9 @@ export default function Profile() {
                     <Text className="text-[12px] text-slate-600">{email}</Text>
                   ) : null}
                   {role ? (
-                    <Text className="text-[12px] text-slate-500 mt-1">{role}</Text>
+                    <Text className="text-[12px] text-slate-500 mt-1">
+                      {role}
+                    </Text>
                   ) : null}
                 </>
               ) : (
@@ -233,7 +234,7 @@ export default function Profile() {
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
           <SectionHeader
             icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
-            title="Paiements – Mobile Money"
+            title="Paiements – Mobile Money (En cours de developpement)"
           />
           <PaymentRow
             icon={
@@ -404,7 +405,7 @@ export default function Profile() {
             confirm
             className="bg-slate-900 rounded-xl text-white"
             textClassName="font-quicksand-bold"
-            onLoggedOut={() => router.replace('/(auth)/auth')}
+            onLoggedOut={() => router.replace("/(auth)/login")}
           />
 
           <TouchableOpacity
@@ -508,6 +509,7 @@ function PaymentRow({
         className={`px-3 py-1.5 rounded-full ${
           linked ? "bg-emerald-50" : "bg-slate-100"
         }`}
+        disabled
       >
         <Text
           className={`text-[12px] font-quicksand-semibold ${

@@ -11,10 +11,17 @@ expo-env.d.ts
 node_modules/
 
 # Expo
+./expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+
+web-build/
+
+# Native builds
+android/
+ios/
 
 # Native
 .kotlin/

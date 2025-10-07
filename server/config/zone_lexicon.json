@@ -1,0 +1,53 @@
+{
+  "ville": [
+    "analakely",
+    "anosy",
+    "ankorondrano",
+    "akorondrano",
+    "antanimena",
+    "isoraka",
+    "behoririka",
+    "besarety",
+    "67 ha",
+    "67ha",
+    "plaza ampefiloha",
+    "andraharo",
+    "ankadifotsy",
+    "andavamamba",
+    "androndra",
+    "hjra",
+    "water front",
+    "ampasapito",
+    "betongolo",
+    "pochard",
+    "art malagasy"
+  ],
+  "peripherie": [
+    "ambohibao",
+    "andraharo",
+    "ivato",
+    "ivato cci",
+    "talatamaty",
+    "tanjombato",
+    "itaosy",
+    "ambatobe",
+    "ambohimangakely",
+    "andoharanofotsy",
+    "soavimasoandro",
+    "andranomena",
+    "ankadidramamy",
+    "ankadidravola",
+    "ankadibahoaka",
+    "manjakaray",
+    "nanisana",
+    "ankadifotsy pharmacie",
+    "andohatapenaka",
+    "andavamamba",
+    "amboditsiry",
+    "ankarobato"
+  ],
+  "super-peripherie": [
+    "vontovorona"
+  ],
+  "notes": "Ce lexique initial est volontairement simple et sera enrichi. Les entrées sont comparées en 'contains' après normalisation (minuscules, accents supprimés, ponctuation retirée)."
+}

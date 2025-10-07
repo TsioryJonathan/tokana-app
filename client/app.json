@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "tokana-app",
+    "name": "Tokana",
     "slug": "tokana-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "tokanaapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,30 +13,31 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "resize",
-      "usesCleartextTraffic": true
+      "softwareKeyboardLayoutMode": "pan",
+      "usesCleartextTraffic": true,
+      "package": "com.anonymous.tokanaapp"
     },
     "androidStatusBar": {
       "barStyle": "light-content",
-      "backgroundColor": "#00000000",
+      "backgroundColor": "#ffffff",
       "translucent": true,
       "hidden": false
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -44,8 +45,12 @@
       ]
     ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.0.220:5000",
-      "API_BASE_PROD": "https://api.example.com"
+      "API_BASE_DEV": "https://tokana-app.onrender.com",
+      "API_BASE_PROD": "https://tokana-app.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "cb6e54a5-9dc1-47df-8fca-79e873803134"
+      }
     },
     "experiments": {
       "typedRoutes": true

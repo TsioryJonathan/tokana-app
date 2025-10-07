@@ -22,6 +22,7 @@ import StatChip from "@/components/ui/StatChip";
 import FilterChip from "@/components/ui/FilterChip";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import {
   mapBackendOrderToUI,
   type UIOrder,
@@ -193,6 +194,12 @@ function OrderCard({ order, onPress }: { order: UIOrder; onPress?: () => void })
               {formatTime(order.createdAt)}
             </Text>
           </View>
+          {/* ETA hint for active Express orders (if available) */}
+          {order.service === "EXPRESS" && isActiveStatus(order.status) && typeof (order as any).etaHint === 'string' && (
+            <View className="mt-1 self-start px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+              <Text className="text-[10px] text-emerald-700">{(order as any).etaHint}</Text>
+            </View>
+          )}
           <ProgressBar status={order.status} />
         </View>
 
@@ -238,6 +245,7 @@ export default function ClientHome() {
   const [orders, setOrders] = useState<UIOrder[]>([]);
   const [todayCount, setTodayCount] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
+  const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -246,7 +254,12 @@ export default function ClientHome() {
     setLoading(true);
     try {
       const data = await api.orders.getApiOrders(undefined, true);
-      const ui = data.map(mapBackendOrderToUI);
+      const ui = data.map(mapBackendOrderToUI).map(o => {
+        if (o.service === 'EXPRESS' && isActiveStatus(o.status) && expressEta) {
+          return { ...o, etaHint: `ETA ~${expressEta.min}–${expressEta.max} min (indicatif)` } as any;
+        }
+        return o as any;
+      });
       setOrders(ui);
 
       // Stats
@@ -277,9 +290,26 @@ export default function ClientHome() {
     }
   }, [api]);
 
+  // Fetch Express ETA once and reuse as hint on active Express orders
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const avail = await api.slots.getApiSlotsExpress();
+        const min = avail?.eta?.minMinutes;
+        const max = avail?.eta?.maxMinutes;
+        if (mounted && typeof min === 'number' && typeof max === 'number') setExpressEta({ min, max });
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, [api]);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-refresh every 2 minutes
+  useAutoRefresh(load, 2 * 60 * 1000, true);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
