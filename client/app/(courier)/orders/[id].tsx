@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient, getApiBase } from "@/lib/api/client";
+import { getApiClient } from "@/lib/api/client";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -18,7 +18,6 @@ import {
   type UIOrder,
   type OrderStatus,
 } from "@/lib/mappers/order";
-import { getAccessToken } from "@/lib/auth/session";
 import { OTPRequest } from "@/lib/api/models/OTPRequest";
 
 export default function CourierOrderDetail() {
@@ -103,20 +102,23 @@ export default function CourierOrderDetail() {
     if (!id) return;
     setLoadingRemarks(true);
     try {
-      const base = getApiBase();
-      const token = await getAccessToken();
-      const res = await fetch(`${base}/api/orders/${id}/remarks`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setRemarks(Array.isArray(data) ? data : []);
+      const data = await api.orders.getApiOrdersRemarks(Number(id));
+      const mapped = (Array.isArray(data) ? data : []).map((r, idx) => ({
+        id: typeof r.id === "number" ? r.id : idx,
+        text: String(r.text || ""),
+        createdAt: r.createdAt ? String(r.createdAt) : new Date().toISOString(),
+        createdBy:
+          typeof r.createdBy === "number" || r.createdBy === null
+            ? r.createdBy
+            : null,
+      }));
+      setRemarks(mapped);
     } catch (e) {
       // optional toast, keep quiet for MVP
     } finally {
       setLoadingRemarks(false);
     }
-  }, [id]);
+  }, [api.orders, id]);
 
   useEffect(() => {
     if (order) {
@@ -164,21 +166,7 @@ export default function CourierOrderDetail() {
     if (text.length < 2) return;
     setSubmitting(true);
     try {
-      const base = getApiBase();
-      const token = await getAccessToken();
-
-      const res = await fetch(`${base}/api/orders/${id}/remarks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.msg || `HTTP ${res.status}`);
-      }
+      await api.orders.postApiOrdersRemarks(Number(id), { text });
       setNewRemark("");
       await loadRemarks();
       showToast("Remarque ajoutée", "success");
