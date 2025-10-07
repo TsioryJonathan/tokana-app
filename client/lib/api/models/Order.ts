@@ -8,6 +8,8 @@ export type Order = {
     zoneLevel?: Order.zoneLevel;
     pickupAddress?: string;
     dropoffAddress?: string;
+    dropoffLat?: number | null;
+    dropoffLng?: number | null;
     weight?: number;
     parcels?: number;
     cashToCollect?: number | null;
