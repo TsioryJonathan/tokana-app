@@ -138,6 +138,60 @@ export class OrdersService {
         });
     }
     /**
+     * List order remarks
+     * @param id
+     * @returns any OK
+     * @throws ApiError
+     */
+    public getApiOrdersRemarks(
+        id: number,
+    ): CancelablePromise<Array<{
+        id?: number;
+        text?: string;
+        createdAt?: string;
+        createdBy?: number | null;
+    }>> {
+        return this.httpRequest.request({
+            method: 'GET',
+            url: '/api/orders/{id}/remarks',
+            path: {
+                'id': id,
+            },
+            errors: {
+                401: `Unauthorized`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
+     * Add order remark
+     * @param id
+     * @param requestBody
+     * @returns any OK
+     * @throws ApiError
+     */
+    public postApiOrdersRemarks(
+        id: number,
+        requestBody: {
+            text: string;
+        },
+    ): CancelablePromise<any> {
+        return this.httpRequest.request({
+            method: 'POST',
+            url: '/api/orders/{id}/remarks',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
      * Update order status
      * @param id
      * @param requestBody
