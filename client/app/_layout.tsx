@@ -81,15 +81,15 @@ export default function RootLayout() {
     return () => clearTimeout(timeout);
   }, []);
 
-  if (!fontsLoaded || showSplash) {
-    return (
-      <SafeAreaProvider>
-        <ToastProvider>
-          <CustomSplashScreen />
-        </ToastProvider>
-      </SafeAreaProvider>
-    );
-  }
+  // if (!fontsLoaded || showSplash) {
+  //   return (
+  //     <SafeAreaProvider>
+  //       <ToastProvider>
+  //         <CustomSplashScreen />
+  //       </ToastProvider>
+  //     </SafeAreaProvider>
+  //   );
+  // }
 
   return (
     <SafeAreaProvider>

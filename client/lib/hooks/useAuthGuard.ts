@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { getAccessToken } from "@/lib/auth/session";
+import { getAccessToken, clearSession } from "@/lib/auth/session";
 import { getApiClient } from "@/lib/api/client";
 
 export type UseAuthGuardOptions = {
@@ -43,7 +43,9 @@ export function useAuthGuard(
             }
           } catch {
             if (!mounted) return;
-            router.replace("/" as any);
+            // If fetching /api/me fails (likely 401), clear session and redirect to login
+            try { await clearSession(); } catch {}
+            router.replace("/(auth)/login" as any);
             return;
           }
         }

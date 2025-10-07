@@ -9,7 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
-import { Mail, Lock } from "lucide-react-native";
+import { AtSign, Lock } from "lucide-react-native";
 import { assets } from "@/assets/images/assets";
 import CustomInput from "../ui/CustomInput";
 import GoogleIcon from "../Icons/GoogleIcon";
@@ -71,9 +71,9 @@ export default function LoginPage({
         <View className="gap-4">
           <CustomInput
             value={email}
-            icon={Mail}
+            icon={AtSign}
             setValue={setEmail}
-            placeholder="Email"
+            placeholder="Email ou téléphone"
             keyboardType="email-address"
             className="border border-gray-300 rounded-lg bg-gray-50"
           />

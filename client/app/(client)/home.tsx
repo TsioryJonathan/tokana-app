@@ -16,6 +16,7 @@ import {
 } from "react-native";
 // safe area handled by (client)/_layout
 import { useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import StatChip from "@/components/ui/StatChip";
@@ -246,6 +247,8 @@ export default function ClientHome() {
   const [todayCount, setTodayCount] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
+  const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
+  const isFocused = useIsFocused();
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -279,6 +282,7 @@ export default function ClientHome() {
         0
       );
       setMonthRevenue(revenue);
+      setLastUpdatedISO(new Date().toISOString());
     } catch (e) {
       console.warn("load orders error", e);
       showToast("Erreur de chargement des commandes", "error");
@@ -305,11 +309,11 @@ export default function ClientHome() {
   }, [api]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (isFocused) load();
+  }, [isFocused, load]);
 
-  // Auto-refresh every 2 minutes
-  useAutoRefresh(load, 2 * 60 * 1000, true);
+  // Auto-refresh every 2 minutes, only when focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -433,6 +437,11 @@ export default function ClientHome() {
               En cours
             </Text>
           </View>
+          {lastUpdatedISO && (
+            <Text className="text-[11px] text-slate-400">
+              Dernière mise à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}
+            </Text>
+          )}
           <TouchableOpacity
             onPress={() => router.push("/orders" as any)}
             activeOpacity={0.8}

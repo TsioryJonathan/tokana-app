@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
+import { normalizeLocalPhone } from "@/utils/phone";
 
 type MobileMoney = "MVOLA" | "AIRTEL" | "ORANGE";
 
@@ -56,13 +57,12 @@ export default function Profile() {
     ORANGE: false,
   });
 
-  const canSave = useMemo(
-    () =>
-      name.trim().length > 1 &&
-      (phone.trim() === "" || mgPhoneRegex.test(phone.trim())) &&
-      (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) || email.trim() === ""),
-    [name, phone, email]
-  );
+  const canSave = useMemo(() => {
+    const cleaned = normalizeLocalPhone(phone);
+    const emailOk = (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) || email.trim() === "");
+    const phoneOk = (cleaned === "" || mgPhoneRegex.test(cleaned));
+    return name.trim().length > 1 && phoneOk && emailOk;
+  }, [name, phone, email]);
 
   useEffect(() => {
     let mounted = true;

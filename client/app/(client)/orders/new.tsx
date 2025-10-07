@@ -27,6 +27,7 @@ import { formatAr, toNumberSafe } from "@/utils/price.helper";
 import type { LocalityItem } from "@/lib/hooks/useLocalities";
 import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
 import OrderReviewModal from "@/components/CreateOrder/OrderReviewModal";
+import { normalizeLocalPhone } from "@/utils/phone";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -194,14 +195,14 @@ export default function NewOrderWizard() {
     }
     if (step === 1) {
       if (!sender.name.trim()) errs.push("Nom expéditeur requis");
-      if (!mgPhoneRegex.test(sender.phone.trim()))
-        errs.push("Téléphone expéditeur invalide");
+      const sPhone = normalizeLocalPhone(sender.phone);
+      if (!mgPhoneRegex.test(sPhone)) errs.push("Téléphone expéditeur invalide");
       if (!sender.address.trim()) errs.push("Adresse expéditeur requise");
     }
     if (step === 2) {
       if (!recipient.name.trim()) errs.push("Nom destinataire requis");
-      if (!mgPhoneRegex.test(recipient.phone.trim()))
-        errs.push("Téléphone destinataire invalide");
+      const rPhone = normalizeLocalPhone(recipient.phone);
+      if (!mgPhoneRegex.test(rPhone)) errs.push("Téléphone destinataire invalide");
       if (!recipient.address.trim()) errs.push("Adresse destinataire requise");
     }
     if (step === 3) {
@@ -323,12 +324,14 @@ export default function NewOrderWizard() {
         return;
       }
 
+      const cleanedSenderPhone = normalizeLocalPhone(sender.phone);
+      const cleanedRecipientPhone = normalizeLocalPhone(recipient.phone);
       const created = await api.orders.postApiOrders({
         type,
         zoneLevel,
         pickupAddress: sender.address.trim(),
         pickupName: sender.name.trim() || undefined,
-        pickupPhone: sender.phone.trim() || undefined,
+        pickupPhone: cleanedSenderPhone || undefined,
         dropoffAddress: recipient.address.trim(),
         dropoffName: recipient.name.trim() || undefined,
         category: parcel.category,
@@ -338,7 +341,7 @@ export default function NewOrderWizard() {
         parcels: parcelsCount,
         cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
         notes: (payment.notes || '').trim() || undefined,
-        recipientPhone: recipient.phone?.trim() || undefined,
+        recipientPhone: cleanedRecipientPhone || undefined,
         recipientEmail: recipient.email?.trim() || undefined,
         needReturn: !!service.needReturn,
         slotStart,
