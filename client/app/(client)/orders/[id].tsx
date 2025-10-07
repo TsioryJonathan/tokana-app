@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,8 +30,11 @@ export default function OrderDetails() {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
 
   const api = useMemo(getApiClient, []);
+
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     let mounted = true;
@@ -49,6 +53,7 @@ export default function OrderDetails() {
         if (mounted) {
           setOrder(ui);
           setError(null);
+          setLastUpdatedISO(new Date().toISOString());
         }
         // Load history
         const h = await api.orders.getApiOrdersHistory(Number(id));
@@ -73,10 +78,15 @@ export default function OrderDetails() {
     return () => {
       mounted = false;
     };
-  }, [id, api, showToast, reloadTick]);
+  }, [id, api, reloadTick]);
 
-  // Auto-refresh every 2 minutes while on screen
-  useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, true);
+  // Trigger reload when screen gains focus
+  useEffect(() => {
+    if (isFocused) setReloadTick((t) => t + 1);
+  }, [isFocused]);
+
+  // Auto-refresh every 2 minutes only when focused
+  useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, isFocused);
 
   if (loading) {
     return (
@@ -156,6 +166,11 @@ export default function OrderDetails() {
         <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">
           Commande {order.code}
         </Text>
+        {lastUpdatedISO && (
+          <Text className="text-[11px] text-slate-400">
+            {new Date(lastUpdatedISO).toLocaleTimeString()}
+          </Text>
+        )}
       </View>
 
       {/* Contenu */}
