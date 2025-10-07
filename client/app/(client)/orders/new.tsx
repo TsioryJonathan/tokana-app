@@ -1,11 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
@@ -28,6 +22,7 @@ import type { LocalityItem } from "@/lib/hooks/useLocalities";
 import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
 import OrderReviewModal from "@/components/CreateOrder/OrderReviewModal";
 import { normalizeLocalPhone } from "@/utils/phone";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -117,6 +112,7 @@ export default function NewOrderWizard() {
   // Locality selection
   const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
   const [selectedDropoffLocality, setSelectedDropoffLocality] = useState<LocalityItem | null>(null);
+  const [dropoffLatLng, setDropoffLatLng] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     if (!selectedDropoffLocality) return;
     const z = selectedDropoffLocality.zoneLevel;
@@ -184,6 +180,7 @@ export default function NewOrderWizard() {
       cancelled = true;
     };
   }, [api, service.distanceKmBracket, service.service, parcel.weightKg, parcel.parcelsCount]);
+
   const validateCurrent = (): string[] => {
     const errs: string[] = [];
     if (step === 0) {
@@ -206,8 +203,10 @@ export default function NewOrderWizard() {
       if (!recipient.address.trim()) errs.push("Adresse destinataire requise");
     }
     if (step === 3) {
-      // Service: exiger la localité de livraison pour éviter toute ambiguïté de zone
-      if (!selectedDropoffLocality) errs.push("Sélectionnez la localité de livraison");
+      // Service: exiger soit une localité, soit des coordonnées sélectionnées
+      if (!selectedDropoffLocality && !dropoffLatLng) {
+        errs.push("Sélectionnez la localité ou choisissez une adresse (coords)");
+      }
     }
     // Étape paiement: non bloquante (en implémentation)
     return errs;
@@ -349,6 +348,7 @@ export default function NewOrderWizard() {
         // Optional fields for future server-side zone derivation
         ...(selectedPickupLocality ? { pickupLocalityId: selectedPickupLocality.id } : {}),
         ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
+        ...(dropoffLatLng ? { dropoffLat: dropoffLatLng.lat, dropoffLng: dropoffLatLng.lng } : {}),
       } as any);
       resetForm();
       showToast("Commande créée", "success");
@@ -401,6 +401,24 @@ export default function NewOrderWizard() {
 
         {step === 2 && (
           <ThirdStep recipient={recipient} setRecipient={setRecipient} />
+        )}
+        {step === 2 && (
+          <View className="mt-2">
+            <AddressAutocomplete
+              label="Adresse de livraison (autocomplétion)"
+              placeholder="Saisir l'adresse (Antananarivo)"
+              bbox={[47.4, -19.1, 47.7, -18.7]}
+              onSelected={({ label, lat, lng }) => {
+                setDropoffLatLng({ lat, lng });
+                setRecipient((r) => ({ ...r, address: label }));
+                showToast('Adresse sélectionnée', 'success');
+              }}
+              initialText={recipient.address}
+            />
+            {dropoffLatLng && (
+              <Text className="mt-2 text-[11px] text-slate-500">Coordonnées: {dropoffLatLng.lat.toFixed(5)}, {dropoffLatLng.lng.toFixed(5)}</Text>
+            )}
+          </View>
         )}
 
         {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!selectedDropoffLocality} />}
