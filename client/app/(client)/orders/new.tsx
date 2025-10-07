@@ -102,6 +102,7 @@ export default function NewOrderWizard() {
     manual?: boolean;
     instructions?: string | null;
     contactPhone?: string | null;
+    inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null;
   } | null>(null);
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
   const [showReview, setShowReview] = useState(false);
@@ -142,22 +143,28 @@ export default function NewOrderWizard() {
       setQuoteLoading(true);
       setQuoteError(null);
       try {
-        const zoneEnum =
-          zoneLevel === "ville"
-            ? PricingQuoteRequest.zoneLevel.VILLE
-            : zoneLevel === "peripherie"
-            ? PricingQuoteRequest.zoneLevel.PERIPHERIE
-            : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
         const typeEnum =
           type === "express"
             ? PricingQuoteRequest.type.EXPRESS
             : PricingQuoteRequest.type.STANDARD;
-        const quote = await api.pricing.postApiPricingQuote({
-          zoneLevel: zoneEnum,
+        const body: any = {
           type: typeEnum,
           weight,
           parcels: parcelsCount,
-        });
+        };
+        if (dropoffLatLng) {
+          body.lat = dropoffLatLng.lat;
+          body.lng = dropoffLatLng.lng;
+        } else {
+          const zoneEnum =
+            zoneLevel === "ville"
+              ? PricingQuoteRequest.zoneLevel.VILLE
+              : zoneLevel === "peripherie"
+              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+          body.zoneLevel = zoneEnum;
+        }
+        const quote = await api.pricing.postApiPricingQuote(body);
         if (cancelled) return;
         setServerQuote({
           total: quote?.priceTotal ?? undefined,
@@ -167,6 +174,7 @@ export default function NewOrderWizard() {
           manual: !!quote?.requiresManualHandling,
           instructions: quote?.instructions ?? null,
           contactPhone: (quote as any)?.contactPhone ?? null,
+          inferredZone: (quote as any)?.inferredZone ?? null,
         });
       } catch (e: any) {
         if (cancelled) return;
@@ -179,7 +187,7 @@ export default function NewOrderWizard() {
     return () => {
       cancelled = true;
     };
-  }, [api, service.distanceKmBracket, service.service, parcel.weightKg, parcel.parcelsCount]);
+  }, [api, service.distanceKmBracket, service.service, parcel.weightKg, parcel.parcelsCount, dropoffLatLng]);
 
   const validateCurrent = (): string[] => {
     const errs: string[] = [];
@@ -205,7 +213,7 @@ export default function NewOrderWizard() {
     if (step === 3) {
       // Service: exiger soit une localité, soit des coordonnées sélectionnées
       if (!selectedDropoffLocality && !dropoffLatLng) {
-        errs.push("Sélectionnez la localité ou choisissez une adresse (coords)");
+        errs.push("Sélectionnez la localité ou choisissez une adresse.");
       }
     }
     // Étape paiement: non bloquante (en implémentation)
@@ -277,7 +285,13 @@ export default function NewOrderWizard() {
       // 2) Standard slot required
       if (type === "standard") {
         try {
-          const slots = await api.slots.getApiSlotsStandard(zoneLevel);
+          let slotsResp: any;
+          if (dropoffLatLng) {
+            slotsResp = await api.slots.getApiSlotsStandard(undefined, dropoffLatLng.lat, dropoffLatLng.lng);
+          } else {
+            slotsResp = await api.slots.getApiSlotsStandard(zoneLevel);
+          }
+          const slots = Array.isArray(slotsResp) ? slotsResp : slotsResp?.slots;
           if (!Array.isArray(slots) || slots.length === 0) {
             showToast("Aucun créneau standard disponible", "error");
             return;
@@ -293,22 +307,28 @@ export default function NewOrderWizard() {
 
       // 3) Pricing quote (alignement backend)
       try {
-        const zoneEnum =
-          zoneLevel === "ville"
-            ? PricingQuoteRequest.zoneLevel.VILLE
-            : zoneLevel === "peripherie"
-            ? PricingQuoteRequest.zoneLevel.PERIPHERIE
-            : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
         const typeEnum =
           type === "express"
             ? PricingQuoteRequest.type.EXPRESS
             : PricingQuoteRequest.type.STANDARD;
-        const quote = await api.pricing.postApiPricingQuote({
-          zoneLevel: zoneEnum,
+        const body: any = {
           type: typeEnum,
           weight: toNumberSafe(parcel.weightKg),
           parcels: parcelsCount,
-        });
+        };
+        if (dropoffLatLng) {
+          body.lat = dropoffLatLng.lat;
+          body.lng = dropoffLatLng.lng;
+        } else {
+          const zoneEnum =
+            zoneLevel === "ville"
+              ? PricingQuoteRequest.zoneLevel.VILLE
+              : zoneLevel === "peripherie"
+              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+          body.zoneLevel = zoneEnum;
+        }
+        const quote = await api.pricing.postApiPricingQuote(body);
         if (quote?.requiresManualHandling) {
           showToast(
             quote.instructions ||
@@ -325,9 +345,8 @@ export default function NewOrderWizard() {
 
       const cleanedSenderPhone = normalizeLocalPhone(sender.phone);
       const cleanedRecipientPhone = normalizeLocalPhone(recipient.phone);
-      const created = await api.orders.postApiOrders({
+      const orderPayload: any = {
         type,
-        zoneLevel,
         pickupAddress: sender.address.trim(),
         pickupName: sender.name.trim() || undefined,
         pickupPhone: cleanedSenderPhone || undefined,
@@ -349,7 +368,11 @@ export default function NewOrderWizard() {
         ...(selectedPickupLocality ? { pickupLocalityId: selectedPickupLocality.id } : {}),
         ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
         ...(dropoffLatLng ? { dropoffLat: dropoffLatLng.lat, dropoffLng: dropoffLatLng.lng } : {}),
-      } as any);
+      };
+      if (!dropoffLatLng) {
+        orderPayload.zoneLevel = zoneLevel;
+      }
+      const created = await api.orders.postApiOrders(orderPayload as any);
       resetForm();
       showToast("Commande créée", "success");
       // Navigate to tracking with created id for MVP
@@ -421,8 +444,8 @@ export default function NewOrderWizard() {
           </View>
         )}
 
-        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!selectedDropoffLocality} />}
-        {step === 3 && (
+        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!dropoffLatLng || !!selectedDropoffLocality} />}
+        {step === 3 && !dropoffLatLng && (
           <LocalitySelector
             selected={selectedDropoffLocality}
             onSelect={(loc) => setSelectedDropoffLocality(loc)}
@@ -441,7 +464,7 @@ export default function NewOrderWizard() {
               <View className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
                 <Text className="text-[11px] text-slate-700">
                   {(() => {
-                    const z = toZoneLevel(service.distanceKmBracket);
+                    const z = (serverQuote?.inferredZone as any) || toZoneLevel(service.distanceKmBracket);
                     if (z === "ville") return "Standard (demain): 10:00–17:00";
                     if (z === "peripherie") return "Standard (demain): 12:00–17:00";
                     return "Standard (demain): 14:00–17:00";
@@ -491,12 +514,16 @@ export default function NewOrderWizard() {
             ) : quoteError ? (
               <Text className="text-[12px] text-rose-700">{quoteError}</Text>
             ) : (
-              <Text className="text-[12px] text-slate-500">Indique le poids et la localité/zone pour obtenir le devis</Text>
+              <Text className="text-[12px] text-slate-500">Indique le poids et l'adresse ou la localité pour obtenir le devis</Text>
             )}
             {serverQuote && !serverQuote.manual && (
               <Text className="mt-0.5 text-[11px] text-slate-500">
                 {`Pickup: ${serverQuote.pickup ? formatAr(serverQuote.pickup) : '—'} · Livraison: ${serverQuote.delivery ? formatAr(serverQuote.delivery) : '—'} · Express: ${serverQuote.express ? formatAr(serverQuote.express) : '—'}`}
               </Text>
+            )}
+            {/* Zone inférée affichée si disponible */}
+            {serverQuote?.inferredZone && (
+              <Text className="mt-0.5 text-[11px] text-slate-500">Zone détectée: {serverQuote.inferredZone}</Text>
             )}
           </View>
 
@@ -557,7 +584,7 @@ export default function NewOrderWizard() {
         payment={payment}
         pickupLocality={selectedPickupLocality}
         dropoffLocality={selectedDropoffLocality}
-        zoneLevel={toZoneLevel(service.distanceKmBracket)}
+        zoneLevel={(serverQuote?.inferredZone as any) || toZoneLevel(service.distanceKmBracket)}
         priceTotal={serverQuote?.total ?? null}
       />
     </View>
