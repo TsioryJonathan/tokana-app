@@ -11,6 +11,11 @@ const Zone = sequelize.define('Zone', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  geometry: {
+    // GeoJSON MultiPolygon or Polygon representing the zone boundary
+    type: DataTypes.JSONB,
+    allowNull: true,
+  },
 }, {
   indexes: [
     { unique: true, fields: ['key'] },
