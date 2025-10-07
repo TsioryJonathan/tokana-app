@@ -6,6 +6,7 @@ import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
 import type { Order } from '@/lib/api/models/Order';
 import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
 import { useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function AdminOrdersPage() {
   const api = useMemo(getApiClient, []);
@@ -18,6 +19,8 @@ export default function AdminOrdersPage() {
   const [assignInputs, setAssignInputs] = useState<Record<number, string>>({});
   const [assignBusy, setAssignBusy] = useState<Record<number, boolean>>({});
   const [statusBusy, setStatusBusy] = useState<Record<number, boolean>>({});
+  const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
+  const isFocused = useIsFocused();
 
   const load = async () => {
     setLoading(true);
@@ -25,6 +28,7 @@ export default function AdminOrdersPage() {
       // Admin sees all orders; API has no explicit all flag, so omit mine and assignedTo
       const list = await api.orders.getApiOrders();
       setOrders(list);
+      setLastUpdatedISO(new Date().toISOString());
     } catch (e: any) {
       console.warn('orders load error', e?.body || e?.message || e);
       showToast('Chargement des commandes échoué', 'error');
@@ -63,11 +67,11 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (isFocused) load();
+  }, [isFocused]);
 
-  // Auto-refresh every 2 minutes
-  useAutoRefresh(load, 2 * 60 * 1000, true);
+  // Auto-refresh every 2 minutes when focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -201,6 +205,9 @@ export default function AdminOrdersPage() {
       <View className="px-4 pt-4 pb-2 border-b border-slate-200 bg-white">
         <Text className="text-xl font-quicksand-bold text-slate-900">Commandes</Text>
         <Text className="text-slate-500 mt-1">Assignation des commandes aux livreurs</Text>
+        {lastUpdatedISO && (
+          <Text className="text-[11px] text-slate-400 mt-1">Dernière mise à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}</Text>
+        )}
       </View>
       <FlatList
         className="px-4 pt-3"
