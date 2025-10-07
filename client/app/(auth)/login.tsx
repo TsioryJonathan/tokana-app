@@ -28,11 +28,24 @@ const Login = () => {
   const onSubmit = async () => {
     try {
       setLoading(true);
-      const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
-      const id = identifier.trim();
-      const payload = mgPhone.test(id)
-        ? { phone: id, password: password.trim() }
-        : { email: id, password: password.trim() };
+      // Accept MG phone even if user types spaces/dashes/parentheses
+      const raw = identifier.trim();
+      const cleaned = raw.replace(/[\s.\-()]/g, "");
+      const isMgPhone = (() => {
+        // +261XXXXXXXXX or 261XXXXXXXXX or 0(3x|20)XXXXXXX
+        if (/^\+?261\d{9}$/.test(cleaned)) return true;
+        if (/^0(3\d|20)\d{7}$/.test(cleaned)) return true;
+        return false;
+      })();
+      const phoneForPayload = (() => {
+        if (/^0(3\d|20)\d{7}$/.test(cleaned)) return cleaned; // server will normalize
+        if (/^261\d{9}$/.test(cleaned)) return `+${cleaned}`;
+        if (/^\+261\d{9}$/.test(cleaned)) return cleaned;
+        return raw; // fallback
+      })();
+      const payload = isMgPhone
+        ? { phone: phoneForPayload, password: password.trim() }
+        : { email: raw, password: password.trim() };
       const res = await api.auth.postApiAuthLogin(payload as any);
       await setSession({
         token: res.token,
