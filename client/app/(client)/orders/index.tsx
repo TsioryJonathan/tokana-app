@@ -16,6 +16,7 @@ import {
   Animated,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
@@ -217,6 +218,8 @@ export default function OrdersList() {
     keyof typeof statusLabel | "ALL" | "ACTIVE"
   >("ALL");
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
+  const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
+  const isFocused = useIsFocused();
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -231,6 +234,7 @@ export default function OrdersList() {
         return o as any;
       });
       setItems(enriched);
+      setLastUpdatedISO(new Date().toISOString());
     } catch (e) {
       console.warn("orders list load error", e);
       showToast("Erreur de chargement des commandes", "error");
@@ -244,8 +248,13 @@ export default function OrdersList() {
     load();
   }, [q, filter, load]); // reload on search/filter change
 
-  // Auto-refresh every 2 minutes
-  useAutoRefresh(load, 2 * 60 * 1000, true);
+  // Trigger load when screen gains focus
+  useEffect(() => {
+    if (isFocused) load();
+  }, [isFocused, load]);
+
+  // Auto-refresh every 2 minutes only when focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -328,6 +337,12 @@ export default function OrdersList() {
           }}
         />
       </View>
+      {/* Last updated */}
+      {lastUpdatedISO && (
+        <Text className="mt-1 text-[11px] text-slate-400">
+          Dernière mise à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}
+        </Text>
+      )}
     </View>
   );
 
