@@ -5,6 +5,7 @@ import {
   createZone, updateZone, deleteZone,
   createAxis, updateAxis, deleteAxis,
   createLocality, updateLocality, deleteLocality,
+  getZoneGeometry, setZoneGeometry, setZoneGeometryByKey,
 } from '../../controllers/admin/zonesAdminController.js';
 import {
   validateCreateZone, validateUpdateZone,
@@ -26,6 +27,11 @@ router.get('/axes/:axisId/localities', listLocalitiesByAxis); // GET /api/admin/
 router.post('/', validateCreateZone, createZone);                 // POST /api/admin/zones
 router.put('/:id', validateUpdateZone, updateZone);               // PUT /api/admin/zones/:id
 router.delete('/:id', deleteZone);            // DELETE /api/admin/zones/:id
+
+// Zones geometry (GeoJSON)
+router.get('/:id/geometry', getZoneGeometry);                     // GET /api/admin/zones/:id/geometry
+router.put('/:id/geometry', setZoneGeometry);                     // PUT /api/admin/zones/:id/geometry
+router.put('/key/:key/geometry', setZoneGeometryByKey);           // PUT /api/admin/zones/key/:key/geometry
 
 // Axes
 router.post('/:zoneId/axes', validateCreateAxis, createAxis);     // POST /api/admin/zones/:zoneId/axes
