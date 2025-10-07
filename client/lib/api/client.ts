@@ -19,31 +19,23 @@ export function getApiClient(): TokanaApiClient {
   const extra = (Constants as any)?.expoConfig?.extra || {};
 
   let base: string | undefined;
-  if (__DEV__) {
+  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined;
+  if (envBase && envBase.trim().length > 0) {
+    base = envBase.trim();
+  } else if (__DEV__) {
+    // Backward-compat: allow extra.API_BASE_DEV, else fall back to LAN IP or localhost
     base = extra.API_BASE_DEV;
-    const hostUri = (Constants as any)?.expoConfig?.hostUri as
-      | string
-      | undefined;
+    const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
     const host = hostUri ? hostUri.split(":")[0] : undefined;
-
-    const nativeFallback = host
-      ? `http://${host}:5000`
-      : "http://localhost:5000";
+    const nativeFallback = host ? `http://${host}:5000` : "http://localhost:5000";
     if (!base) {
-      base = Platform.select({
-        web: "http://localhost:5000",
-        default: nativeFallback,
-      }) as string;
-    } else if (
-      Platform.OS !== "web" &&
-      /(^|\/)localhost(?=[:/]|$)/.test(base)
-    ) {
+      base = Platform.select({ web: "http://localhost:5000", default: nativeFallback }) as string;
+    } else if (Platform.OS !== "web" && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
       base = nativeFallback;
     }
-    // Debug log in development
-
     console.log("[TokanaApi] BASE (dev):", base, "| hostUri:", hostUri);
   } else {
+    // Production fallback if no env var provided
     base = extra.API_BASE_PROD || "https://tokana-app.onrender.com";
   }
   currentBase = base!;

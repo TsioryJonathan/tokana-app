@@ -48,3 +48,34 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Setup (Environment Variables)
+
+This app uses Expo public env variables. Create a `.env` file in `client/` based on `.env.example`.
+
+Important:
+
+- `EXPO_PUBLIC_*` variables are embedded in the client and are PUBLIC. Do not put secrets here.
+- For native builds (EAS), you can override env vars per build profile in `eas.json` under the `env` section.
+
+Example `.env`:
+
+```
+EXPO_PUBLIC_API_BASE_URL=http://localhost:5000
+EXPO_PUBLIC_MAPBOX_TOKEN=pk.YOUR_MAPBOX_PUBLIC_TOKEN
+```
+
+Usage in code:
+
+```ts
+const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+```
+
+Run the app:
+
+```bash
+npm install
+npx expo start
+```
+
+If testing on a real device in development, ensure your API is reachable over LAN and set `EXPO_PUBLIC_API_BASE_URL` accordingly (e.g. `http://<your-computer-LAN-IP>:5000`).
