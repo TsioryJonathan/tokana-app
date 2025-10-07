@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import User from '../../models/User.js';
 import { Op } from 'sequelize';
+import { normalizeMgPhone } from '../../utils/phone.js';
 
 // Must match authController pattern: /^(\+261|0)(3[0-9]|20)\d{7}$/
 const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
@@ -18,18 +19,19 @@ export const createLivreur = async (req, res, next) => {
     if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
 
     const { email, phone, password, name } = value;
+    const normalizedPhone = phone ? normalizeMgPhone(phone) : null;
 
     // Uniqueness checks
     if (email) {
       const existing = await User.findOne({ where: { email } });
       if (existing) return res.status(409).json({ msg: 'Email déjà utilisé' });
     }
-    if (phone) {
-      const existingPhone = await User.findOne({ where: { phone } });
+    if (normalizedPhone) {
+      const existingPhone = await User.findOne({ where: { phone: normalizedPhone } });
       if (existingPhone) return res.status(409).json({ msg: 'Téléphone déjà utilisé' });
     }
 
-    const payload = { phone, name, password, role: 'livreur' };
+    const payload = { phone: normalizedPhone, name, password, role: 'livreur' };
     if (email) Object.assign(payload, { email });
     const user = await User.create(payload);
 
