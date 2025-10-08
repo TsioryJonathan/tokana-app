@@ -6,7 +6,7 @@ export async function computePrice({ zoneLevel, type, weight, parcels = 1 }) {
     err.status = 400;
     throw err;
   }
-  const rules = await PricingRule.findAll({ where: { zoneLevel, type } });
+  const rules = await PricingRule.findAll({ where: { zoneLevel, type }, order: [['minWeight', 'ASC']] });
   if (!rules || rules.length === 0) {
     const err = new Error('Règles tarifaires introuvables');
     err.status = 400;
@@ -33,10 +33,9 @@ export async function computePrice({ zoneLevel, type, weight, parcels = 1 }) {
   }
 
   const deliveryFee = matched.deliveryFee || 0;
-  const expressSurcharge = matched.expressSurcharge || 0;
+  const expressSurcharge = type === 'express' ? (matched.expressSurcharge || 0) : 0;
 
-  // Delivery and express surcharge apply per parcel
-  const perParcel = deliveryFee + expressSurcharge;
-  const total = pickupFee + perParcel * parcels;
+  // Pricing per order (not per parcel) per business grid/seeders
+  const total = pickupFee + deliveryFee + expressSurcharge;
   return { pickupFee, deliveryFee, expressSurcharge, total };
 }

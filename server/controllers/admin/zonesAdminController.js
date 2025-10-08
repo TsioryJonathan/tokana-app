@@ -72,6 +72,48 @@ export const deleteZone = async (req, res) => {
   } catch (err) { return handleErr(res, err); }
 };
 
+// Geometry (GeoJSON) management
+const isValidGeoJSON = (g) => {
+  if (!g || typeof g !== 'object' || !g.type) return false;
+  if (g.type === 'Polygon' || g.type === 'MultiPolygon') return Array.isArray(g.coordinates);
+  return false;
+};
+
+export const getZoneGeometry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const z = await Zone.findByPk(id, { attributes: ['id', 'key', 'label', 'geometry'] });
+    if (!z) return send404(res, 'Zone');
+    return res.json({ id: z.id, key: z.key, label: z.label, geometry: z.geometry || null });
+  } catch (err) { return handleErr(res, err); }
+};
+
+export const setZoneGeometry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { geometry } = req.body || {};
+    if (!isValidGeoJSON(geometry)) return res.status(400).json({ msg: 'GeoJSON invalide (Polygon ou MultiPolygon requis)' });
+    const z = await Zone.findByPk(id);
+    if (!z) return send404(res, 'Zone');
+    z.geometry = geometry;
+    await z.save();
+    return res.json({ msg: 'Geometry enregistrée', id: z.id, key: z.key });
+  } catch (err) { return handleErr(res, err); }
+};
+
+export const setZoneGeometryByKey = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { geometry } = req.body || {};
+    if (!isValidGeoJSON(geometry)) return res.status(400).json({ msg: 'GeoJSON invalide (Polygon ou MultiPolygon requis)' });
+    const z = await Zone.findOne({ where: { key } });
+    if (!z) return send404(res, 'Zone');
+    z.geometry = geometry;
+    await z.save();
+    return res.json({ msg: 'Geometry enregistrée', id: z.id, key: z.key });
+  } catch (err) { return handleErr(res, err); }
+};
+
 // Axes
 export const createAxis = async (req, res) => {
   try {

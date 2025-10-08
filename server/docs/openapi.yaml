@@ -80,15 +80,18 @@ components:
     PricingQuoteRequest:
       type: object
       properties:
-        zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+        zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie], description: "Optional if lat/lng provided" }
+        lat: { type: number, description: "Dropoff latitude (preferred)" }
+        lng: { type: number, description: "Dropoff longitude (preferred)" }
         type: { type: string, enum: [standard, express] }
         weight: { type: number }
         parcels: { type: integer }
-      required: [zoneLevel, type, weight, parcels]
+      required: [type, weight, parcels]
     PricingQuoteResponse:
       type: object
       properties:
         zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+        inferredZone: { type: string, enum: [ville, peripherie, super-peripherie], nullable: true, description: "Zone inferred from lat/lng when provided" }
         type: { type: string, enum: [standard, express] }
         weight: { type: number }
         parcels: { type: integer }
@@ -115,6 +118,8 @@ components:
         zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
         pickupAddress: { type: string }
         dropoffAddress: { type: string }
+        dropoffLat: { type: number, nullable: true }
+        dropoffLng: { type: number, nullable: true }
         weight: { type: number }
         parcels: { type: integer }
         cashToCollect: { type: integer, nullable: true }
@@ -1116,6 +1121,92 @@ paths:
                   value:
                     msg: "Locality not found"
 
+  #Geometry
+  /api/admin/zones/{id}/geometry:
+    get:
+      summary: Get zone geometry (GeoJSON)
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  key: { type: string }
+                  label: { type: string }
+                  geometry: { type: object, nullable: true }
+    put:
+      summary: Set zone geometry (GeoJSON)
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                geometry:
+                  type: object
+                  description: GeoJSON Polygon or MultiPolygon
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "Geometry enregistrée"
+                    id: 1
+                    key: "ville"
+
+  /api/admin/zones/key/{key}/geometry:
+    put:
+      summary: Set zone geometry by key (GeoJSON)
+      tags: [Admin Zones]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema: { type: string, enum: [ville, peripherie, super-peripherie] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                geometry:
+                  type: object
+                  description: GeoJSON Polygon or MultiPolygon
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                sample:
+                  value:
+                    msg: "Geometry enregistrée"
+                    id: 1
+                    key: "ville"
+
   # Admin Users
   /api/admin/users:
     get:
@@ -1296,23 +1387,43 @@ paths:
       parameters:
         - in: query
           name: zoneLevel
-          required: true
+          required: false
           schema: { type: string, enum: [ville, peripherie, super-peripherie] }
+        - in: query
+          name: lat
+          required: false
+          schema: { type: number }
+        - in: query
+          name: lng
+          required: false
+          schema: { type: number }
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/Slot' }
+                type: object
+                properties:
+                  type: { type: string, enum: [standard] }
+                  allowed: { type: boolean }
+                  zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+                  inferredZone: { type: string, enum: [ville, peripherie, super-peripherie], nullable: true }
+                  slots:
+                    type: array
+                    items: { $ref: '#/components/schemas/Slot' }
               examples:
                 sample:
                   value:
-                    - startISO: "2025-08-16T08:00:00+03:00"
-                      endISO: "2025-08-16T10:00:00+03:00"
-                    - startISO: "2025-08-16T10:00:00+03:00"
-                      endISO: "2025-08-16T12:00:00+03:00"
+                    type: standard
+                    allowed: true
+                    zoneLevel: ville
+                    inferredZone: ville
+                    slots:
+                      - startISO: "2025-08-16T08:00:00+03:00"
+                        endISO: "2025-08-16T10:00:00+03:00"
+                      - startISO: "2025-08-16T10:00:00+03:00"
+                        endISO: "2025-08-16T12:00:00+03:00"
         '401':
           description: Unauthorized
           content:
@@ -1377,7 +1488,9 @@ paths:
               type: object
               properties:
                 type: { type: string, enum: [standard, express] }
-                zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie] }
+                zoneLevel: { type: string, enum: [ville, peripherie, super-peripherie], description: "Optional if lat/lng or dropoffLocalityId provided" }
+                lat: { type: number, description: "Dropoff latitude (preferred)" }
+                lng: { type: number, description: "Dropoff longitude (preferred)" }
                 pickupAddress: { type: string }
                 dropoffAddress: { type: string }
                 weight: { type: number }
@@ -1387,7 +1500,7 @@ paths:
                 recipientEmail: { type: string, format: email }
                 slotStart: { type: string, format: date-time }
                 slotEnd: { type: string, format: date-time }
-              required: [type, zoneLevel, pickupAddress, dropoffAddress, weight, parcels]
+              required: [type, pickupAddress, dropoffAddress, weight, parcels]
       responses:
         '201':
           description: Created

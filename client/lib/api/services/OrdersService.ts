@@ -17,7 +17,18 @@ export class OrdersService {
     public postApiOrders(
         requestBody: {
             type: 'standard' | 'express';
-            zoneLevel: 'ville' | 'peripherie' | 'super-peripherie';
+            /**
+             * Optional if lat/lng or dropoffLocalityId provided
+             */
+            zoneLevel?: 'ville' | 'peripherie' | 'super-peripherie';
+            /**
+             * Dropoff latitude (preferred)
+             */
+            lat?: number;
+            /**
+             * Dropoff longitude (preferred)
+             */
+            lng?: number;
             pickupAddress: string;
             dropoffAddress: string;
             weight: number;

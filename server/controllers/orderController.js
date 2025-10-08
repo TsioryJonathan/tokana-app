@@ -12,13 +12,14 @@ import { sendSms } from "../services/smsService.js";
 import { sendEmail } from "../services/emailService.js";
 import User from "../models/User.js";
 import crypto from "crypto";
+import { inferZoneLevel } from "../utils/geo.js";
 
 const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 const createSchema = Joi.object({
   type: Joi.string().valid("standard", "express").required(),
-  zoneLevel: Joi.string()
-    .valid("ville", "peripherie", "super-peripherie")
-    .required(),
+  zoneLevel: Joi.string().valid("ville", "peripherie", "super-peripherie").optional(),
+  lat: Joi.number().optional(),
+  lng: Joi.number().optional(),
   pickupAddress: Joi.string().min(3).required(),
   dropoffAddress: Joi.string().min(3).required(),
   weight: Joi.number().positive().precision(2).required(),
@@ -28,9 +29,7 @@ const createSchema = Joi.object({
 
   recipientEmail: Joi.string().email().optional(),
   // Optional enrichments
-  category: Joi.string()
-    .valid("ENVELOPE", "SMALL", "MEDIUM", "LARGE")
-    .optional(),
+  category: Joi.string().valid("ENVELOPE", "SMALL", "MEDIUM", "LARGE").optional(),
   fragile: Joi.boolean().optional(),
   bulky: Joi.boolean().optional(),
   pickupName: Joi.string().min(2).max(120).optional(),
@@ -43,6 +42,12 @@ const createSchema = Joi.object({
   // For standard only
   slotStart: Joi.date().iso().allow(null),
   slotEnd: Joi.date().iso().allow(null),
+}).custom((val, helper) => {
+  const hasCoords = typeof val.lat === 'number' && typeof val.lng === 'number';
+  if (!hasCoords && !val.zoneLevel && !val.dropoffLocalityId) {
+    return helper.error('any.custom', { message: 'zoneLevel ou (lat,lng) ou dropoffLocalityId requis' });
+  }
+  return val;
 });
 
 const statusSchema = Joi.object({
@@ -100,6 +105,11 @@ export const listOrderRemarks = async (req, res, next) => {
       if (!userId || order.createdBy !== userId) {
         return res.status(403).json({ msg: "Accès refusé" });
       }
+    // If coords provided, infer zone from geometry (takes precedence)
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      const inferred = await inferZoneLevel(lat, lng);
+      if (inferred) zoneLevel = inferred;
+    }
     }
 
     const remarks = await OrderRemark.findAll({
@@ -169,6 +179,8 @@ export const createOrder = async (req, res, next) => {
       recipientPhone,
       slotStart,
       slotEnd,
+      lat,
+      lng,
     } = value;
 
     // Derive zoneLevel from dropoffLocalityId if provided (source of truth)
@@ -231,6 +243,8 @@ export const createOrder = async (req, res, next) => {
       notes: value.notes ?? null,
       pickupLocalityId: value.pickupLocalityId ?? null,
       dropoffLocalityId: value.dropoffLocalityId ?? null,
+      dropoffLat: typeof lat === 'number' ? lat : null,
+      dropoffLng: typeof lng === 'number' ? lng : null,
       weight,
       parcels,
       cashToCollect: cashToCollect ?? null,

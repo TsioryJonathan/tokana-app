@@ -302,4 +302,78 @@ export class AdminZonesService {
             },
         });
     }
+    /**
+     * Get zone geometry (GeoJSON)
+     * @param id
+     * @returns any OK
+     * @throws ApiError
+     */
+    public getApiAdminZonesGeometry(
+        id: number,
+    ): CancelablePromise<{
+        id?: number;
+        key?: string;
+        label?: string;
+        geometry?: Record<string, any> | null;
+    }> {
+        return this.httpRequest.request({
+            method: 'GET',
+            url: '/api/admin/zones/{id}/geometry',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * Set zone geometry (GeoJSON)
+     * @param id
+     * @param requestBody
+     * @returns any OK
+     * @throws ApiError
+     */
+    public putApiAdminZonesGeometry(
+        id: number,
+        requestBody: {
+            /**
+             * GeoJSON Polygon or MultiPolygon
+             */
+            geometry?: Record<string, any>;
+        },
+    ): CancelablePromise<any> {
+        return this.httpRequest.request({
+            method: 'PUT',
+            url: '/api/admin/zones/{id}/geometry',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Set zone geometry by key (GeoJSON)
+     * @param key
+     * @param requestBody
+     * @returns any OK
+     * @throws ApiError
+     */
+    public putApiAdminZonesKeyGeometry(
+        key: 'ville' | 'peripherie' | 'super-peripherie',
+        requestBody: {
+            /**
+             * GeoJSON Polygon or MultiPolygon
+             */
+            geometry?: Record<string, any>;
+        },
+    ): CancelablePromise<any> {
+        return this.httpRequest.request({
+            method: 'PUT',
+            url: '/api/admin/zones/key/{key}/geometry',
+            path: {
+                'key': key,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
 }

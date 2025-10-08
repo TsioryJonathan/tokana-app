@@ -4,6 +4,10 @@
 /* eslint-disable */
 export type PricingQuoteResponse = {
     zoneLevel?: PricingQuoteResponse.zoneLevel;
+    /**
+     * Zone inferred from lat/lng when provided
+     */
+    inferredZone?: PricingQuoteResponse.inferredZone | null;
     type?: PricingQuoteResponse.type;
     weight?: number;
     parcels?: number;
@@ -22,6 +26,14 @@ export type PricingQuoteResponse = {
 };
 export namespace PricingQuoteResponse {
     export enum zoneLevel {
+        VILLE = 'ville',
+        PERIPHERIE = 'peripherie',
+        SUPER_PERIPHERIE = 'super-peripherie',
+    }
+    /**
+     * Zone inferred from lat/lng when provided
+     */
+    export enum inferredZone {
         VILLE = 'ville',
         PERIPHERIE = 'peripherie',
         SUPER_PERIPHERIE = 'super-peripherie',

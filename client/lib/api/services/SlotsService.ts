@@ -10,17 +10,29 @@ export class SlotsService {
     /**
      * Get standard delivery slots
      * @param zoneLevel
-     * @returns Slot OK
+     * @param lat
+     * @param lng
+     * @returns any OK
      * @throws ApiError
      */
     public getApiSlotsStandard(
-        zoneLevel: 'ville' | 'peripherie' | 'super-peripherie',
-    ): CancelablePromise<Array<Slot>> {
+        zoneLevel?: 'ville' | 'peripherie' | 'super-peripherie',
+        lat?: number,
+        lng?: number,
+    ): CancelablePromise<{
+        type?: 'standard';
+        allowed?: boolean;
+        zoneLevel?: 'ville' | 'peripherie' | 'super-peripherie';
+        inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null;
+        slots?: Array<Slot>;
+    }> {
         return this.httpRequest.request({
             method: 'GET',
             url: '/api/slots/standard',
             query: {
                 'zoneLevel': zoneLevel,
+                'lat': lat,
+                'lng': lng,
             },
             errors: {
                 401: `Unauthorized`,
