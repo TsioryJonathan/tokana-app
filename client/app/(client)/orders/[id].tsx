@@ -1,4 +1,3 @@
-  const [svcQuote, setSvcQuote] = useState<{ total?: number; pickup?: number; delivery?: number; express?: number; manual?: boolean } | null>(null);
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
@@ -34,6 +33,13 @@ export default function OrderDetails() {
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
+  const [svcQuote, setSvcQuote] = useState<{
+    total?: number;
+    pickup?: number;
+    delivery?: number;
+    express?: number;
+    manual?: boolean;
+  } | null>(null);
 
   const api = useMemo(getApiClient, []);
 
