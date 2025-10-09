@@ -113,6 +113,7 @@ export default function NewOrderWizard() {
   // Locality selection
   const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
   const [selectedDropoffLocality, setSelectedDropoffLocality] = useState<LocalityItem | null>(null);
+  const [pickupLatLng, setPickupLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffLatLng, setDropoffLatLng] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     if (!selectedDropoffLocality) return;
@@ -203,19 +204,15 @@ export default function NewOrderWizard() {
       const sPhone = normalizeLocalPhone(sender.phone);
       if (!mgPhoneRegex.test(sPhone)) errs.push("Téléphone expéditeur invalide");
       if (!sender.address.trim()) errs.push("Adresse expéditeur requise");
+      if (!pickupLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de collecte");
     }
     if (step === 2) {
       if (!recipient.name.trim()) errs.push("Nom destinataire requis");
       const rPhone = normalizeLocalPhone(recipient.phone);
       if (!mgPhoneRegex.test(rPhone)) errs.push("Téléphone destinataire invalide");
-      if (!recipient.address.trim()) errs.push("Adresse destinataire requise");
+      if (!dropoffLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de livraison");
     }
-    if (step === 3) {
-      // Service: exiger soit une localité, soit des coordonnées sélectionnées
-      if (!selectedDropoffLocality && !dropoffLatLng) {
-        errs.push("Sélectionnez la localité ou choisissez une adresse.");
-      }
-    }
+    // Étape 3: plus de fallback localité, les coordonnées sont désormais requises à l'étape 2
     // Étape paiement: non bloquante (en implémentation)
     return errs;
   };
@@ -350,7 +347,7 @@ export default function NewOrderWizard() {
         pickupAddress: sender.address.trim(),
         pickupName: sender.name.trim() || undefined,
         pickupPhone: cleanedSenderPhone || undefined,
-        dropoffAddress: recipient.address.trim(),
+        dropoffAddress: (recipient.address || '').trim() || (selectedDropoffLocality?.name ?? ''),
         dropoffName: recipient.name.trim() || undefined,
         category: parcel.category,
         fragile: !!parcel.fragile,
@@ -365,13 +362,16 @@ export default function NewOrderWizard() {
         slotStart,
         slotEnd,
         // Optional fields for future server-side zone derivation
-        ...(selectedPickupLocality ? { pickupLocalityId: selectedPickupLocality.id } : {}),
         ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
+        ...(pickupLatLng ? { pickupLat: pickupLatLng.lat, pickupLng: pickupLatLng.lng } : {}),
         ...(dropoffLatLng ? { dropoffLat: dropoffLatLng.lat, dropoffLng: dropoffLatLng.lng } : {}),
       };
       if (!dropoffLatLng) {
         orderPayload.zoneLevel = zoneLevel;
       }
+      // Always include zoneLevel for backend pricing/slots, preferring server-inferred zone (from coords)
+      orderPayload.zoneLevel = ((serverQuote?.inferredZone as any) || zoneLevel);
+
       const created = await api.orders.postApiOrders(orderPayload as any);
       resetForm();
       showToast("Commande créée", "success");
@@ -412,47 +412,31 @@ export default function NewOrderWizard() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
         {step === 0 && <FirstStep parcel={parcel} setParcel={setParcel} />}
 
-        {step === 1 && <SecondStep sender={sender} setSender={setSender} />}
         {step === 1 && (
-          <LocalitySelector
-            selected={selectedPickupLocality}
-            onSelect={(loc) => setSelectedPickupLocality(loc)}
-            onReset={() => setSelectedPickupLocality(null)}
-            label="Localité de collecte (optionnel)"
+          <SecondStep
+            sender={sender}
+            setSender={setSender}
+            onPickupSelected={({ label, lat, lng }) => {
+              setPickupLatLng({ lat, lng });
+              showToast('Adresse de collecte sélectionnée', 'success');
+            }}
+            coordsText={pickupLatLng ? `Coordonnées pickup: ${pickupLatLng.lat.toFixed(5)}, ${pickupLatLng.lng.toFixed(5)}` : null}
           />
         )}
 
         {step === 2 && (
-          <ThirdStep recipient={recipient} setRecipient={setRecipient} />
-        )}
-        {step === 2 && (
-          <View className="mt-2">
-            <AddressAutocomplete
-              label="Adresse de livraison (autocomplétion)"
-              placeholder="Saisir l'adresse (Antananarivo)"
-              bbox={[47.4, -19.1, 47.7, -18.7]}
-              onSelected={({ label, lat, lng }) => {
-                setDropoffLatLng({ lat, lng });
-                setRecipient((r) => ({ ...r, address: label }));
-                showToast('Adresse sélectionnée', 'success');
-              }}
-              initialText={recipient.address}
-            />
-            {dropoffLatLng && (
-              <Text className="mt-2 text-[11px] text-slate-500">Coordonnées: {dropoffLatLng.lat.toFixed(5)}, {dropoffLatLng.lng.toFixed(5)}</Text>
-            )}
-          </View>
-        )}
-
-        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={!!dropoffLatLng || !!selectedDropoffLocality} />}
-        {step === 3 && !dropoffLatLng && (
-          <LocalitySelector
-            selected={selectedDropoffLocality}
-            onSelect={(loc) => setSelectedDropoffLocality(loc)}
-            onReset={() => setSelectedDropoffLocality(null)}
-            label="Localité de livraison"
+          <ThirdStep
+            recipient={recipient}
+            setRecipient={setRecipient}
+            onDropoffSelected={({ label, lat, lng }) => {
+              setDropoffLatLng({ lat, lng });
+              showToast('Adresse sélectionnée', 'success');
+            }}
+            coordsText={dropoffLatLng ? `Coordonnées: ${dropoffLatLng.lat.toFixed(5)}, ${dropoffLatLng.lng.toFixed(5)}` : null}
           />
         )}
+
+        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={true} />}
         {/* Service hints based on selection */}
         {step === 3 && (
           <View className="mt-2 flex-row items-center">
@@ -472,15 +456,6 @@ export default function NewOrderWizard() {
                 </Text>
               </View>
             )}
-          </View>
-        )}
-
-        {/* ETA Express (affiché si service Express et dispo) */}
-        {service.service === "EXPRESS" && expressEta && (
-          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-            <Text className="text-[12px] text-emerald-700">
-              Livraison estimée {expressEta.min}–{expressEta.max} minutes
-            </Text>
           </View>
         )}
 
