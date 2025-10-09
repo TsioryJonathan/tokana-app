@@ -19,6 +19,8 @@ export function KpiSection({
   error,
   data,
   onRefresh,
+  showRefresh = true,
+  showPeriodControls = true,
 }: {
   period: Period;
   setPeriod: (p: Period | ((p: Period) => Period)) => void;
@@ -26,21 +28,45 @@ export function KpiSection({
   error: string | null;
   data: KpiData | null;
   onRefresh: () => void;
+  showRefresh?: boolean;
+  showPeriodControls?: boolean;
 }) {
   return (
     <View className="mb-6">
       <View className="flex-row items-center justify-between mb-2">
         <Text className="font-quicksand-bold">KPIs</Text>
         <View className="flex-row gap-2">
-          <TouchableOpacity onPress={() => setPeriod('today')} className={`px-3 py-1 rounded border ${period==='today' ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}>
-            <Text className={period==='today' ? 'text-white' : 'text-slate-700'}>Aujourd'hui</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setPeriod('7d')} className={`px-3 py-1 rounded border ${period==='7d' ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}>
-            <Text className={period==='7d' ? 'text-white' : 'text-slate-700'}>7 jours</Text>
-          </TouchableOpacity>
-          <TouchableOpacity disabled={loading} onPress={onRefresh} className={`px-3 py-1 rounded border flex-row items-center gap-2 ${loading ? 'border-slate-200 bg-slate-100' : 'border-slate-300'}`}>
-            {loading ? <ActivityIndicator size="small" color="#475569" /> : <Text className="text-slate-700">Rafraîchir</Text>}
-          </TouchableOpacity>
+          {showPeriodControls && (
+            <>
+              <TouchableOpacity
+                onPress={() => setPeriod('today')}
+                className={`px-3 py-1 rounded border ${period==='today' ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}
+                accessibilityLabel="Afficher la période Aujourd’hui"
+                accessibilityHint="Affiche les KPIs du jour"
+              >
+                <Text className={period==='today' ? 'text-white' : 'text-slate-700'}>Aujourd’hui</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPeriod('7d')}
+                className={`px-3 py-1 rounded border ${period==='7d' ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300'}`}
+                accessibilityLabel="Afficher la période Global (7 jours)"
+                accessibilityHint="Affiche les KPIs agrégés sur les 7 derniers jours"
+              >
+                <Text className={period==='7d' ? 'text-white' : 'text-slate-700'}>Global (7j)</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {showRefresh && (
+            <TouchableOpacity
+              disabled={loading}
+              onPress={onRefresh}
+              className={`px-3 py-1 rounded border flex-row items-center gap-2 ${loading ? 'border-slate-200 bg-slate-100' : 'border-slate-300'}`}
+              accessibilityLabel="Rafraîchir les KPIs"
+              accessibilityHint="Recharge les données de la période sélectionnée"
+            >
+              {loading ? <ActivityIndicator size="small" color="#475569" /> : <Text className="text-slate-700">Rafraîchir</Text>}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       {loading && (
