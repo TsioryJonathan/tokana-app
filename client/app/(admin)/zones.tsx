@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { getApiClient } from '@/lib/api/client';
 import { useToast } from '@/components/ui/Toast';
 import type { Zone } from '@/lib/api/models/Zone';
-import type { Axis } from '@/lib/api/models/Axis';
-import type { Locality } from '@/lib/api/models/Locality';
 
 export default function AdminZonesPage() {
   const api = useMemo(getApiClient, []);
@@ -20,17 +18,11 @@ export default function AdminZonesPage() {
   const [newZoneLabel, setNewZoneLabel] = useState('');
 
   const [expandedZoneId, setExpandedZoneId] = useState<number | null>(null);
-  const [axes, setAxes] = useState<Record<number, Axis[]>>({});
-  const [localities, setLocalities] = useState<Record<number, Locality[]>>({});
 
-  const [newAxisLabel, setNewAxisLabel] = useState('');
-  const [newAxisKey, setNewAxisKey] = useState<'nord'|'est'|'sud'|'ouest'|'nord_ouest'|'sud_ouest'>('nord');
-  const [creatingAxisForZoneId, setCreatingAxisForZoneId] = useState<number | null>(null);
-  const [deletingAxisId, setDeletingAxisId] = useState<number | null>(null);
-
-  const [newLocalityName, setNewLocalityName] = useState('');
-  const [creatingLocalityForAxisId, setCreatingLocalityForAxisId] = useState<number | null>(null);
-  const [deletingLocalityId, setDeletingLocalityId] = useState<number | null>(null);
+  // Geometry editor state (per zone)
+  const [geometryTextByZoneId, setGeometryTextByZoneId] = useState<Record<number, string>>({});
+  const [geometryBusyByZoneId, setGeometryBusyByZoneId] = useState<Record<number, boolean>>({});
+  
 
   const loadZones = async () => {
     setLoading(true);
@@ -98,118 +90,55 @@ export default function AdminZonesPage() {
   const toggleZone = async (zoneId: number) => {
     if (expandedZoneId === zoneId) { setExpandedZoneId(null); return; }
     setExpandedZoneId(zoneId);
-    try {
-      const a = await api.adminZones.getApiAdminZonesAxes(zoneId);
-      setAxes(prev => ({ ...prev, [zoneId]: a }));
-    } catch (e) {
-      console.warn('load axes error', e);
-      showToast('Chargement axes échoué', 'error');
+    const z = zones.find(zz => zz.id === zoneId);
+    if (z) {
+      await loadGeometry(z);
     }
   };
 
-  const createAxis = async (zoneId: number) => {
+  const loadGeometry = async (z: Zone) => {
+    if (!z?.id) return;
+    setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: true }));
     try {
-      setCreatingAxisForZoneId(zoneId);
-      await api.adminZones.postApiAdminZonesAxes(zoneId, { key: newAxisKey, label: newAxisLabel });
-      showToast('Axe créé', 'success');
-      setNewAxisLabel('');
-      const a = await api.adminZones.getApiAdminZonesAxes(zoneId);
-      setAxes(prev => ({ ...prev, [zoneId]: a }));
+      const res = await api.adminZones.getApiAdminZonesGeometry(z.id!);
+      const text = res?.geometry ? JSON.stringify(res.geometry, null, 2) : '';
+      setGeometryTextByZoneId((m) => ({ ...m, [z.id!]: text }));
+      showToast('Géométrie chargée', 'success');
     } catch (e) {
-      console.warn('create axis error', e);
-      showToast("Création axe échouée", 'error');
+      console.warn('load geometry error', e);
+      showToast('Chargement géométrie échoué', 'error');
     } finally {
-      setCreatingAxisForZoneId(null);
+      setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: false }));
     }
   };
 
-  const updateAxis = async (axisId: number, label: string, zoneId: number) => {
+  const saveGeometry = async (z: Zone) => {
+    if (!z?.id || !z?.key) return;
+    const raw = geometryTextByZoneId[z.id!]?.trim();
+    if (!raw) { showToast('Collez un GeoJSON valide', 'error'); return; }
+    let parsed: any;
     try {
-      await api.adminZones.putApiAdminZonesAxes(axisId, { label });
-      showToast('Axe mis à jour', 'success');
-      const a = await api.adminZones.getApiAdminZonesAxes(zoneId);
-      setAxes(prev => ({ ...prev, [zoneId]: a }));
-    } catch (e) {
-      console.warn('update axis error', e);
-      showToast('MàJ axe échouée', 'error');
+      parsed = JSON.parse(raw);
+    } catch {
+      showToast('JSON invalide', 'error');
+      return;
     }
-  };
-
-  const deleteAxis = async (axisId: number, zoneId: number) => {
+    const t = parsed?.type;
+    if (!(t === 'Polygon' || t === 'MultiPolygon') || !Array.isArray(parsed?.coordinates)) {
+      showToast('GeoJSON invalide (Polygon ou MultiPolygon requis)', 'error');
+      return;
+    }
+    setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: true }));
     try {
-      setDeletingAxisId(axisId);
-      await api.adminZones.deleteApiAdminZonesAxes(axisId);
-      showToast('Axe supprimé', 'success');
-      const a = await api.adminZones.getApiAdminZonesAxes(zoneId);
-      setAxes(prev => ({ ...prev, [zoneId]: a }));
+      // Save by key for convenience
+      await api.adminZones.putApiAdminZonesKeyGeometry(z.key as any, { geometry: parsed });
+      showToast('Géométrie enregistrée', 'success');
     } catch (e) {
-      console.warn('delete axis error', e);
-      showToast('Suppression axe échouée', 'error');
+      console.warn('save geometry error', e);
+      showToast('Enregistrement géométrie échoué', 'error');
     } finally {
-      setDeletingAxisId(null);
+      setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: false }));
     }
-  };
-  const confirmDeleteAxis = (axisId: number, zoneId: number) => {
-    Alert.alert('Supprimer l\'axe', 'Cette action est irréversible. Continuer ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: () => deleteAxis(axisId, zoneId) },
-    ]);
-  };
-
-  const loadLocalities = async (axisId: number) => {
-    try {
-      const l = await api.adminZones.getApiAdminZonesAxesLocalities(axisId);
-      setLocalities(prev => ({ ...prev, [axisId]: l }));
-    } catch (e) {
-      console.warn('load localities error', e);
-      showToast('Chargement localités échoué', 'error');
-    }
-  };
-
-  const createLocality = async (axisId: number) => {
-    try {
-      setCreatingLocalityForAxisId(axisId);
-      await api.adminZones.postApiAdminZonesAxesLocalities(axisId, { name: newLocalityName });
-      showToast('Localité créée', 'success');
-      setNewLocalityName('');
-      await loadLocalities(axisId);
-    } catch (e) {
-      console.warn('create locality error', e);
-      showToast('Création localité échouée', 'error');
-    } finally {
-      setCreatingLocalityForAxisId(null);
-    }
-  };
-
-  const updateLocality = async (localityId: number, name: string, axisId: number) => {
-    try {
-      await api.adminZones.putApiAdminZonesLocalities(localityId, { name });
-      showToast('Localité mise à jour', 'success');
-      await loadLocalities(axisId);
-    } catch (e) {
-      console.warn('update locality error', e);
-      showToast('MàJ localité échouée', 'error');
-    }
-  };
-
-  const deleteLocality = async (localityId: number, axisId: number) => {
-    try {
-      setDeletingLocalityId(localityId);
-      await api.adminZones.deleteApiAdminZonesLocalities(localityId);
-      showToast('Localité supprimée', 'success');
-      await loadLocalities(axisId);
-    } catch (e) {
-      console.warn('delete locality error', e);
-      showToast('Suppression localité échouée', 'error');
-    } finally {
-      setDeletingLocalityId(null);
-    }
-  };
-  const confirmDeleteLocality = (localityId: number, axisId: number) => {
-    Alert.alert('Supprimer la localité', 'Cette action est irréversible. Continuer ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: () => deleteLocality(localityId, axisId) },
-    ]);
   };
 
   return (
@@ -243,6 +172,33 @@ export default function AdminZonesPage() {
           </TouchableOpacity>
           {expandedZoneId === z.id && (
             <View className="p-4">
+              <Text className="font-quicksand-bold mb-2">Geometry (GeoJSON)</Text>
+              <View className="bg-slate-50 border border-slate-200 rounded-md p-3 mb-3">
+                <Text className="text-slate-600 mb-1">Collez un GeoJSON Polygon/MultiPolygon (coordonnées [lng, lat])</Text>
+                <TextInput
+                  className="border border-slate-300 rounded px-3 py-2"
+                  style={{ minHeight: 140, textAlignVertical: 'top' }}
+                  multiline
+                  placeholder='Ex: { "type": "Polygon", "coordinates": [[[47.50,-18.95],[47.60,-18.95],[47.60,-18.85],[47.50,-18.85],[47.50,-18.95]]] }'
+                  value={geometryTextByZoneId[z.id!] ?? ''}
+                  onChangeText={(t) => setGeometryTextByZoneId((m) => ({ ...m, [z.id!]: t }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View className="flex-row gap-2 mt-2">
+                  <TouchableOpacity onPress={() => loadGeometry(z)} disabled={!!geometryBusyByZoneId[z.id!]} className={`px-3 py-2 rounded ${geometryBusyByZoneId[z.id!] ? 'bg-slate-300' : 'bg-slate-200'}`}>
+                    <Text className="text-slate-700 text-xs font-quicksand-bold">{geometryBusyByZoneId[z.id!] ? 'Chargement…' : 'Charger'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => saveGeometry(z)} disabled={!!geometryBusyByZoneId[z.id!]} className={`px-3 py-2 rounded ${geometryBusyByZoneId[z.id!] ? 'bg-emerald-400' : 'bg-emerald-600'}`}>
+                    <Text className="text-white text-xs font-quicksand-bold">{geometryBusyByZoneId[z.id!] ? 'Enregistrement…' : 'Enregistrer'}</Text>
+                  </TouchableOpacity>
+                  <View className="flex-1" />
+                  <TouchableOpacity className="px-3 py-2 rounded border border-red-600" onPress={() => confirmDeleteZone(z.id!)}>
+                    <Text className="text-red-600">Supprimer</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               <Text className="text-slate-600 mb-1">Renommer la zone</Text>
               <View className="flex-row gap-2 mb-3">
                 <TextInput className="flex-1 border border-slate-300 rounded px-3 py-2" defaultValue={z.label || ''} onEndEditing={(e) => updateZone(z.id!, e.nativeEvent.text)} />
@@ -250,60 +206,6 @@ export default function AdminZonesPage() {
                   <Text className="text-red-600">Supprimer</Text>
                 </TouchableOpacity>
               </View>
-
-              <Text className="font-quicksand-bold mt-2 mb-2">Axes</Text>
-              <View className="bg-slate-50 border border-slate-200 rounded-md p-3 mb-3">
-                <Text className="text-slate-600 mb-1">Créer un axe</Text>
-                <View className="flex-row gap-2 mb-2 flex-wrap">
-                  {(['nord','est','sud','ouest','nord_ouest','sud_ouest'] as const).map(k => (
-                    <TouchableOpacity key={k} className={`px-3 py-2 rounded border ${newAxisKey===k?'bg-emerald-600 border-emerald-600':'border-slate-300'}`} onPress={() => setNewAxisKey(k)}>
-                      <Text className={newAxisKey===k? 'text-white' : 'text-slate-700'}>{k}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <TextInput className="border border-slate-300 rounded px-3 py-2 mb-2" placeholder="Label" value={newAxisLabel} onChangeText={setNewAxisLabel} />
-                <TouchableOpacity className={`rounded ${creatingAxisForZoneId===z.id ? 'bg-emerald-400' : 'bg-emerald-600'}`} disabled={creatingAxisForZoneId===z.id} onPress={() => createAxis(z.id!)}>
-                  <Text className="text-white text-center py-3">{creatingAxisForZoneId===z.id ? 'Création…' : "Créer l'axe"}</Text>
-                </TouchableOpacity>
-              </View>
-
-              {(axes[z.id!] || []).map(a => (
-                <View key={a.id} className="border border-slate-200 rounded-md p-3 mb-3">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="font-quicksand-bold">Axe: {a.key} — {a.label}</Text>
-                    <TouchableOpacity disabled={deletingAxisId===a.id} onPress={() => confirmDeleteAxis(a.id!, z.id!)}>
-                      <Text className={`text-red-600 ${deletingAxisId===a.id ? 'opacity-50' : ''}`}>{deletingAxisId===a.id ? 'Suppression…' : 'Supprimer'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput className="border border-slate-300 rounded px-3 py-2 mb-2" defaultValue={a.label || ''} onEndEditing={(e) => updateAxis(a.id!, e.nativeEvent.text, z.id!)} />
-
-                  <Text className="font-quicksand-bold mt-2 mb-1">Localités</Text>
-                  <View className="bg-slate-50 border border-slate-200 rounded-md p-3">
-                    <View className="flex-row gap-2 mb-2">
-                      <TextInput className="flex-1 border border-slate-300 rounded px-3 py-2" placeholder="Nom de localité" value={newLocalityName} onChangeText={setNewLocalityName} />
-                      <TouchableOpacity className={`px-3 py-2 rounded ${creatingLocalityForAxisId===a.id ? 'bg-emerald-400' : 'bg-emerald-600'}`} disabled={creatingLocalityForAxisId===a.id} onPress={() => createLocality(a.id!)}>
-                        <Text className="text-white">{creatingLocalityForAxisId===a.id ? 'Ajout…' : 'Ajouter'}</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity className="mb-2" onPress={() => loadLocalities(a.id!)}>
-                      <Text className="text-emerald-700">Rafraîchir</Text>
-                    </TouchableOpacity>
-                    {(localities[a.id!] || []).map(l => (
-                      <View key={l.id} className="flex-row items-center justify-between py-1">
-                        <Text>{l.name}</Text>
-                        <View className="flex-row gap-3">
-                          <TouchableOpacity onPress={() => updateLocality(l.id!, l.name || '', a.id!)}>
-                            <Text className="text-emerald-700">Sauver</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity disabled={deletingLocalityId===l.id} onPress={() => confirmDeleteLocality(l.id!, a.id!)}>
-                            <Text className={`text-red-600 ${deletingLocalityId===l.id ? 'opacity-50' : ''}`}>{deletingLocalityId===l.id ? 'Suppression…' : 'Supprimer'}</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ))}
             </View>
           )}
         </View>
