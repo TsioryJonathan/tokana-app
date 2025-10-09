@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { mapBackendStatus, statusLabel } from '@/lib/mappers/order';
+import { PricingQuoteRequest } from '@/lib/api/models/PricingQuoteRequest';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getApiClient } from '@/lib/api/client';
 import type { Order } from '@/lib/api/models/Order';
@@ -18,6 +20,7 @@ export default function AdminOrderDetail() {
   const [assignVal, setAssignVal] = useState('');
   const [assignBusy, setAssignBusy] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [svcQuote, setSvcQuote] = useState<{ total?: number; pickup?: number; delivery?: number; express?: number; manual?: boolean } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,16 +42,67 @@ export default function AdminOrderDetail() {
     load();
   }, [orderId, load]);
 
+  // Fetch pricing quote for the current order to compute service fee and total to collect (COD + service)
+  useEffect(() => {
+    if (!order) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const typeEnum = String(order.type) === 'express' ? PricingQuoteRequest.type.EXPRESS : PricingQuoteRequest.type.STANDARD;
+        const body: any = {
+          type: typeEnum,
+          weight: order.weight,
+          parcels: order.parcels,
+        };
+        if (typeof (order as any).dropoffLat === 'number' && typeof (order as any).dropoffLng === 'number') {
+          body.lat = (order as any).dropoffLat;
+          body.lng = (order as any).dropoffLng;
+        } else if (order.zoneLevel) {
+          body.zoneLevel =
+            order.zoneLevel === 'ville'
+              ? PricingQuoteRequest.zoneLevel.VILLE
+              : order.zoneLevel === 'peripherie'
+              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+        }
+        const quote = await api.pricing.postApiPricingQuote(body);
+        if (cancelled) return;
+        setSvcQuote({
+          total: quote?.priceTotal ?? undefined,
+          pickup: quote?.fees?.pickupFee ?? undefined,
+          delivery: quote?.fees?.deliveryFee ?? undefined,
+          express: quote?.fees?.expressSurcharge ?? undefined,
+          manual: !!quote?.requiresManualHandling,
+        });
+      } catch (e) {
+        if (!cancelled) setSvcQuote(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [order, api]);
+
   const assign = async () => {
-    const trimmed = assignVal.trim();
-    const toId = trimmed ? Number(trimmed) : NaN;
-    if (Number.isNaN(toId)) {
-      showToast('ID livreur invalide', 'error');
-      return;
-    }
+    const raw = assignVal.trim();
+    if (!raw) { showToast('Renseignez un ID ou un nom de livreur', 'error'); return; }
     setAssignBusy(true);
     try {
-      await api.orders.patchApiOrdersAssign(orderId, { assignedTo: toId });
+      let targetId: number | null = null;
+      const asNum = Number(raw);
+      if (!Number.isNaN(asNum)) {
+        targetId = asNum;
+      } else {
+        // lookup by name among livreurs
+        const res = await api.adminUsers.getApiAdminUsers('livreur', raw, 1, 5);
+        const items = res.items ?? [];
+        const exact = items.filter(u => (u.name ?? '').toLowerCase() === raw.toLowerCase());
+        if (exact.length === 1) targetId = exact[0].id as number;
+        else if (items.length === 1) targetId = items[0].id as number;
+        else if (items.length > 1) { showToast(`Plusieurs livreurs trouvés pour "${raw}". Affinez la recherche.`, 'error'); return; }
+        else { showToast(`Aucun livreur trouvé pour "${raw}"`, 'error'); return; }
+      }
+      await api.orders.patchApiOrdersAssign(orderId, { assignedTo: targetId });
       showToast('Commande assignée', 'success');
       await load();
     } catch (e: any) {
@@ -155,11 +209,11 @@ export default function AdminOrderDetail() {
       <View className="px-4 pt-4 pb-2 border-b border-slate-200 bg-white">
         <View className="flex-row items-center justify-between">
           <Text className="text-xl font-quicksand-bold text-slate-900">Commande #{order.id}</Text>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Revenir à la liste des commandes">
             <Text className="text-emerald-700">Retour</Text>
           </TouchableOpacity>
         </View>
-        <Text className="text-slate-500 mt-1">{order.type?.toUpperCase()} · Statut: {String(order.status)}</Text>
+        <Text className="text-slate-500 mt-1">{order.type?.toUpperCase()} · Statut: {statusLabel[mapBackendStatus(String(order.status))]}</Text>
       </View>
 
       <View className="m-4 bg-white border border-slate-200 rounded-2xl p-4">
@@ -178,6 +232,66 @@ export default function AdminOrderDetail() {
             ) : null}
           </>
         ); })()}
+      </View>
+
+      {/* Détail du prix */}
+      <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-4">
+        <Text className="font-quicksand-bold text-slate-900 mb-2">Détail du prix</Text>
+        {(() => {
+          const p = order as any;
+          const pick = (...keys: string[]) => keys.map(k => p?.[k]).find(v => v !== undefined && v !== null);
+          const amt = (v: any): number | undefined => {
+            if (v === undefined || v === null) return undefined;
+            const n = Number(v);
+            return Number.isFinite(n) ? n : undefined;
+          };
+
+          const rows: Array<{ label: string; value?: number }> = [
+            { label: 'Montant à encaisser (COD)', value: amt(p.cashToCollect) },
+            { label: 'Pickup', value: amt((svcQuote?.pickup ?? undefined) as any) },
+            { label: 'Livraison', value: amt((svcQuote?.delivery ?? undefined) as any) },
+            { label: 'Express', value: amt((svcQuote?.express ?? undefined) as any) },
+            { label: 'Prix de base', value: amt(pick('priceBase','basePrice')) },
+            { label: 'Zone', value: amt(pick('priceZone','zonePrice')) },
+            { label: 'Poids', value: amt(pick('weightFee','weightPrice')) },
+            { label: 'Volumineux', value: amt(pick('bulkyFee')) },
+            { label: 'Fragile', value: amt(pick('fragileFee')) },
+            { label: 'Distance', value: amt(pick('distanceFee')) },
+            { label: 'Retour', value: amt(pick('returnFee')) },
+            { label: 'Colis supplémentaires', value: amt(pick('parcelsFee')) },
+            { label: 'TVA', value: amt(pick('vat')) },
+            { label: 'Réduction', value: (() => { const d = pick('discount'); const n = amt(d); return n !== undefined ? -Math.abs(n) : undefined; })() },
+          ];
+          const present = rows.filter(r => r.value !== undefined);
+          const serviceTotal = amt(svcQuote?.total);
+          const cod = amt(p.cashToCollect) || 0;
+          const totalToCollect = (serviceTotal ?? 0) + cod;
+          if (present.length === 0 && serviceTotal === undefined) {
+            return <Text className="text-slate-500">Aucun détail disponible</Text>;
+          }
+          return (
+            <View>
+              {present.map((r, idx) => (
+                <View key={idx} className="flex-row justify-between py-1">
+                  <Text className="text-slate-700">{r.label}</Text>
+                  <Text className="text-slate-800">{r.value} Ar</Text>
+                </View>
+              ))}
+              {serviceTotal !== undefined && (
+                <View className="flex-row justify-between py-1 mt-1 border-t border-slate-200">
+                  <Text className="text-slate-900 font-quicksand-bold">Frais de service (livraison)</Text>
+                  <Text className="text-slate-900 font-quicksand-bold">{serviceTotal} Ar</Text>
+                </View>
+              )}
+              {(serviceTotal !== undefined || cod > 0) && (
+                <View className="flex-row justify-between py-1">
+                  <Text className="text-slate-900 font-quicksand-bold">Total à encaisser (COD + service)</Text>
+                  <Text className="text-slate-900 font-quicksand-bold">{totalToCollect} Ar</Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
       </View>
 
       <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-4">
@@ -210,17 +324,18 @@ export default function AdminOrderDetail() {
         <View className="flex-row items-center gap-2">
           <TextInput
             className="flex-1 border border-slate-300 rounded-lg px-3 py-2"
-            placeholder="ID livreur"
-            keyboardType="number-pad"
+            placeholder="ID ou nom du livreur"
+            keyboardType="default"
             value={assignVal}
             onChangeText={setAssignVal}
+            accessibilityLabel={`Saisir l'ID ou le nom du livreur pour la commande #${order.id}`}
           />
-          <TouchableOpacity className={`px-3 py-2 rounded-lg ${assignBusy ? 'bg-emerald-400' : 'bg-emerald-600'}`} disabled={assignBusy} onPress={assign}>
-            <Text className="text-white">{assignBusy ? '...' : 'Assigner'}</Text>
+          <TouchableOpacity className={`px-3 py-2 rounded-lg ${assignBusy ? 'bg-emerald-300' : 'bg-emerald-600'}`} disabled={assignBusy} onPress={assign} accessibilityLabel={`Assigner la commande #${order.id}`} accessibilityState={{ disabled: assignBusy }}>
+            {assignBusy ? <ActivityIndicator size="small" color="#ffffff" /> : <Text className="text-white">Assigner</Text>}
           </TouchableOpacity>
           {order.assignedTo != null && (
-            <TouchableOpacity className={`px-3 py-2 rounded-lg ${assignBusy ? 'bg-slate-300' : 'bg-slate-500'}`} disabled={assignBusy} onPress={unassign}>
-              <Text className="text-white">Retirer</Text>
+            <TouchableOpacity className={`px-3 py-2 rounded-lg ${assignBusy ? 'bg-rose-300' : 'bg-rose-600'}`} disabled={assignBusy} onPress={unassign} accessibilityLabel={`Retirer l'assignation de la commande #${order.id}`} accessibilityState={{ disabled: assignBusy }}>
+              {assignBusy ? <ActivityIndicator size="small" color="#ffffff" /> : <Text className="text-white">Retirer</Text>}
             </TouchableOpacity>
           )}
         </View>
@@ -229,11 +344,29 @@ export default function AdminOrderDetail() {
       <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-8">
         <Text className="font-quicksand-bold text-slate-900 mb-2">Statut</Text>
         <View className="flex-row flex-wrap gap-2">
-          {['en_cours_de_traitement','en_route_vers_recuperation','en_chemin','en_chemin_pour_livraison','expedie'].map((s) => (
-            <TouchableOpacity key={s} className={`px-3 py-2 rounded-full border ${statusBusy ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`} disabled={statusBusy} onPress={() => setStatus(s)}>
-              <Text className="text-slate-700 text-xs font-quicksand-bold">{s}</Text>
-            </TouchableOpacity>
-          ))}
+          {(() => {
+            const pipeline = ['en_cours_de_traitement','en_route_vers_recuperation','en_chemin','en_chemin_pour_livraison','expedie'];
+            const cur = String(order.status);
+            const idx = Math.max(0, pipeline.indexOf(cur));
+            return pipeline.map((s, i) => {
+              const isCurrent = i === idx;
+              const isNext = i === idx + 1;
+              const enabled = isNext && !statusBusy; // n'autorise que l'étape suivante
+              const cls = enabled ? 'bg-emerald-600 border-emerald-700' : isCurrent ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-100 border-slate-300';
+              const textCls = enabled ? 'text-white' : isCurrent ? 'text-emerald-700' : 'text-slate-400';
+              return (
+                <TouchableOpacity
+                  key={s}
+                  className={`px-3 py-2 rounded-full border ${cls}`}
+                  disabled={!enabled}
+                  onPress={() => enabled && setStatus(s)}
+                  accessibilityState={{ disabled: !enabled }}
+                >
+                  <Text className={`${textCls} text-xs font-quicksand-bold`}>{s}</Text>
+                </TouchableOpacity>
+              );
+            });
+          })()}
         </View>
       </View>
 
@@ -241,11 +374,11 @@ export default function AdminOrderDetail() {
         <Text className="font-quicksand-bold text-slate-900 mb-2">Assistance OTP (Admin)</Text>
         <Text className="text-slate-600 mb-2">Utilisez uniquement en support au livreur/destinataire.</Text>
         <View className="flex-row flex-wrap gap-2">
-          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.SMS)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
-            <Text className="text-slate-700 text-xs font-quicksand-bold">Envoyer OTP (SMS)</Text>
+          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.SMS)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-100 border-slate-300' : 'bg-emerald-50 border-emerald-300'}`} accessibilityState={{ disabled: otpReqBusy }}>
+            <Text className={`${otpReqBusy ? 'text-slate-400' : 'text-emerald-700'} text-xs font-quicksand-bold`}>Envoyer OTP (SMS)</Text>
           </TouchableOpacity>
-          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.EMAIL)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
-            <Text className="text-slate-700 text-xs font-quicksand-bold">Envoyer OTP (Email)</Text>
+          <TouchableOpacity disabled={otpReqBusy} onPress={() => requestOtp(OTPRequest.channel.EMAIL)} className={`px-3 py-2 rounded-full border ${otpReqBusy ? 'bg-slate-100 border-slate-300' : 'bg-emerald-50 border-emerald-300'}`} accessibilityState={{ disabled: otpReqBusy }}>
+            <Text className={`${otpReqBusy ? 'text-slate-400' : 'text-emerald-700'} text-xs font-quicksand-bold`}>Envoyer OTP (Email)</Text>
           </TouchableOpacity>
         </View>
         <View className="mt-3">
@@ -258,8 +391,8 @@ export default function AdminOrderDetail() {
             className="border border-slate-300 rounded-lg px-3 py-2"
           />
           <View className="mt-2">
-            <TouchableOpacity disabled={otpVerifyBusy || !/^\d{6}$/.test(otpCode)} onPress={verifyOtp} className={`self-start px-3 py-2 rounded-full border ${otpVerifyBusy || !/^\d{6}$/.test(otpCode) ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}>
-              <Text className="text-slate-700 text-xs font-quicksand-bold">Vérifier OTP</Text>
+            <TouchableOpacity disabled={otpVerifyBusy || !/^\d{6}$/.test(otpCode)} onPress={verifyOtp} className={`self-start px-3 py-2 rounded-full border ${otpVerifyBusy || !/^\d{6}$/.test(otpCode) ? 'bg-slate-100 border-slate-300' : 'bg-emerald-50 border-emerald-300'}`} accessibilityState={{ disabled: otpVerifyBusy || !/^\d{6}$/.test(otpCode) }}>
+              <Text className={`${otpVerifyBusy || !/^\d{6}$/.test(otpCode) ? 'text-slate-400' : 'text-emerald-700'} text-xs font-quicksand-bold`}>Vérifier OTP</Text>
             </TouchableOpacity>
           </View>
         </View>
