@@ -10,6 +10,7 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export { AdminStatsResponse } from './models/AdminStatsResponse';
 export type { AuthTokens } from './models/AuthTokens';
 export { Axis } from './models/Axis';
 export type { Error } from './models/Error';
@@ -26,6 +27,7 @@ export { User } from './models/User';
 export { Zone } from './models/Zone';
 export type { ZonePublicResponse } from './models/ZonePublicResponse';
 
+export { AdminStatsService } from './services/AdminStatsService';
 export { AdminUsersService } from './services/AdminUsersService';
 export { AdminZonesService } from './services/AdminZonesService';
 export { AuthService } from './services/AuthService';

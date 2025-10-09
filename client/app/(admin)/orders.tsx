@@ -1,70 +1,40 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, RefreshControl, ScrollView } from 'react-native';
-import { getApiClient } from '@/lib/api/client';
-import { useToast } from '@/components/ui/Toast';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
-import type { Order } from '@/lib/api/models/Order';
-import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
+import { type OrderStatus } from '@/lib/mappers/order';
 import { useRouter } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
+import { useAdminOrders } from './hooks/useAdminOrders';
+import { AdminOrderItem } from './components/AdminOrderItem';
 
 export default function AdminOrdersPage() {
-  const api = useMemo(getApiClient, []);
-  const { showToast } = useToast();
   const router = useRouter();
-
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [assignInputs, setAssignInputs] = useState<Record<number, string>>({});
-  const [assignBusy, setAssignBusy] = useState<Record<number, boolean>>({});
-  const [statusBusy, setStatusBusy] = useState<Record<number, boolean>>({});
-  const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
+  const {
+    orders,
+    filteredOrders,
+    loading,
+    refreshing,
+    lastUpdatedISO,
+    filterTab,
+    setFilterTab,
+    serviceTab,
+    setServiceTab,
+    dateTab,
+    setDateTab,
+    assignInputs,
+    setAssignInput,
+    assignBusy,
+    statusBusy,
+    load,
+    onRefresh,
+    assign,
+    unassign,
+    updateStatus,
+    updateStatusBackend,
+    counts,
+  } = useAdminOrders();
   const isFocused = useIsFocused();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      // Admin sees all orders; API has no explicit all flag, so omit mine and assignedTo
-      const list = await api.orders.getApiOrders();
-      setOrders(list);
-      setLastUpdatedISO(new Date().toISOString());
-    } catch (e: any) {
-      console.warn('orders load error', e?.body || e?.message || e);
-      showToast('Chargement des commandes échoué', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ---- Admin status update ----
-  const backendStatusByUi: Partial<Record<OrderStatus, string>> = {
-    CREATED: 'en_cours_de_traitement',
-    PICKED_UP: 'en_route_vers_recuperation',
-    IN_TRANSIT: 'en_chemin',
-    DELIVERED: 'expedie', // nécessite OTP vérifié côté serveur
-  };
-
-  const updateStatusBackend = async (orderId: number, backendStatus: string) => {
-    setStatusBusy((m) => ({ ...m, [orderId]: true }));
-    try {
-      await api.orders.patchApiOrdersStatus(orderId, { status: backendStatus });
-      showToast(`Statut mis à jour`, 'success');
-      await load();
-    } catch (e: any) {
-      console.warn('status update error', e?.body || e?.message || e);
-      const msg: string = e?.body?.msg || e?.message || 'Mise à jour du statut échouée';
-      showToast(msg, 'error');
-    } finally {
-      setStatusBusy((m) => ({ ...m, [orderId]: false }));
-    }
-  };
-
-  const updateStatus = async (orderId: number, uiStatus: OrderStatus) => {
-    const backend = backendStatusByUi[uiStatus];
-    if (!backend) return; // ignore unsupported statuses like CANCELLED
-    return updateStatusBackend(orderId, backend);
-  };
 
   useEffect(() => {
     if (isFocused) load();
@@ -73,130 +43,23 @@ export default function AdminOrdersPage() {
   // Auto-refresh every 2 minutes when focused
   useAutoRefresh(load, 2 * 60 * 1000, isFocused);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await load();
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
-  const setBusy = (id: number, busy: boolean) => setAssignBusy((m) => ({ ...m, [id]: busy }));
-  const setInput = (id: number, v: string) => setAssignInputs((m) => ({ ...m, [id]: v }));
-
-  const assign = async (orderId: number) => {
-    const value = assignInputs[orderId]?.trim();
-    const toId = value ? Number(value) : NaN;
-    if (!value || Number.isNaN(toId)) {
-      showToast('ID livreur invalide', 'error');
-      return;
-    }
-    setBusy(orderId, true);
-    try {
-      await api.orders.patchApiOrdersAssign(orderId, { assignedTo: toId });
-      showToast('Commande assignée', 'success');
-      await load();
-    } catch (e: any) {
-      console.warn('assign error', e?.body || e?.message || e);
-      const msg: string = e?.body?.msg || e?.message || 'Assignation échouée';
-      showToast(msg, 'error');
-    } finally {
-      setBusy(orderId, false);
-    }
-  };
-
-  const unassign = async (orderId: number) => {
-    setBusy(orderId, true);
-    try {
-      await api.orders.patchApiOrdersAssign(orderId, { assignedTo: null });
-      showToast('Assignation retirée', 'success');
-      await load();
-    } catch (e: any) {
-      console.warn('unassign error', e?.body || e?.message || e);
-      const msg: string = e?.body?.msg || e?.message || 'Désassignation échouée';
-      showToast(msg, 'error');
-    } finally {
-      setBusy(orderId, false);
-    }
-  };
-
-  const renderItem = ({ item }: { item: Order }) => {
+  const renderItem = ({ item }: { item: any }) => {
     const busy = !!assignBusy[item.id!];
     const val = assignInputs[item.id!] ?? (item.assignedTo ? String(item.assignedTo) : '');
     return (
-      <View
-        className="border border-slate-200 rounded-xl p-4 mb-3 bg-white"
-        style={{
-          elevation: 1,
-          shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 2 },
-        }}
-      >
-        <Text className="font-quicksand-bold text-slate-800">#{item.id} · {item.type?.toUpperCase()} · {statusLabel[mapBackendStatus(String(item.status))]}</Text>
-        <Text className="text-slate-600 mt-1">{item.pickupAddress} → {item.dropoffAddress}</Text>
-        <Text className="text-slate-600 mt-1">Poids: {item.weight}kg · Colis: {item.parcels}</Text>
-        <Text className="text-slate-600 mt-1">Assigné à: {item.assignedTo ?? '—'}</Text>
-        <View className="mt-2">
-          <TouchableOpacity
-            className="self-start px-3 py-1.5 rounded-full bg-slate-100 border border-slate-300"
-            onPress={() => router.push({ pathname: '/(admin)/orders/[id]' as any, params: { id: String(item.id) } })}
-          >
-            <Text className="text-slate-700 text-xs font-quicksand-bold">Voir</Text>
-          </TouchableOpacity>
-        </View>
-        <View className="mt-2 flex-row items-center gap-2">
-          <TextInput
-            className="flex-1 border border-slate-300 rounded-lg px-3 py-2"
-            placeholder="ID livreur"
-            keyboardType="number-pad"
-            value={val}
-            onChangeText={(t) => setInput(item.id!, t)}
-          />
-          <TouchableOpacity
-            className={`px-3 py-2 rounded-lg ${busy ? 'bg-emerald-400' : 'bg-emerald-600'}`}
-            disabled={busy}
-            onPress={() => assign(item.id!)}
-          >
-            <Text className="text-white">{busy ? '...' : 'Assigner'}</Text>
-          </TouchableOpacity>
-          {item.assignedTo != null && (
-            <TouchableOpacity
-              className={`px-3 py-2 rounded-lg ${busy ? 'bg-slate-300' : 'bg-slate-500'}`}
-              disabled={busy}
-              onPress={() => unassign(item.id!)}
-            >
-              <Text className="text-white">Retirer</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {/* Status actions */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ gap: 8 }}>
-          {(['CREATED','PICKED_UP','IN_TRANSIT','DELIVERED'] as OrderStatus[]).map((ui) => {
-            const busyS = !!statusBusy[item.id!];
-            return (
-              <TouchableOpacity
-                key={ui}
-                className={`px-3 py-2 rounded-full border ${busyS ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}
-                disabled={busyS}
-                onPress={() => updateStatus(item.id!, ui)}
-              >
-                <Text className="text-slate-700 text-xs font-quicksand-bold">{statusLabel[ui]}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          {/* Explicit action for 'en_chemin_pour_livraison' */}
-          <TouchableOpacity
-            className={`px-3 py-2 rounded-full border ${statusBusy[item.id!] ? 'bg-slate-200 border-slate-300' : 'bg-slate-100 border-slate-300'}`}
-            disabled={!!statusBusy[item.id!]}
-            onPress={() => updateStatusBackend(item.id!, 'en_chemin_pour_livraison')}
-          >
-            <Text className="text-slate-700 text-xs font-quicksand-bold">En chemin pour la livraison</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+      <AdminOrderItem
+        order={item}
+        assignValue={val}
+        onChangeAssignValue={(t) => setAssignInput(item.id!, t)}
+        busyAssign={busy}
+        busyStatus={!!statusBusy[item.id!]}
+        onPressView={() => router.push({ pathname: '/(admin)/orders/[id]' as any, params: { id: String(item.id) } })}
+        onAssign={() => assign(item.id!)}
+        onUnassign={() => unassign(item.id!)}
+        onUpdateStatus={(ui: OrderStatus) => updateStatus(item.id!, ui)}
+        onUpdateBackendStatus={(s: string) => updateStatusBackend(item.id!, s)}
+      />
     );
   };
 
@@ -209,15 +72,145 @@ export default function AdminOrdersPage() {
           <Text className="text-[11px] text-slate-400 mt-1">Dernière mise à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}</Text>
         )}
       </View>
+      {/* Tabs: Date filter (All / Today / Week) */}
+      <View className="px-4 pt-2">
+        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
+          <TouchableOpacity
+            onPress={() => setDateTab('all')}
+            className={`px-3 py-2 rounded-lg ${dateTab === 'all' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher toutes les périodes"
+          >
+            <View className="flex-row items-center">
+              <Text className={`${dateTab === 'all' ? 'text-white' : 'text-slate-700'}`}>Toutes</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${dateTab === 'all' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.date?.all ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setDateTab('today')}
+            className={`px-3 py-2 rounded-lg ${dateTab === 'today' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes du jour"
+          >
+            <View className="flex-row items-center">
+              <Text className={`${dateTab === 'today' ? 'text-white' : 'text-slate-700'}`}>Aujourd’hui</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${dateTab === 'today' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.date?.today ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setDateTab('week')}
+            className={`px-3 py-2 rounded-lg ${dateTab === 'week' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes de la semaine (depuis dimanche)"
+          >
+            <View className="flex-row items-center">
+              <Text className={`${dateTab === 'week' ? 'text-white' : 'text-slate-700'}`}>Cette semaine</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${dateTab === 'week' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.date?.week ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {/* Tabs: Assigned / Unassigned */}
+      <View className="px-4 pt-3">
+        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
+          <TouchableOpacity
+            onPress={() => setFilterTab('assigned')}
+            className={`px-3 py-2 rounded-lg ${filterTab === 'assigned' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes assignées"
+            accessibilityHint={`Il y a ${counts?.assignedCount ?? 0} commandes assignées`}
+          >
+            <View className="flex-row items-center">
+              <Text className={`${filterTab === 'assigned' ? 'text-white' : 'text-slate-700'}`}>Assignées</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${filterTab === 'assigned' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.assignedCount ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setFilterTab('unassigned')}
+            className={`px-3 py-2 rounded-lg ${filterTab === 'unassigned' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes non assignées"
+            accessibilityHint={`Il y a ${counts?.unassignedCount ?? 0} commandes non assignées`}
+          >
+            <View className="flex-row items-center">
+              <Text className={`${filterTab === 'unassigned' ? 'text-white' : 'text-slate-700'}`}>Non assignées</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${filterTab === 'unassigned' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.unassignedCount ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {/* Tabs: Service Type (All / Standard / Express) */}
+      <View className="px-4 pt-2">
+        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
+          <TouchableOpacity
+            onPress={() => setServiceTab('all')}
+            className={`px-3 py-2 rounded-lg ${serviceTab === 'all' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher toutes les commandes"
+            accessibilityHint={`Il y a ${counts?.service?.all ?? 0} commandes au total pour l'onglet service`}
+          >
+            <View className="flex-row items-center">
+              <Text className={`${serviceTab === 'all' ? 'text-white' : 'text-slate-700'}`}>Toutes</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${serviceTab === 'all' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.service?.all ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setServiceTab('standard')}
+            className={`px-3 py-2 rounded-lg ${serviceTab === 'standard' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes Standard"
+            accessibilityHint={`Il y a ${counts?.service?.standard ?? 0} commandes Standard`}
+          >
+            <View className="flex-row items-center">
+              <Text className={`${serviceTab === 'standard' ? 'text-white' : 'text-slate-700'}`}>Standard</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${serviceTab === 'standard' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.service?.standard ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setServiceTab('express')}
+            className={`px-3 py-2 rounded-lg ${serviceTab === 'express' ? 'bg-emerald-600' : 'bg-slate-100'}`}
+            accessibilityLabel="Afficher les commandes Express"
+            accessibilityHint={`Il y a ${counts?.service?.express ?? 0} commandes Express`}
+          >
+            <View className="flex-row items-center">
+              <Text className={`${serviceTab === 'express' ? 'text-white' : 'text-slate-700'}`}>Express</Text>
+              <View className={`ml-2 px-2 h-5 min-w-[20px] rounded-full items-center justify-center ${serviceTab === 'express' ? 'bg-emerald-700' : 'bg-slate-300'}`}>
+                <Text className="text-[11px] text-white">{counts?.service?.express ?? 0}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {/* Reset filters button */}
+      <View className="px-4 pt-2">
+        <TouchableOpacity
+          className="self-end px-3 py-2 rounded-full bg-slate-200"
+          onPress={() => { setServiceTab('express'); setDateTab('today'); setFilterTab('unassigned'); }}
+          accessibilityLabel="Réinitialiser les filtres"
+          accessibilityHint="Revenir aux filtres par défaut: Express · Aujourd’hui · Non assignées"
+        >
+          <Text className="text-slate-700 text-[12px] font-quicksand-bold">Réinitialiser</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         className="px-4 pt-3"
-        data={orders}
+        data={filteredOrders}
         keyExtractor={(o) => String(o.id)}
         renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={!loading ? (
           <View className="p-10 items-center">
-            <Text className="text-slate-500">Aucune commande</Text>
+            <Text className="text-slate-500">
+              {`Aucune commande ${serviceTab === 'all' ? '' : serviceTab === 'express' ? 'Express ' : 'Standard '} ${filterTab === 'assigned' ? 'assignée' : 'non assignée'} ${dateTab === 'all' ? '' : dateTab === 'today' ? 'aujourd’hui' : 'cette semaine'}`}
+            </Text>
           </View>
         ) : null}
         contentContainerStyle={{ paddingBottom: 16 }}

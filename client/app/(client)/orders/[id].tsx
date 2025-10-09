@@ -1,3 +1,4 @@
+  const [svcQuote, setSvcQuote] = useState<{ total?: number; pickup?: number; delivery?: number; express?: number; manual?: boolean } | null>(null);
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
@@ -7,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useToast } from "@/components/ui/Toast";
+import { PricingQuoteRequest } from "@/lib/api/models/PricingQuoteRequest";
 import {
   mapBackendOrderToUI,
   type UIOrder as Order,
@@ -24,6 +26,7 @@ export default function OrderDetails() {
   const router = useRouter();
   const { showToast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
+  const [rawOrder, setRawOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<
     { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
@@ -52,6 +55,7 @@ export default function OrderDetails() {
         const ui = mapBackendOrderToUI(data);
         if (mounted) {
           setOrder(ui);
+          setRawOrder(data as any);
           setError(null);
           setLastUpdatedISO(new Date().toISOString());
         }
@@ -88,6 +92,45 @@ export default function OrderDetails() {
   // Auto-refresh every 2 minutes only when focused
   useAutoRefresh(() => setReloadTick((t) => t + 1), 2 * 60 * 1000, isFocused);
 
+  // Fetch pricing quote for this order to compute service fee and total to collect (COD + service)
+  useEffect(() => {
+    if (!rawOrder) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const typeEnum = String(rawOrder.type) === 'express' ? PricingQuoteRequest.type.EXPRESS : PricingQuoteRequest.type.STANDARD;
+        const body: any = {
+          type: typeEnum,
+          weight: rawOrder.weight,
+          parcels: rawOrder.parcels,
+        };
+        if (typeof rawOrder.dropoffLat === 'number' && typeof rawOrder.dropoffLng === 'number') {
+          body.lat = rawOrder.dropoffLat;
+          body.lng = rawOrder.dropoffLng;
+        } else if (rawOrder.zoneLevel) {
+          body.zoneLevel =
+            rawOrder.zoneLevel === 'ville'
+              ? PricingQuoteRequest.zoneLevel.VILLE
+              : rawOrder.zoneLevel === 'peripherie'
+              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+        }
+        const quote = await api.pricing.postApiPricingQuote(body);
+        if (cancelled) return;
+        setSvcQuote({
+          total: quote?.priceTotal ?? undefined,
+          pickup: quote?.fees?.pickupFee ?? undefined,
+          delivery: quote?.fees?.deliveryFee ?? undefined,
+          express: quote?.fees?.expressSurcharge ?? undefined,
+          manual: !!quote?.requiresManualHandling,
+        });
+      } catch (e) {
+        if (!cancelled) setSvcQuote(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [rawOrder, api]);
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -120,6 +163,7 @@ export default function OrderDetails() {
                   const data = await api.orders.getApiOrders1(Number(id));
                   const ui = mapBackendOrderToUI(data);
                   setOrder(ui);
+                  setRawOrder(data as any);
                   setError(null);
                   const h = await api.orders.getApiOrdersHistory(Number(id));
                   const mapped = (h || [])
@@ -202,11 +246,55 @@ export default function OrderDetails() {
             </Text>
           </View>
 
+          {/* Détail du prix */}
           <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Prix</Text>
-            <Text className="text-base font-quicksand-bold text-slate-900">
-              {formatAr(order.priceAr)}
-            </Text>
+            <Text className="text-slate-500 text-sm">Détail du prix</Text>
+            {(() => {
+              const p: any = rawOrder || {};
+              const amt = (v: any): number | undefined => {
+                if (v === undefined || v === null) return undefined;
+                const n = Number(v);
+                return Number.isFinite(n) ? n : undefined;
+              };
+              const cod = amt(p.cashToCollect) || 0;
+              const rows: Array<{ label: string; value?: number }> = [
+                { label: 'Montant à encaisser (COD)', value: amt(p.cashToCollect) },
+                { label: 'Pickup', value: amt(svcQuote?.pickup) },
+                { label: 'Livraison', value: amt(svcQuote?.delivery) },
+                { label: 'Express', value: amt(svcQuote?.express) },
+              ];
+              const present = rows.filter(r => r.value !== undefined);
+              const serviceTotal = amt(svcQuote?.total);
+              const totalToCollect = (serviceTotal ?? 0) + cod;
+              return (
+                <View className="mt-1">
+                  {present.length === 0 && !serviceTotal ? (
+                    <Text className="text-[12px] text-slate-500">Aucun détail disponible</Text>
+                  ) : (
+                    <>
+                      {present.map((r, idx) => (
+                        <View key={idx} className="flex-row justify-between py-1">
+                          <Text className="text-slate-700">{r.label}</Text>
+                          <Text className="text-slate-800">{formatAr(r.value || 0)}</Text>
+                        </View>
+                      ))}
+                      {serviceTotal !== undefined && (
+                        <View className="flex-row justify-between py-1 mt-1 border-t border-slate-200">
+                          <Text className="text-slate-900 font-quicksand-bold">Frais de service (livraison)</Text>
+                          <Text className="text-slate-900 font-quicksand-bold">{formatAr(serviceTotal)}</Text>
+                        </View>
+                      )}
+                      {(serviceTotal !== undefined || cod > 0) && (
+                        <View className="flex-row justify-between py-1">
+                          <Text className="text-slate-900 font-quicksand-bold">Total à encaisser (COD + service)</Text>
+                          <Text className="text-slate-900 font-quicksand-bold">{formatAr(totalToCollect)}</Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+              );
+            })()}
           </View>
 
           <View className="mt-4">

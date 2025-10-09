@@ -16,6 +16,7 @@ tags:
   - name: Pricing
   - name: Slots
   - name: Delivery OTP
+  - name: Admin Stats
 components:
   securitySchemes:
     bearerAuth:
@@ -28,6 +29,31 @@ components:
       properties:
         msg:
           type: string
+    AdminStatsResponse:
+      type: object
+      properties:
+        ordersToday: { type: integer }
+        deliveredToday: { type: integer }
+        inProgress: { type: integer }
+        late: { type: integer }
+        heavyCount: { type: integer }
+        otpPending: { type: integer }
+        revenueToday: { type: integer }
+        now: { type: string, format: date-time }
+        period: { type: string, enum: [today, 7d] }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        global:
+          type: object
+          properties:
+            totalAll: { type: integer }
+            deliveredAll: { type: integer }
+            inProgressAll: { type: integer }
+            lateAll: { type: integer }
+        seriesOrders7d:
+          type: array
+          description: "Order counts per day for the last 7 days (inclusive of today), index 0 = oldest"
+          items: { type: integer }
     User:
       type: object
       properties:
@@ -167,6 +193,65 @@ components:
         token: { type: string }
         refreshToken: { type: string }
 paths:
+  /api/admin/stats:
+    get:
+      summary: Get admin KPIs and stats
+      description: |
+        Returns consolidated KPIs for the selected period and global aggregates.
+        Period `today` covers [start of today .. end of today] in server time.
+        Period `7d` covers the last 7 days including today.
+      tags: [Admin Stats]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: period
+          required: false
+          schema: { type: string, enum: [today, 7d], default: today }
+          description: "Selects the period for KPIs. Defaults to 'today' if omitted."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminStatsResponse' }
+              examples:
+                sample:
+                  value:
+                    ordersToday: 12
+                    deliveredToday: 8
+                    inProgress: 4
+                    late: 1
+                    heavyCount: 2
+                    otpPending: 3
+                    revenueToday: 45000
+                    now: "2025-10-08T13:00:00.000Z"
+                    period: "today"
+                    start: "2025-10-08T00:00:00.000Z"
+                    end: "2025-10-08T23:59:59.999Z"
+                    global:
+                      totalAll: 420
+                      deliveredAll: 380
+                      inProgressAll: 30
+                      lateAll: 10
+                    seriesOrders7d: [5,7,6,9,10,8,12]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                unauthorized:
+                  value:
+                    msg: "Unauthorized"
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                forbidden:
+                  value:
+                    msg: "Forbidden"
   # Public Zones
   /api/zones:
     get:
