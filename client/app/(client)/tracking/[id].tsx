@@ -1,32 +1,51 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
-import { statusLabel } from "@/lib/mappers/order";
+import { statusLabel, mapBackendStatus } from "@/lib/mappers/order";
 import LottieView from "lottie-react-native";
+import { useToast } from "@/components/ui/Toast";
+import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
+import { useIsFocused } from "@react-navigation/native";
 export default function TrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const api = useMemo(getApiClient, []);
+  const { showToast } = useToast();
+  const isFocused = useIsFocused();
   const [order, setOrder] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api.orders.getApiOrders1(Number(id));
+      setOrder(data);
+      const h = await api.orders.getApiOrdersHistory(Number(id));
+      setHistory(Array.isArray(h) ? h : []);
+    } catch (err: any) {
+      console.warn("tracking load error", err);
+      showToast("Erreur de chargement du suivi", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [api, id, showToast]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.orders.getApiOrders1(Number(id));
-        setOrder(data);
-        const h = await api.orders.getApiOrdersHistory(Number(id));
-        setHistory(h || []);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id]);
+    setLoading(true);
+    load();
+  }, [id, load]);
+
+  // Auto-refresh every 2 minutes when focused
+  useAutoRefresh(load, 2 * 60 * 1000, isFocused);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   if (loading) {
     return (
@@ -50,7 +69,12 @@ export default function TrackingScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-slate-50">
+    <ScrollView
+      className="flex-1 bg-slate-50"
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#059669"]} tintColor="#059669" />
+      }
+    >
       {/* Illustration */}
       <View className="bg-white items-center p-6">
         <LottieView
@@ -93,7 +117,7 @@ export default function TrackingScreen() {
           <View>
             <Text className="text-slate-500 text-sm">Statut</Text>
             <Text className="font-bold text-emerald-700">
-              {statusLabel[order.status] || order.status}
+              {statusLabel[mapBackendStatus(String(order.status || ""))] || String(order.status)}
             </Text>
           </View>
         </View>
@@ -126,7 +150,7 @@ export default function TrackingScreen() {
               />
               <View className="flex-1">
                 <Text className="font-semibold text-slate-800">
-                  {statusLabel[h.toStatus] || h.toStatus}
+                  {statusLabel[mapBackendStatus(String(h.toStatus || ""))] || String(h.toStatus)}
                 </Text>
                 <Text className="text-xs text-slate-500">
                   {new Date(h.createdAt).toLocaleString()}
