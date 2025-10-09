@@ -9,9 +9,10 @@ export type AddressAutocompleteProps = {
   bbox?: [number, number, number, number];
   onSelected: (sel: { label: string; lat: number; lng: number; feature: MapboxFeature }) => void;
   initialText?: string;
+  onTextChange?: (text: string) => void;
 };
 
-export default function AddressAutocomplete({ label = 'Adresse (autocomplétion)', placeholder = "Saisir l'adresse", bbox, onSelected, initialText = '' }: AddressAutocompleteProps) {
+export default function AddressAutocomplete({ label = 'Adresse (autocomplétion)', placeholder = "Saisir l'adresse", bbox, onSelected, initialText = '', onTextChange }: AddressAutocompleteProps) {
   const { query, setQuery, loading, error, suggestions } = useMapboxGeocoding(initialText, {
     limit: 5,
     bbox,
@@ -25,7 +26,7 @@ export default function AddressAutocomplete({ label = 'Adresse (autocomplétion)
       <TextInput
         placeholder={placeholder}
         value={query}
-        onChangeText={setQuery}
+        onChangeText={(t) => { setQuery(t); onTextChange?.(t); }}
         className="px-3 py-2 rounded-xl bg-white border border-slate-200"
         autoCorrect={false}
         autoCapitalize="none"
