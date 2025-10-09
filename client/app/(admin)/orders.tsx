@@ -115,11 +115,12 @@ export default function AdminOrdersPage() {
       </View>
       {/* Tabs: Assigned / Unassigned */}
       <View className="px-4 pt-3">
-        <View className="flex-row bg-white border border-slate-200 rounded-2xl p-2 items-center">
+        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
           <TouchableOpacity
             onPress={() => setFilterTab('assigned')}
             className={`px-3 py-2 rounded-lg ${filterTab === 'assigned' ? 'bg-emerald-600' : 'bg-slate-100'}`}
             accessibilityLabel="Afficher les commandes assignées"
+            accessibilityHint={`Il y a ${counts?.assignedCount ?? 0} commandes assignées`}
           >
             <View className="flex-row items-center">
               <Text className={`${filterTab === 'assigned' ? 'text-white' : 'text-slate-700'}`}>Assignées</Text>
@@ -128,11 +129,11 @@ export default function AdminOrdersPage() {
               </View>
             </View>
           </TouchableOpacity>
-          <View className="w-[8]" />
           <TouchableOpacity
             onPress={() => setFilterTab('unassigned')}
             className={`px-3 py-2 rounded-lg ${filterTab === 'unassigned' ? 'bg-emerald-600' : 'bg-slate-100'}`}
             accessibilityLabel="Afficher les commandes non assignées"
+            accessibilityHint={`Il y a ${counts?.unassignedCount ?? 0} commandes non assignées`}
           >
             <View className="flex-row items-center">
               <Text className={`${filterTab === 'unassigned' ? 'text-white' : 'text-slate-700'}`}>Non assignées</Text>
@@ -145,11 +146,12 @@ export default function AdminOrdersPage() {
       </View>
       {/* Tabs: Service Type (All / Standard / Express) */}
       <View className="px-4 pt-2">
-        <View className="flex-row bg-white border border-slate-200 rounded-2xl p-2 items-center">
+        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
           <TouchableOpacity
             onPress={() => setServiceTab('all')}
             className={`px-3 py-2 rounded-lg ${serviceTab === 'all' ? 'bg-emerald-600' : 'bg-slate-100'}`}
             accessibilityLabel="Afficher toutes les commandes"
+            accessibilityHint={`Il y a ${counts?.service?.all ?? 0} commandes au total pour l'onglet service`}
           >
             <View className="flex-row items-center">
               <Text className={`${serviceTab === 'all' ? 'text-white' : 'text-slate-700'}`}>Toutes</Text>
@@ -158,11 +160,11 @@ export default function AdminOrdersPage() {
               </View>
             </View>
           </TouchableOpacity>
-          <View className="w-[8]" />
           <TouchableOpacity
             onPress={() => setServiceTab('standard')}
             className={`px-3 py-2 rounded-lg ${serviceTab === 'standard' ? 'bg-emerald-600' : 'bg-slate-100'}`}
             accessibilityLabel="Afficher les commandes Standard"
+            accessibilityHint={`Il y a ${counts?.service?.standard ?? 0} commandes Standard`}
           >
             <View className="flex-row items-center">
               <Text className={`${serviceTab === 'standard' ? 'text-white' : 'text-slate-700'}`}>Standard</Text>
@@ -171,11 +173,11 @@ export default function AdminOrdersPage() {
               </View>
             </View>
           </TouchableOpacity>
-          <View className="w-[8]" />
           <TouchableOpacity
             onPress={() => setServiceTab('express')}
             className={`px-3 py-2 rounded-lg ${serviceTab === 'express' ? 'bg-emerald-600' : 'bg-slate-100'}`}
             accessibilityLabel="Afficher les commandes Express"
+            accessibilityHint={`Il y a ${counts?.service?.express ?? 0} commandes Express`}
           >
             <View className="flex-row items-center">
               <Text className={`${serviceTab === 'express' ? 'text-white' : 'text-slate-700'}`}>Express</Text>
@@ -186,6 +188,18 @@ export default function AdminOrdersPage() {
           </TouchableOpacity>
         </View>
       </View>
+      {/* Reset filters button */}
+      <View className="px-4 pt-2">
+        <TouchableOpacity
+          className="self-end px-3 py-2 rounded-full bg-slate-200"
+          onPress={() => { setServiceTab('express'); setDateTab('today'); setFilterTab('unassigned'); }}
+          accessibilityLabel="Réinitialiser les filtres"
+          accessibilityHint="Revenir aux filtres par défaut: Express · Aujourd’hui · Non assignées"
+        >
+          <Text className="text-slate-700 text-[12px] font-quicksand-bold">Réinitialiser</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         className="px-4 pt-3"
         data={filteredOrders}
