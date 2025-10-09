@@ -171,7 +171,19 @@ export function useAdminOrders() {
       return byAssign.filter(o => String(o.type) === (isExpress ? 'express' : 'standard'));
     })();
     // 3) Date filter (based on createdAt when available)
-    if (dateTab === 'all') return byService;
+    if (dateTab === 'all') {
+      // Sort: Express first, then by createdAt desc
+      return [...byService].sort((a, b) => {
+        const ax = String(a.type) === 'express' ? 0 : 1;
+        const bx = String(b.type) === 'express' ? 0 : 1;
+        if (ax !== bx) return ax - bx;
+        const ta = new Date(String((a as any).createdAt)).getTime();
+        const tb = new Date(String((b as any).createdAt)).getTime();
+        const va = Number.isFinite(ta) ? ta : -Infinity;
+        const vb = Number.isFinite(tb) ? tb : -Infinity;
+        return vb - va;
+      });
+    }
     const now = new Date();
     let start: Date;
     let end: Date;
@@ -191,7 +203,17 @@ export function useAdminOrders() {
       const t = new Date(String(iso)).getTime();
       return Number.isFinite(t) && t >= start.getTime() && t < end.getTime();
     };
-    return byService.filter(o => inRange((o as any).createdAt));
+    const ranged = byService.filter(o => inRange((o as any).createdAt));
+    return ranged.sort((a, b) => {
+      const ax = String(a.type) === 'express' ? 0 : 1;
+      const bx = String(b.type) === 'express' ? 0 : 1;
+      if (ax !== bx) return ax - bx;
+      const ta = new Date(String((a as any).createdAt)).getTime();
+      const tb = new Date(String((b as any).createdAt)).getTime();
+      const va = Number.isFinite(ta) ? ta : -Infinity;
+      const vb = Number.isFinite(tb) ? tb : -Infinity;
+      return vb - va;
+    });
   }, [orders, filterTab, serviceTab, dateTab]);
 
   // Badge counts for tabs (contextual with other active filters)
