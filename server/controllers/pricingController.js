@@ -34,17 +34,22 @@ export const getQuote = async (req, res, next) => {
         type,
         parcels,
         requiresManualHandling: true,
-        instructions: 'Poids supérieur à 5kg. Veuillez contacter le responsable par appel téléphonique ou SMS pour un devis personnalisé.',
         contactPhone,
       });
     }
 
     // Infer zone from coords if provided
-    let inferredZone = null;
-    if (typeof lat === 'number' && typeof lng === 'number') {
-      inferredZone = await inferZoneLevel(lat, lng);
-      if (inferredZone) zoneLevel = inferredZone;
+  let inferredZone = null;
+  if (typeof lat === 'number' && typeof lng === 'number') {
+    inferredZone = await inferZoneLevel(lat, lng);
+    if (inferredZone) zoneLevel = inferredZone;
+    // If coords were provided but no zone could be inferred and no zoneLevel fallback was given, fail fast with 400
+    if (!inferredZone && !zoneLevel) {
+      return res.status(400).json({
+        msg: "Impossible d’inférer la zone depuis les coordonnées fournies. Vérifiez que l’adresse se situe dans une zone couverte ou fournissez zoneLevel.",
+      });
     }
+  }
 
     // Delegate to service for single source of truth
     const { pickupFee, deliveryFee, expressSurcharge, total } = await computePrice({ zoneLevel, type, weight, parcels });
