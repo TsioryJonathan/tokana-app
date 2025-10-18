@@ -11,12 +11,13 @@ import {
   Platform,
   Image,
 } from "react-native";
-import LogoutButton from "@/components/Auth/LogoutButton";
+// import LogoutButton from "@/components/Auth/LogoutButton";
 import { useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
 import { normalizeLocalPhone } from "@/utils/phone";
+import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
 
 type MobileMoney = "MVOLA" | "AIRTEL" | "ORANGE";
 
@@ -122,329 +123,65 @@ export default function Profile() {
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      {/* Header */}
-      <View className="px-5 py-3 bg-white border-b border-slate-200 flex-row items-center justify-between">
-        <Text className="text-lg font-quicksand-bold text-slate-900">
-          Mon profil
-        </Text>
-        {!editing ? (
-          <TouchableOpacity
-            onPress={() => setEditing(true)}
-            activeOpacity={0.8}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="create-outline" size={18} color="#0F172A" />
-              <Text className="ml-1 font-quicksand-semibold text-slate-900">
-                Modifier
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <View className="flex-row">
-            <TouchableOpacity
-              onPress={() => setEditing(false)}
-              activeOpacity={0.8}
-              className="mr-3"
-            >
-              <Text className="font-quicksand-semibold text-slate-600">
-                Annuler
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onSaveProfile}
-              activeOpacity={0.8}
-              disabled={!canSave}
-            >
-              <Text
-                className={`font-quicksand-bold ${
-                  canSave ? "text-emerald-700" : "text-slate-400"
-                }`}
-              >
-                Enregistrer
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+    <View className="flex-1 bg-white">
+      {/* Header illustration with gradient */}
+      <View style={{ height: 260 }}>
+        <HeaderBackground source={require("@/assets/images/orders-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* Identité */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-          <View className="flex-row items-center">
-            <View className="w-16 h-16 rounded-full bg-slate-200 items-center justify-center overflow-hidden">
-              {avatarUrl ? (
-                <Image
-                  source={{ uri: avatarUrl }}
-                  style={{ width: 64, height: 64 }}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle-outline"
-                  size={54}
-                  color="#64748B"
-                />
-              )}
-            </View>
-            <View className="ml-3 flex-1">
-              {!editing ? (
-                <>
-                  <Text className="text-base font-quicksand-bold text-slate-900">
-                    {name}
-                  </Text>
-                  {phone ? (
-                    <Text className="text-[12px] text-slate-600">{phone}</Text>
-                  ) : null}
-                  {email ? (
-                    <Text className="text-[12px] text-slate-600">{email}</Text>
-                  ) : null}
-                  {role ? (
-                    <Text className="text-[12px] text-slate-500 mt-1">
-                      {role}
-                    </Text>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Labeled
-                    value={name}
-                    onChangeText={setName}
-                    label="Nom complet"
-                  />
-                  <Labeled
-                    value={phone}
-                    onChangeText={setPhone}
-                    label="Téléphone"
-                    keyboardType="phone-pad"
-                  />
-                  <Labeled
-                    value={email}
-                    onChangeText={setEmail}
-                    label="Email (optionnel)"
-                    keyboardType="email-address"
-                  />
-                </>
-              )}
-            </View>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, marginTop: -120 }}>
+        {/* Avatar camera circle */}
+        <View className="self-center w-28 h-28 rounded-full bg-white/90 items-center justify-center border border-slate-200 shadow-sm">
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={{ width: 112, height: 112, borderRadius: 9999 }} />
+          ) : (
+            <Ionicons name="camera-outline" size={36} color="#64748B" />
+          )}
+        </View>
+
+        {/* White card with rows */}
+        <View className="mt-6 bg-white rounded-2xl p-2 shadow-sm border border-slate-100">
+          <KVRow label="Name" value={name || "-"} onPress={() => setEditing(true)} showDivider />
+          <KVRow label="Phone" value={phone || "-"} onPress={() => setEditing(true)} showDivider />
+          <KVRow label="Gender" value={(role || "").toUpperCase() || "-"} onPress={() => setEditing(true)} showDivider />
+          <KVRow label="Saved Addresses" value={String(addresses.length)} onPress={() => { /* could navigate */ }} />
+        </View>
+
+        {/* Save button */}
+        <TouchableOpacity
+          onPress={onSaveProfile}
+          activeOpacity={0.9}
+          disabled={!canSave}
+          className="mt-10 items-center"
+        >
+          <View className={`w-full py-4 rounded-full ${canSave ? 'bg-yellow-400' : 'bg-yellow-200'}`}>
+            <Text className="text-center text-slate-900 font-quicksand-bold">Save</Text>
           </View>
-        </View>
-
-        {/* Paiements */}
-        {role === "client" ? (
-          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-            <SectionHeader
-              icon={<Ionicons name="card-outline" size={16} color="#0F172A" />}
-              title="Paiements – Mobile Money"
-            />
-            <PaymentRow
-              icon={
-                <MaterialCommunityIcons
-                  name="cellphone-nfc"
-                  size={18}
-                  color="#0F172A"
-                />
-              }
-              brand="MVola"
-              linked={linkedPayments.MVOLA}
-              onToggle={() => toggleLink("MVOLA")}
-            />
-            <View className="h-2" />
-            <PaymentRow
-              icon={
-                <MaterialCommunityIcons
-                  name="cellphone-nfc"
-                  size={18}
-                  color="#0F172A"
-                />
-              }
-              brand="Airtel Money"
-              linked={linkedPayments.AIRTEL}
-              onToggle={() => toggleLink("AIRTEL")}
-            />
-            <View className="h-2" />
-            <PaymentRow
-              icon={
-                <MaterialCommunityIcons
-                  name="cellphone-nfc"
-                  size={18}
-                  color="#0F172A"
-                />
-              }
-              brand="Orange Money"
-              linked={linkedPayments.ORANGE}
-              onToggle={() => toggleLink("ORANGE")}
-            />
-            <Text className="mt-2 text-[11px] text-slate-500">
-              Liez vos comptes Mobile Money pour des paiements et remboursements
-              rapides.
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Carnet d’adresses */}
-        {role === "client" && (
-          <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-            <SectionHeader
-              icon={
-                <Ionicons name="location-outline" size={16} color="#0F172A" />
-              }
-              title="Carnet d’adresses"
-            />
-            {addresses.map((a) => (
-              <View
-                key={a.id}
-                className="flex-row items-start justify-between px-3 py-3 rounded-xl border border-slate-200 mb-2"
-              >
-                <View className="flex-1">
-                  <Text className="font-quicksand-semibold text-slate-900">
-                    {a.label}
-                  </Text>
-                  <Text className="text-[12px] text-slate-600 mt-1">
-                    {a.detail}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => removeAddress(a.id)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-            <TouchableOpacity
-              onPress={addAddress}
-              activeOpacity={0.85}
-              className="mt-1 flex-row items-center self-start"
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#059669" />
-              <Text className="ml-1 text-emerald-700 font-quicksand-semibold">
-                Ajouter une adresse
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Notifications & sécurité */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
-          <SectionHeader
-            icon={
-              <Ionicons
-                name="notifications-outline"
-                size={16}
-                color="#0F172A"
-              />
-            }
-            title="Notifications"
-          />
-          <ToggleLine
-            label="Notifications push"
-            value={pushEnabled}
-            onChange={setPushEnabled}
-          />
-          <View className="h-2" />
-          <ToggleLine
-            label="SMS statut livraison"
-            value={smsEnabled}
-            onChange={setSmsEnabled}
-          />
-
-          <View className="mt-4 border-t border-slate-200 pt-3" />
-          <SectionHeader
-            icon={
-              <Ionicons name="lock-closed-outline" size={16} color="#0F172A" />
-            }
-            title="Sécurité"
-          />
-          <TouchableOpacity
-            onPress={() => {
-              // TODO: router.push("/(client)/security/change-password")
-              showToast("Changement de mot de passe à venir", "info");
-            }}
-            activeOpacity={0.8}
-            className="flex-row items-center justify-between px-3 py-3 rounded-xl border border-slate-200"
-          >
-            <Text className="font-quicksand-semibold text-slate-800">
-              Changer le mot de passe
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="#64748B" />
-          </TouchableOpacity>
-
-          <View className="h-2" />
-          <ToggleLine
-            label="Doubler l’authentification (2FA)"
-            value={twoFA}
-            onChange={setTwoFA}
-          />
-        </View>
-
-        {/* Légal */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-5">
-          <SectionHeader
-            icon={
-              <Ionicons
-                name="document-text-outline"
-                size={16}
-                color="#0F172A"
-              />
-            }
-            title="Légal"
-          />
-          <LinkRow
-            label="Conditions Générales"
-            onPress={() => {
-              /* TODO: openLink */
-            }}
-          />
-          <View className="h-2" />
-          <LinkRow
-            label="Politique de confidentialité"
-            onPress={() => {
-              /* TODO: openLink */
-            }}
-          />
-        </View>
-
-        {/* Danger & logout */}
-        <View className="px-1">
-          <LogoutButton
-            title="Se déconnecter"
-            confirm
-            className="bg-slate-900 rounded-xl text-white"
-            textClassName="font-quicksand-bold"
-            onLoggedOut={() => router.replace("/(auth)/login")}
-          />
-
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert(
-                "Supprimer mon compte",
-                "Cette action est irréversible. Continuer ?",
-                [
-                  { text: "Annuler", style: "cancel" },
-                  {
-                    text: "Supprimer",
-                    style: "destructive",
-                    onPress: async () => {
-                      // TODO: await api.deleteAccount()
-                    },
-                  },
-                ]
-              )
-            }
-            activeOpacity={0.85}
-            className="mt-3 px-5 py-3 rounded-xl border border-rose-300 items-center"
-          >
-            <Text className="text-rose-600 font-quicksand-semibold">
-              Supprimer mon compte
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
 /* ====== Petits composants réutilisables ====== */
+function KVRow({ label, value, onPress, showDivider }: { label: string; value: string; onPress?: () => void; showDivider?: boolean }) {
+  return (
+    <>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={onPress ? 0.8 : 1}
+        className="flex-row items-center justify-between px-3 py-3 rounded-xl"
+      >
+        <Text className="text-[13px] text-slate-800 font-quicksand-semibold">{label}</Text>
+        <View className="flex-row items-center">
+          <Text className="mr-1 text-[13px] text-slate-500">{value}</Text>
+          <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+        </View>
+      </TouchableOpacity>
+      {showDivider ? <View className="h-[1px] bg-slate-100 mx-3" /> : null}
+    </>
+  );
+}
 function Labeled({
   label,
   value,
