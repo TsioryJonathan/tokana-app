@@ -150,16 +150,18 @@ export default function NewOrderWizard() {
           weight,
           parcels: parcelsCount,
         };
+        const zoneEnum =
+          zoneLevel === "ville"
+            ? PricingQuoteRequest.zoneLevel.VILLE
+            : zoneLevel === "peripherie"
+            ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+            : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
         if (dropoffLatLng) {
           body.lat = dropoffLatLng.lat;
           body.lng = dropoffLatLng.lng;
+          // Also send a fallback zoneLevel in case server inference fails
+          body.zoneLevel = zoneEnum;
         } else {
-          const zoneEnum =
-            zoneLevel === "ville"
-              ? PricingQuoteRequest.zoneLevel.VILLE
-              : zoneLevel === "peripherie"
-              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
-              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
           body.zoneLevel = zoneEnum;
         }
         const quote = await api.pricing.postApiPricingQuote(body);
@@ -559,7 +561,7 @@ export default function NewOrderWizard() {
               </View>
             </TouchableOpacity>
           </View>
-        </View>
+         </View>
       </ScrollView>
     </View>
   );
