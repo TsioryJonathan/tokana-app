@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
@@ -8,6 +9,7 @@ import { normalizeLocalPhone } from "@/utils/phone";
 import { toNumberSafe, formatAr } from "@/utils/price.helper";
 import { PricingQuoteRequest } from "@/lib/api/models/PricingQuoteRequest";
 import { COLORS } from "@/theme/colors";
+import Row from "@/components/CreateOrder/Row";
 
 type Draft = {
   sender: { name: string; phone: string; address: string };
@@ -61,10 +63,13 @@ export default function OrderRecapPage() {
         const weight = toNumberSafe(draft.parcel.weightKg);
         if (!weight || weight <= 0) return;
         const body: any = { type: typeEnum, weight, parcels };
+        const zoneEnum = zoneLevel === "ville" ? PricingQuoteRequest.zoneLevel.VILLE : zoneLevel === "peripherie" ? PricingQuoteRequest.zoneLevel.PERIPHERIE : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
         if (draft.dropoffLatLng) {
           body.lat = draft.dropoffLatLng.lat; body.lng = draft.dropoffLatLng.lng;
+          // send fallback in case server inference fails
+          body.zoneLevel = zoneEnum;
         } else {
-          body.zoneLevel = zoneLevel === "ville" ? PricingQuoteRequest.zoneLevel.VILLE : zoneLevel === "peripherie" ? PricingQuoteRequest.zoneLevel.PERIPHERIE : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
+          body.zoneLevel = zoneEnum;
         }
         const q = await api.pricing.postApiPricingQuote(body);
         setQuote({
@@ -98,12 +103,8 @@ export default function OrderRecapPage() {
       // Optional slot selection for standard (pick first available)
       let slotStart: string | undefined; let slotEnd: string | undefined;
       if (type === "standard") {
-        let slotsResp: any;
-        if (draft.dropoffLatLng) {
-          slotsResp = await api.slots.getApiSlotsStandard(undefined, draft.dropoffLatLng.lat, draft.dropoffLatLng.lng);
-        } else {
-          slotsResp = await api.slots.getApiSlotsStandard(zoneLevel);
-        }
+        // `/api/slots/standard` requires only zoneLevel; extra query params (lat/lng) are rejected by Joi
+        const slotsResp: any = await api.slots.getApiSlotsStandard(zoneLevel);
         const slots = Array.isArray(slotsResp) ? slotsResp : slotsResp?.slots;
         if (!Array.isArray(slots) || slots.length === 0) {
           showToast("Aucun créneau standard disponible", "error");
@@ -142,7 +143,6 @@ export default function OrderRecapPage() {
         slotStart,
         slotEnd,
         ...(draft.selectedDropoffLocality ? { dropoffLocalityId: draft.selectedDropoffLocality.id } : {}),
-        ...(draft.pickupLatLng ? { pickupLat: draft.pickupLatLng.lat, pickupLng: draft.pickupLatLng.lng } : {}),
         ...(draft.dropoffLatLng ? { dropoffLat: draft.dropoffLatLng.lat, dropoffLng: draft.dropoffLatLng.lng } : {}),
         zoneLevel,
       };
@@ -150,8 +150,10 @@ export default function OrderRecapPage() {
       const created = await api.orders.postApiOrders(orderPayload as any);
       showToast("Commande créée", "success");
       router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(created.id) } });
-    } catch (e) {
-      showToast("Création échouée", "error");
+    } catch (e: any) {
+      // Surface server error message to the user for better diagnosis (Joi/business errors)
+      const msg = e?.body?.msg || e?.message || "Création échouée";
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -179,88 +181,81 @@ export default function OrderRecapPage() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.textMain} />
-        </TouchableOpacity>
-        <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">Récapitulatif</Text>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+      <HeaderBackground source={require("@/assets/images/recap-bg.png")} height={300} opacity={0.7} />
+
+      <View className="pt-4 pb-2 border-b border-slate-50 overflow-hidden">
+        <View className="pb-5">
+          <TouchableOpacity
+            onPress={() => router.replace({ pathname: "/orders/new" as any, params: { draft: encodeURIComponent(JSON.stringify(draft)) } })}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={22} color={COLORS.textMain} className="py-2"/>
+          </TouchableOpacity>
+          <View className="">
+            <Text className="text-4xl font-quicksand-bold text-slate-900">
+              05<Text className="text-2xl text-slate-400">/05</Text>
+            </Text>
+            <Text className="text-[25px] mt-1 text-slate-600">Confirmation</Text>
+          </View>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* Devis */}
+        {/* Sender information */}
+        <Text className="text-[16px] text-slate-900 mb-2">Informations expéditeur</Text>
         <View className="bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Devis</Text>
-          {quote?.manual ? (
-            <Text className="text-[12px] text-amber-700">{quote.instructions || "Traitement manuel requis."}</Text>
-          ) : quote?.total != null ? (
-            <Text className="text-xl font-quicksand-bold text-emerald-700">{formatAr(quote.total)}</Text>
-          ) : (
-            <Text className="text-[12px] text-slate-500">Devis indisponible</Text>
+          <Row label="Nom" value={draft.sender.name || '—'} />
+          <Row label="Téléphone" value={draft.sender.phone || '—'} />
+          <Row label="Adresse" value={draft.sender.address || '—'} />
+        </View>
+
+        {/* Recipient information */}
+        <Text className="text-[16px] text-slate-900 mt-4">Informations destinataire</Text>
+        <View className="mt-2 bg-white rounded-2xl border border-slate-200 p-4">
+          <Row label="Nom" value={draft.recipient.name || '—'} />
+          <Row label="Téléphone" value={draft.recipient.phone || '—'} />
+          <Row label="Adresse" value={draft.recipient.address || draft.selectedDropoffLocality?.name || '—'} />
+        </View>
+
+        {/* Details card (type, weight, parcels, category, service, estimated price) */}
+        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
+          <Row label="Type" value={draft.parcel.fragile ? 'Fragile' : draft.parcel.bulky ? 'Volumineux' : 'Standard'} />
+          <Row label="Poids" value={`${draft.parcel.weightKg || '—'} kg`} />
+          <Row label="Nombre" value={`${draft.parcel.parcelsCount || '1'}`} />
+          <Row label="Catégorie" value={draft.parcel.category || '—'} />
+          <Row label="Service" value={draft.service.service === 'EXPRESS' ? 'Express' : 'Standard'} />
+          <Row label="Zone" value={zone} />
+          {toNumberSafe(draft.payment.codAmountAr) > 0 && (
+            <Row label="Encaissement (COD)" value={`${formatAr(toNumberSafe(draft.payment.codAmountAr))}`} />
           )}
-          {quote && !quote.manual && (
-            <Text className="mt-0.5 text-[11px] text-slate-500">
-              {`Pickup: ${quote.pickup ? formatAr(quote.pickup) : '—'} · Livraison: ${quote.delivery ? formatAr(quote.delivery) : '—'} · Express: ${quote.express ? formatAr(quote.express) : '—'}`}
-            </Text>
-          )}
-          <Text className="mt-0.5 text-[11px] text-slate-500">Zone: {zone}</Text>
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text className="text-slate-500">Prix estimé</Text>
+            {quote?.manual ? (
+              <Text className="text-[12px] text-amber-700">{quote.instructions || 'Traitement manuel requis.'}</Text>
+            ) : quote?.total != null ? (
+              <Text className="text-xl font-quicksand-bold" style={{ color: '#EF4444' }}>{formatAr(quote.total)}</Text>
+            ) : (
+              <Text className="text-slate-500 text-[12px]">Indisponible</Text>
+            )}
+          </View>
         </View>
 
-        {/* Expéditeur */}
-        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Expéditeur</Text>
-          <Text className="font-quicksand-semibold text-slate-800">{draft.sender.name} - {draft.sender.phone}</Text>
-          <Text className="text-slate-700">{draft.sender.address}</Text>
-        </View>
-
-        {/* Destinataire */}
-        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Destinataire</Text>
-          <Text className="font-quicksand-semibold text-slate-800">{draft.recipient.name} - {draft.recipient.phone}</Text>
-          <Text className="text-slate-700">{draft.recipient.address || draft.selectedDropoffLocality?.name}</Text>
-          {draft.recipient.email ? (
-            <Text className="text-slate-700">{draft.recipient.email}</Text>
-          ) : null}
-        </View>
-
-        {/* Colis */}
-        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Colis</Text>
-          <Text className="text-slate-800">Catégorie: {draft.parcel.category}</Text>
-          <Text className="text-slate-800">Poids: {draft.parcel.weightKg} kg</Text>
-          <Text className="text-slate-800">Nombre: {draft.parcel.parcelsCount}</Text>
-          <Text className="text-slate-800">Fragile: {draft.parcel.fragile ? "Oui" : "Non"} · Volumineux: {draft.parcel.bulky ? "Oui" : "Non"}</Text>
-        </View>
-
-        {/* Service */}
-        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Service</Text>
-          <Text className="text-slate-800">Type: {draft.service.service === "EXPRESS" ? "Express" : "Standard"}</Text>
-          <Text className="text-slate-800">Distance: {draft.service.distanceKmBracket} km</Text>
-          <Text className="text-slate-800">Retour requis: {draft.service.needReturn ? "Oui" : "Non"}</Text>
-        </View>
-
-        {/* Paiement */}
-        <View className="mt-3 bg-white rounded-2xl border border-slate-200 p-4">
-          <Text className="text-[12px] text-slate-500">Paiement</Text>
-          <Text className="text-slate-800">Encaissement à livraison (COD): {toNumberSafe(draft.payment.codAmountAr) > 0 ? formatAr(toNumberSafe(draft.payment.codAmountAr)) : "—"}</Text>
-          {draft.payment.notes ? (<Text className="text-slate-800">Notes: {draft.payment.notes}</Text>) : null}
-        </View>
-
-        {/* Actions */}
-        <View className="mt-4">
+        {/* Action buttons */}
+        <View className="mt-5">
           <TouchableOpacity
             onPress={confirm}
             activeOpacity={0.9}
-            disabled={submitting}
-            className={`w-full px-5 py-3 rounded-xl ${submitting ? "bg-emerald-300" : "bg-emerald-600"}`}
+            disabled={submitting || !!quote?.manual}
+            className={`w-full px-5 py-3 rounded-full ${submitting || quote?.manual ? 'bg-yellow-300' : 'bg-yellow-400'}`}
           >
-            <View className="flex-row items-center justify-center">
-              <Text className="text-white font-quicksand-bold mr-1">{submitting ? "Création…" : "Confirmer la commande"}</Text>
-              <Ionicons name="checkmark" size={18} color="#fff" />
-            </View>
+            <Text className="text-center text-white font-quicksand-bold">{submitting ? 'Traitement…' : 'Confirmer'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.9} className="w-full px-4 py-3 rounded-xl bg-slate-200 mt-2">
-            <Text className="text-center font-quicksand-bold text-slate-800">Modifier</Text>
+          <TouchableOpacity
+            onPress={() => router.replace({ pathname: "/orders/new" as any, params: { draft: encodeURIComponent(JSON.stringify(draft)) } })}
+            activeOpacity={0.9}
+            className="w-full px-5 py-3 rounded-full mt-3 border border-yellow-400"
+          >
+            <Text className="text-center font-quicksand-bold" style={{ color: '#CA8A04' }}>Étape précédente</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
