@@ -44,9 +44,9 @@ const INITIAL_PAYMENT: PaymentState = { codAmountAr: "", notes: "" };
 const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 
 const steps = [
-  "Colis",
   "Expéditeur",
   "Destinataire",
+  "Colis",
   "Service",
   "Paiement",
 ] as const;
@@ -193,27 +193,30 @@ export default function NewOrderWizard() {
   const validateCurrent = (): string[] => {
     const errs: string[] = [];
     if (step === 0) {
-      if (toNumberSafe(parcel.weightKg) <= 0)
-        errs.push("Poids du colis invalide");
-      const n = toNumberSafe(parcel.parcelsCount || "1");
-      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
-        errs.push("Nombre de colis doit être un entier ≥ 1");
-    }
-    if (step === 1) {
+      // Sender validation
       if (!sender.name.trim()) errs.push("Nom expéditeur requis");
       const sPhone = normalizeLocalPhone(sender.phone);
       if (!mgPhoneRegex.test(sPhone)) errs.push("Téléphone expéditeur invalide");
       if (!sender.address.trim()) errs.push("Adresse expéditeur requise");
       if (!pickupLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de collecte");
     }
-    if (step === 2) {
+    if (step === 1) {
+      // Recipient validation
       if (!recipient.name.trim()) errs.push("Nom destinataire requis");
       const rPhone = normalizeLocalPhone(recipient.phone);
       if (!mgPhoneRegex.test(rPhone)) errs.push("Téléphone destinataire invalide");
       if (!dropoffLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de livraison");
     }
-    // Étape 3: plus de fallback localité, les coordonnées sont désormais requises à l'étape 2
-    // Étape paiement: non bloquante (en implémentation)
+    if (step === 2) {
+      // Parcel validation
+      if (toNumberSafe(parcel.weightKg) <= 0)
+        errs.push("Poids du colis invalide");
+      const n = toNumberSafe(parcel.parcelsCount || "1");
+      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
+        errs.push("Nombre de colis doit être un entier ≥ 1");
+    }
+    // Étape 3 (Service): validation si nécessaire
+    // Étape 4 (Paiement): non bloquante
     return errs;
   };
 
@@ -410,9 +413,7 @@ export default function NewOrderWizard() {
       <Stepper step={step} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {step === 0 && <FirstStep parcel={parcel} setParcel={setParcel} />}
-
-        {step === 1 && (
+        {step === 0 && (
           <SecondStep
             sender={sender}
             setSender={setSender}
@@ -424,7 +425,7 @@ export default function NewOrderWizard() {
           />
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <ThirdStep
             recipient={recipient}
             setRecipient={setRecipient}
@@ -435,6 +436,8 @@ export default function NewOrderWizard() {
             coordsText={dropoffLatLng ? `Coordonnées: ${dropoffLatLng.lat.toFixed(5)}, ${dropoffLatLng.lng.toFixed(5)}` : null}
           />
         )}
+
+        {step === 2 && <FirstStep parcel={parcel} setParcel={setParcel} />}
 
         {step === 3 && <FourthStep service={service} setService={setService} lockDistance={true} />}
         {/* Service hints based on selection */}
