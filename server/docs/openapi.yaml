@@ -10,6 +10,7 @@ servers:
 tags:
   - name: Auth
   - name: Me
+  - name: Addresses
   - name: Zones
   - name: Admin Zones
   - name: Orders
@@ -73,6 +74,18 @@ components:
           nullable: true
         name: { type: string, nullable: true }
         role: { type: string, enum: [client, livreur, admin] }
+    UserAddress:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        label: { type: string, nullable: true }
+        detail: { type: string }
+        lat: { type: number, nullable: true }
+        lng: { type: number, nullable: true }
+        isDefault: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     ZonePublicResponse:
       type: object
       additionalProperties:
@@ -456,6 +469,132 @@ paths:
                 noToken:
                   value:
                     msg: "Unauthorized"
+
+  # Addresses (user)
+  /api/addresses:
+    get:
+      summary: List current user's saved addresses
+      tags: [Addresses]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UserAddress' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      summary: Create a new address for current user
+      tags: [Addresses]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string, nullable: true }
+                detail: { type: string }
+                lat: { type: number, nullable: true }
+                lng: { type: number, nullable: true }
+                isDefault: { type: boolean, nullable: true }
+              required: [detail]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAddress' }
+        '400':
+          description: Bad Request (validation error)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/addresses/{id}:
+    put:
+      summary: Update an address
+      tags: [Addresses]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string, nullable: true }
+                detail: { type: string }
+                lat: { type: number, nullable: true }
+                lng: { type: number, nullable: true }
+                isDefault: { type: boolean, nullable: true }
+              required: [detail]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAddress' }
+        '400':
+          description: Bad Request (validation error)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Not Found (address not owned by user or not exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      summary: Delete an address
+      tags: [Addresses]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg: { type: string }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Not Found (address not owned by user or not exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /api/auth/request-otp:
     post:
