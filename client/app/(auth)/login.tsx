@@ -90,6 +90,7 @@ const Login = () => {
         loading={loading}
         onPressLogin={onSubmit}
         onPressForgot={() => router.replace("/(auth)/forgot")}
+        onPressSignUp={() => router.push("/(auth)/register")}
       />
     </AuthScreenWrapper>
   );

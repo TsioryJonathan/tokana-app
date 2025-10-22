@@ -13,12 +13,14 @@ const Register = () => {
   const [phone, setPhone] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirm, setConfirm] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
   const api = useMemo(getApiClient, []);
   const router = useRouter();
   const { showToast } = useToast();
 
   const onSubmit = async () => {
     try {
+      setLoading(true);
       const emailTrim = email.trim();
       const phoneTrim = phone.trim();
       const nameTrim = fullName.trim();
@@ -46,7 +48,7 @@ const Register = () => {
     } catch (err: any) {
 
       const msg: string =
-        err?.body?.msg || err?.message || "Erreur d’inscription";
+        err?.body?.msg || err?.message || "Erreur d'inscription";
       const newErrs: Record<string, string> = {};
       if (/email/i.test(msg)) newErrs.email = msg;
       if (/téléphone|phone/i.test(msg)) newErrs.phone = msg;
@@ -58,6 +60,7 @@ const Register = () => {
         () => {}
       );
     } finally {
+      setLoading(false);
     }
   };
 
@@ -73,8 +76,9 @@ const Register = () => {
       setPassword,
       confirm,
       setConfirm,
+      loading,
     }),
-    [confirm, email, fullName, password, phone]
+    [confirm, email, fullName, password, phone, loading]
   );
   return (
     <AuthScreenWrapper currentScreen="register">
