@@ -13,6 +13,7 @@ import zonesRoutes from "./routes/zonesRoutes.js";
 import zonesAdminRoutes from "./routes/admin/zonesAdminRoutes.js";
 import usersAdminRoutes from "./routes/admin/usersAdminRoutes.js";
 import statsAdminRoutes from "./routes/admin/statsAdminRoutes.js";
+import addressesRoutes from "./routes/addressesRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { protect } from "./middleware/authMiddleware.js";
 import User from "./models/User.js";
@@ -120,6 +121,7 @@ app.use("/api/zones", zonesRoutes);
 app.use("/api/admin/zones", zonesAdminRoutes);
 app.use("/api/admin/users", usersAdminRoutes);
 app.use("/api/admin/stats", statsAdminRoutes);
+app.use("/api/addresses", addressesRoutes);
 
 // Lightweight health check (unauthenticated)
 app.get("/api/health", (req, res) => {
