@@ -58,10 +58,9 @@ export default function RegisterPage({
     return (
       fullName.trim().length >= 3 &&
       hasAtLeastOneContact &&
-      password.length >= 6 &&
-      password === confirm
+      password.length >= 6
     );
-  }, [fullName, email, phone, password, confirm]);
+  }, [fullName, email, phone, password]);
 
   return (
     <View className="flex-1 bg-white">
