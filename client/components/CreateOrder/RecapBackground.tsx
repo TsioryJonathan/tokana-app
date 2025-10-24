@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Dimensions, ImageSourcePropType, ColorValue } from 'react-native';
+import { Image, Dimensions, ImageSourcePropType, ColorValue, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -16,18 +16,17 @@ export const HeaderBackground = ({ source, height = 300, opacity = 0.70, gradien
   const defaultColors = ['rgba(248,250,252,.0)', 'rgba(248,250,252,1)'] as const;
   return (
     <>
-      <Image
-        source={source}
-        style={{
-          position: 'absolute',
-          top: -10,
-          left: -10,
-          width: screenWidth + 20,
-          height,
-          opacity,
-          resizeMode: 'contain',
-        }}
-      />
+      <View pointerEvents="none" style={{ position: 'absolute', top: -10, left: -10, width: screenWidth + 20, height }}>
+        <Image
+          source={source}
+          style={{
+            width: '100%',
+            height: '100%',
+            opacity,
+            resizeMode: 'contain',
+          }}
+        />
+      </View>
       {/* Bottom fade to blend into page background (slate-50) */}
       <LinearGradient
         pointerEvents="none"
