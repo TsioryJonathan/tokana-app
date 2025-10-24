@@ -709,6 +709,71 @@ paths:
                 noToken:
                   value:
                     msg: "Unauthorized"
+    put:
+      summary: Update current user basic fields
+      tags: [Me]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, nullable: true }
+                email: { type: string, nullable: true }
+                phone: { type: string, nullable: true, description: "Madagascar local or +261... formats accepted" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Bad Request (validation error)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/me/avatar:
+    post:
+      summary: Upload profile avatar
+      tags: [Me]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avatarUrl: { type: string }
+        '400':
+          description: Bad Request (missing file)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized (missing/invalid token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   # Admin Zones CRUD
   /api/admin/zones:
