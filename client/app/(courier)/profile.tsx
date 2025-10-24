@@ -1,5 +1,6 @@
 // app/(client)/profile.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import LogoutButton from "@/components/Auth/LogoutButton";
 import {
   View,
   Text,
@@ -159,6 +160,7 @@ export default function Profile() {
           </View>
         </TouchableOpacity>
       </ScrollView>
+      <LogoutButton />
     </View>
   );
 }
