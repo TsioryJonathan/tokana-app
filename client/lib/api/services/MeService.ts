@@ -21,4 +21,55 @@ export class MeService {
             },
         });
     }
+    /**
+     * Update current user basic fields
+     * @param requestBody
+     * @returns User OK
+     * @throws ApiError
+     */
+    public putApiMe(
+        requestBody: {
+            name?: string | null;
+            email?: string | null;
+            /**
+             * Madagascar local or +261... formats accepted
+             */
+            phone?: string | null;
+        },
+    ): CancelablePromise<User> {
+        return this.httpRequest.request({
+            method: 'PUT',
+            url: '/api/me',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Bad Request (validation error)`,
+                401: `Unauthorized (missing/invalid token)`,
+            },
+        });
+    }
+    /**
+     * Upload profile avatar
+     * @param formData
+     * @returns any Created
+     * @throws ApiError
+     */
+    public postApiMeAvatar(
+        formData: {
+            avatar?: Blob;
+        },
+    ): CancelablePromise<{
+        avatarUrl?: string;
+    }> {
+        return this.httpRequest.request({
+            method: 'POST',
+            url: '/api/me/avatar',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                400: `Bad Request (missing file)`,
+                401: `Unauthorized (missing/invalid token)`,
+            },
+        });
+    }
 }

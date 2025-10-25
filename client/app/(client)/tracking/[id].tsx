@@ -4,7 +4,9 @@ import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { statusLabel, mapBackendStatus } from "@/lib/mappers/order";
-import LottieView from "lottie-react-native";
+import Row from "@/components/CreateOrder/Row";
+import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { formatAr } from "@/utils/price.helper";
 import { useToast } from "@/components/ui/Toast";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
 import { useIsFocused } from "@react-navigation/native";
@@ -75,63 +77,48 @@ export default function TrackingScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#059669"]} tintColor="#059669" />
       }
     >
-      {/* Illustration */}
-      <View className="bg-white items-center p-6">
-        <LottieView
-          source={require("../../../assets/lotties/deliveryRiding.json")}
-          autoPlay
-          loop={true}
-        />
-      </View>
+      <HeaderBackground source={require("@/assets/images/tracking-bg.png")} height={350} opacity={0.70} />
 
-      {/* Infos principales */}
-      <View className="m-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <Text className="text-lg font-bold text-slate-900">
-          Détails livraison
+      {/* Top illustrative map header */}
+      {/* <View className="w-full h-[220px] bg-slate-200 relative overflow-hidden">
+      </View> */}
+
+      <View className="px-4 pt-4 mt-40">
+        {/* Status */}
+        <Text className="text-2xl font-quicksand-bold text-slate-800">
+          {statusLabel[mapBackendStatus(String(order.status || ""))] || String(order.status)}
         </Text>
+      </View>
 
-        <View className="mt-3">
-          <Text className="text-slate-500 text-sm">Expéditeur</Text>
-          <Text className="font-semibold text-slate-800">
-            {order.pickupName} - {order.pickupPhone}
-          </Text>
-          <Text className="text-slate-700">{order.pickupAddress}</Text>
-        </View>
-
-        <View className="mt-3">
-          <Text className="text-slate-500 text-sm">Destinataire</Text>
-          <Text className="font-semibold text-slate-800">
-            {order.dropoffName}
-          </Text>
-          <Text className="text-slate-700">{order.recipientPhone}</Text>
-          <Text className="text-slate-700">{order.dropoffAddress}</Text>
-        </View>
-
-        <View className="mt-3 flex-row justify-between">
-          <View>
-            <Text className="text-slate-500 text-sm">Prix total</Text>
-            <Text className="font-bold text-emerald-600">
-              {order.priceTotal} Ar
-            </Text>
-          </View>
-          <View>
-            <Text className="text-slate-500 text-sm">Statut</Text>
-            <Text className="font-bold text-emerald-700">
-              {statusLabel[mapBackendStatus(String(order.status || ""))] || String(order.status)}
-            </Text>
-          </View>
-        </View>
-
-        <View className="mt-3">
-          <Text className="text-slate-500 text-sm">Créneau prévu</Text>
-          <Text className="text-slate-800">
-            {new Date(order.slotStart).toLocaleString()} –{" "}
-            {new Date(order.slotEnd).toLocaleString()}
-          </Text>
+      {/* Sender information */}
+      <View className="px-4 mt-3">
+        <Text className="text-[12px] text-slate-800 mb-2">Informations expéditeur</Text>
+        <View className="bg-white rounded-2xl border border-slate-200 p-4">
+          <Row label="Nom" value={order.pickupName || '—'} />
+          <Row label="Téléphone" value={order.pickupPhone || '—'} />
+          <Row label="Adresse" value={order.pickupAddress || '—'} />
         </View>
       </View>
 
-      {/* Historique */}
+      {/* Recipient information */}
+      <View className="px-4 mt-4">
+        <Text className="text-[12px] text-slate-800 mb-2">Informations destinataire</Text>
+        <View className="bg-white rounded-2xl border border-slate-200 p-4">
+          <Row label="Nom" value={order.dropoffName || '—'} />
+          <Row label="Téléphone" value={order.recipientPhone || '—'} />
+          <Row label="Adresse" value={order.dropoffAddress || '—'} />
+        </View>
+      </View>
+
+      {/* Estimated price */}
+      <View className="px-4 mt-4">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-slate-600">Prix estimé</Text>
+          <Text className="text-xl font-quicksand-bold" style={{ color: '#EF4444' }}>{formatAr(order.priceTotal)}</Text>
+        </View>
+      </View>
+
+      {/* History (keep below) */}
       <View className="m-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
         <Text className="text-lg font-bold text-slate-900">Historique</Text>
         {history.length === 0 ? (

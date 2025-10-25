@@ -24,9 +24,11 @@ export { PricingQuoteRequest } from './models/PricingQuoteRequest';
 export { PricingQuoteResponse } from './models/PricingQuoteResponse';
 export type { Slot } from './models/Slot';
 export { User } from './models/User';
+export type { UserAddress } from './models/UserAddress';
 export { Zone } from './models/Zone';
 export type { ZonePublicResponse } from './models/ZonePublicResponse';
 
+export { AddressesService } from './services/AddressesService';
 export { AdminStatsService } from './services/AdminStatsService';
 export { AdminUsersService } from './services/AdminUsersService';
 export { AdminZonesService } from './services/AdminZonesService';

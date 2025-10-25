@@ -12,7 +12,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  TextInput,
   Animated,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,6 +20,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
 import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
+import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { ArrowLeft, ChevronDown, ArrowDown } from "lucide-react-native";
 import {
   mapBackendOrderToUI,
   type UIOrder as Order,
@@ -55,6 +56,14 @@ function formatTime(iso: string) {
   const h = String(d.getHours()).padStart(2, "0");
   const m = String(d.getMinutes()).padStart(2, "0");
   return `${h}:${m}`;
+}
+
+function formatYMD(iso: string) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
 }
 
 // --- Fetch from backend ---
@@ -140,7 +149,7 @@ function OrderRow({
   return (
     <Animated.View
       style={{ backgroundColor: bg }}
-      className="rounded-2xl border border-slate-100 mb-3"
+      className="bg-white rounded-2xl border border-slate-100 mb-3"
     >
       <TouchableOpacity
         onPress={onPress}
@@ -149,53 +158,62 @@ function OrderRow({
       >
         <View className="flex-row justify-between items-start">
           <View className="flex-1 mr-3">
-            <View className="flex-row items-center">
-              <Ionicons name="receipt-outline" size={14} color="#64748B" />
-              <Text className="ml-1 text-[11px] text-slate-500 font-quicksand-medium">
-                {order.code}
-              </Text>
-            </View>
-            <View className="mt-1 flex-row items-center flex-wrap">
-              <Ionicons name="location-outline" size={16} color="#0F172A" />
-              <Text className="ml-1 text-base text-slate-900 font-quicksand-semibold">
-                {order.from} →
-              </Text>
-              <Text className="ml-1 text-base text-slate-900 font-quicksand-semibold">
-                {order.to}
-              </Text>
-            </View>
-            <View className="mt-1 flex-row items-center">
-              <Ionicons
-                name={
-                  order.service === "EXPRESS"
-                    ? "flash-outline"
-                    : "bicycle-outline"
-                }
-                size={14}
-                color="#475569"
-              />
-              <Text className="ml-1 text-[12px] text-slate-600">
-                {order.service === "EXPRESS" ? "Express" : "Standard"} · {formatTime(order.createdAt)}
-              </Text>
-            </View>
-            {/* ETA hint for active Express orders (if available) */}
-            {order.service === "EXPRESS" && isActiveStatus(order.status) && typeof (order as any).etaHint === 'string' && (
-              <View className="mt-1 self-start px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-                <Text className="text-[10px] text-emerald-700">{(order as any).etaHint}</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[16px] font-quicksand-bold text-slate-900">{order.code}</Text>
+              <View className={`px-2 py-1 rounded-full border ${statusBadge[order.status]}`}>
+                <Text className="text-[11px] font-quicksand-semibold">{statusLabel[order.status]}</Text>
               </View>
-            )}
-          </View>
+            </View>
+            <Text className="mt-1 text-[12px] text-slate-500">{formatYMD(order.createdAt)}</Text>
 
-          <View className="items-end">
-            <Text className="text-sm font-quicksand-bold text-slate-900">
-              {formatAr(order.priceAr)}
-            </Text>
-            <View
-              className={`mt-2 px-2 py-1 rounded-full border ${statusBadge[order.status]}`}
-            >
-              <Text className="text-[11px] font-quicksand-semibold">
-                {statusLabel[order.status]}
-              </Text>
+            {/* Addresses with connector */}
+            <View className="mt-3 flex-row">
+              {/* Connector column with modern arrow */}
+              <View className="items-center mr-2">
+                <View className="w-[1px] h-4 bg-slate-300" />
+                <ArrowDown size={14} color="#94A3B8" />
+                <View className="w-[1px] h-6 bg-slate-300" />
+              </View>
+              {/* Addresses column */}
+              <View className="flex-1">
+                {/* Sender */}
+                <View className="flex-row items-start">
+                  <Ionicons name="person-outline" size={14} color="#0F172A" style={{ marginTop: 1, marginRight: 6 }} />
+                  {/* Name, comma, location icon, address */}
+                  <View className="flex-1 flex-row flex-wrap items-start">
+                    {!!(order as any).senderName && (
+                      <Text className="text-[12px] text-slate-700" numberOfLines={2}>
+                        {(order as any).senderName}
+                      </Text>
+                    )}
+                    {!!(order as any).senderName && (
+                      <Text className="text-[12px] text-slate-700">, </Text>
+                    )}
+                    <Ionicons name="location-outline" size={13} color="#475569" style={{ marginTop: 2, marginRight: 4 }} />
+                    <Text className="flex-1 text-[12px] text-slate-700" numberOfLines={2}>
+                      {order.from}
+                    </Text>
+                  </View>
+                </View>
+                {/* Recipient */}
+                <View className="mt-4 flex-row items-start">
+                  <Ionicons name="person-circle-outline" size={14} color="#0F172A" style={{ marginTop: 1, marginRight: 6 }} />
+                  <View className="flex-1 flex-row flex-wrap items-start">
+                    {!!(order as any).recipientName && (
+                      <Text className="text-[12px] text-slate-700" numberOfLines={2}>
+                        {(order as any).recipientName}
+                      </Text>
+                    )}
+                    {!!(order as any).recipientName && (
+                      <Text className="text-[12px] text-slate-700">, </Text>
+                    )}
+                    <Ionicons name="location-outline" size={13} color="#475569" style={{ marginTop: 2, marginRight: 4 }} />
+                    <Text className="flex-1 text-[12px] text-slate-700" numberOfLines={2}>
+                      {order.to}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -203,7 +221,6 @@ function OrderRow({
     </Animated.View>
   );
 }
-
 // --- Page ---
 export default function OrdersList() {
   const router = useRouter();
@@ -220,6 +237,14 @@ export default function OrdersList() {
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
   const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
   const isFocused = useIsFocused();
+  // Date display formatted as YYYY.MM.DD
+  const todayDisplay = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}.${m}.${day}`;
+  }, []);
 
   // API client
   const api = useMemo(getApiClient, []);
@@ -279,70 +304,39 @@ export default function OrdersList() {
   }, [items, filter]);
 
   const renderHeader = (
-    <View className="px-5 pt-4 pb-2 bg-slate-50">
-      {/* Barre de recherche */}
-      <View className="flex-row items-center bg-white rounded-2xl px-3 py-2 border border-slate-200">
-        <Ionicons name="search-outline" size={18} color="#475569" />
-        <TextInput
-          placeholder="Rechercher (code, lieu...)"
-          placeholderTextColor="#94A3B8"
-          value={q}
-          onChangeText={(t) => {
-            setQ(t);
-          }}
-          className="ml-2 flex-1 text-[14px] text-slate-900"
-          returnKeyType="search"
-        />
-        {q.length > 0 && (
-          <TouchableOpacity onPress={() => setQ("")} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color="#94A3B8" />
-          </TouchableOpacity>
-        )}
-      </View>
+    <View className="-ml-5">
+      {/* Decorative header background matching mock */}
+      <HeaderBackground source={require("@/assets/images/orders-bg.png")} height={300} opacity={0.7} gradientHeight={200} />
 
-      {/* Filtres */}
-      <View className="mt-3 flex-row flex-wrap">
-        <FilterChip
-          label="Toutes"
-          styleKey="ALL"
-          active={filter === "ALL"}
-          onPress={() => {
-            setFilter("ALL");
-          }}
-        />
-        <FilterChip
-          label="En cours"
-          styleKey="ACTIVE"
-          active={filter === "ACTIVE"}
-          onPress={() => {
-            setFilter("ACTIVE");
-          }}
-        />
-        <FilterChip
-          label="Livrées"
-          styleKey="DELIVERED"
-       
-          active={filter === "DELIVERED"}
-          onPress={() => {
-            setFilter("DELIVERED");
-          }}
-        />
-        <FilterChip
-          label="Annulées"
-          styleKey="CANCELLED"
-      
-          active={filter === "CANCELLED"}
-          onPress={() => {
-            setFilter("CANCELLED");
-          }}
-        />
+      {/* Top controls over body content */}
+      <View className="pl-8 pt-3 pb-1">
+        <View className="flex-row items-end justify-between mb-2 mt-10">
+          <View className="flex-col items-start gap-2">
+            <TouchableOpacity onPress={() => router.back()} hitSlop={8} activeOpacity={0.7}>
+              <ArrowLeft size={20} color="#0F172A" />
+            </TouchableOpacity>
+            <Text className="text-[16px] font-quicksand-bold text-slate-900">{todayDisplay}</Text>
+          </View>
+          <View className="flex-row items-center">
+            <Text className="text-[12px] text-slate-700 mr-1">Statut</Text>
+            <TouchableOpacity
+              onPress={() => {
+                const order: Array<keyof typeof statusLabel | 'ALL' | 'ACTIVE'> = ['ALL','ACTIVE','DELIVERED','CANCELLED'];
+                const idx = order.indexOf(filter);
+                const next = order[(idx + 1) % order.length];
+                setFilter(next);
+              }}
+              activeOpacity={0.85}
+              className="px-3 py-1.5 rounded-full bg-white border border-slate-200 flex-row items-center"
+            >
+              <Text className="text-[12px] font-quicksand-semibold text-emerald-700">{filter === 'ALL' ? 'Tous' : filter === 'ACTIVE' ? 'En cours' : filter === 'DELIVERED' ? 'Livrées' : 'Annulées'}</Text>
+              <ChevronDown size={14} color="#059669" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Elements not in mock (search, chips, last-updated) removed intentionally */}
       </View>
-      {/* Last updated */}
-      {lastUpdatedISO && (
-        <Text className="mt-1 text-[11px] text-slate-400">
-          Dernière mise à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}
-        </Text>
-      )}
     </View>
   );
 
@@ -352,7 +346,7 @@ export default function OrdersList() {
         data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingTop: 6,
           paddingBottom: 28,
         }}

@@ -19,10 +19,7 @@ import {
 } from "@/types/createorder.type";
 import { formatAr, toNumberSafe } from "@/utils/price.helper";
 import type { LocalityItem } from "@/lib/hooks/useLocalities";
-import { LocalitySelector } from "@/components/CreateOrder/LocalitySelector";
-import OrderReviewModal from "@/components/CreateOrder/OrderReviewModal";
 import { normalizeLocalPhone } from "@/utils/phone";
-import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -105,7 +102,7 @@ export default function NewOrderWizard() {
     inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null;
   } | null>(null);
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
-  const [showReview, setShowReview] = useState(false);
+  // Recap page will handle final confirmation; we no longer use in-page modal
   // Local estimation removed to avoid confusion; we rely solely on server quote
   // API client
   const api = useMemo(getApiClient, []);
@@ -153,16 +150,18 @@ export default function NewOrderWizard() {
           weight,
           parcels: parcelsCount,
         };
+        const zoneEnum =
+          zoneLevel === "ville"
+            ? PricingQuoteRequest.zoneLevel.VILLE
+            : zoneLevel === "peripherie"
+            ? PricingQuoteRequest.zoneLevel.PERIPHERIE
+            : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
         if (dropoffLatLng) {
           body.lat = dropoffLatLng.lat;
           body.lng = dropoffLatLng.lng;
+          // Also send a fallback zoneLevel in case server inference fails
+          body.zoneLevel = zoneEnum;
         } else {
-          const zoneEnum =
-            zoneLevel === "ville"
-              ? PricingQuoteRequest.zoneLevel.VILLE
-              : zoneLevel === "peripherie"
-              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
-              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
           body.zoneLevel = zoneEnum;
         }
         const quote = await api.pricing.postApiPricingQuote(body);
@@ -223,8 +222,28 @@ export default function NewOrderWizard() {
       showToast(errs.join("\n"), "error");
       return;
     }
-    if (step < steps.length - 1) setStep((s) => (s + 1) as Step);
-    else setShowReview(true);
+    if (step < steps.length - 1) {
+      setStep((s) => (s + 1) as Step);
+    } else {
+      // Navigate to recap page with draft data encoded in params
+      const draft: any = {
+        sender,
+        recipient,
+        parcel,
+        service,
+        payment,
+        pickupLatLng,
+        dropoffLatLng,
+        selectedPickupLocality,
+        selectedDropoffLocality,
+      };
+      try {
+        const encoded = encodeURIComponent(JSON.stringify(draft));
+        router.push({ pathname: "/orders/recap" as any, params: { draft: encoded } });
+      } catch (e) {
+        showToast("Impossible d'ouvrir le récap", "error");
+      }
+    }
   };
   const goPrev = () => {
     if (step > 0) setStep((s) => (s - 1) as Step);
@@ -542,26 +561,8 @@ export default function NewOrderWizard() {
               </View>
             </TouchableOpacity>
           </View>
-        </View>
+         </View>
       </ScrollView>
-      {/* Review modal */}
-      <OrderReviewModal
-        visible={showReview}
-        onClose={() => setShowReview(false)}
-        onConfirm={() => {
-          setShowReview(false);
-          submit();
-        }}
-        sender={sender}
-        recipient={recipient}
-        parcel={parcel}
-        service={service}
-        payment={payment}
-        pickupLocality={selectedPickupLocality}
-        dropoffLocality={selectedDropoffLocality}
-        zoneLevel={(serverQuote?.inferredZone as any) || toZoneLevel(service.distanceKmBracket)}
-        priceTotal={serverQuote?.total ?? null}
-      />
     </View>
   );
 }
