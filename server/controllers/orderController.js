@@ -610,6 +610,8 @@ export const listOrders = async (req, res, next) => {
     });
     return res.json(orders);
   } catch (err) {
+    console.error("Error in listOrders:", err.message);
+    console.error("Full error:", err);
     next(err);
   }
 };
