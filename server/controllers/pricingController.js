@@ -46,6 +46,11 @@ export const getQuote = async (req, res, next) => {
       if (inferredZone) zoneLevel = inferredZone;
     }
 
+    // Default to 'ville' if no zone specified and inference failed
+    if (!zoneLevel) {
+      zoneLevel = 'ville';
+    }
+
     // Delegate to service for single source of truth
     const { pickupFee, deliveryFee, expressSurcharge, total } = await computePrice({ zoneLevel, type, weight, parcels });
 
