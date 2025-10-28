@@ -12,11 +12,13 @@ import {
 // import LogoutButton from "@/components/Auth/LogoutButton";
 // safe area handled by (client)/_layout
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
 import { useProfile } from "@/hooks/useProfile";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 
 export default function Profile() {
+  const router = useRouter();
   const {
     loading,
     editing,
@@ -151,10 +153,7 @@ export default function Profile() {
               <KVRow
                 label="Adresses enregistrées"
                 value={String(addresses.length)}
-                onPress={() => {
-                  setEditing(true);
-                  setTimeout(() => addressInputRef.current?.focus(), 0);
-                }}
+                onPress={() => router.push("/addresses")}
               />
             </View>
           )}
