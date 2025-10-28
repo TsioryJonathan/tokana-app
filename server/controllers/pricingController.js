@@ -42,8 +42,12 @@ export const getQuote = async (req, res, next) => {
     // Infer zone from coords if provided
     let inferredZone = null;
     if (typeof lat === 'number' && typeof lng === 'number') {
-      inferredZone = await inferZoneLevel(lat, lng);
-      if (inferredZone) zoneLevel = inferredZone;
+      try {
+        inferredZone = await inferZoneLevel(lat, lng);
+        if (inferredZone) zoneLevel = inferredZone;
+      } catch (e) {
+        // Ignore inference errors
+      }
     }
 
     // Default to 'ville' if no zone specified and inference failed

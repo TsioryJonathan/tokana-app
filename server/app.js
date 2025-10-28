@@ -166,5 +166,5 @@ try {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-// const HOST = process.env.HOST || '0.0.0.0';
-app.listen(PORT, () => console.log(`Serveur sur http://localhost:${PORT}`));
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => console.log(`Serveur sur http://${HOST}:${PORT}`));
