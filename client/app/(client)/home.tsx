@@ -6,6 +6,7 @@ import {
   Image,
   ImageBackground,
   StatusBar,
+  ImageSourcePropType,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,8 +38,7 @@ function NavCard({ icon, label, onPress }: NavCardProps) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="flex-1 bg-white rounded-3xl p-6 items-center justify-center shadow-lg shadow-gray-300/50 m-2"
-      style={{ minHeight: 140 }}
+      className="flex-1 bg-white rounded-3xl p-6 items-center justify-center shadow-lg shadow-gray-300/50"
     >
       <View className="bg-[#FFD700]/10 p-4 rounded-full mb-3">
         {icon}
@@ -71,7 +71,7 @@ export default function ClientHome() {
 
       {/* Header with Background Image */}
       <ImageBackground
-        source={assets.deliveryGuyMockup}
+        source={assets.deliveryGuyMockup as ImageSourcePropType}
         className="w-full"
         style={{ paddingTop: insets.top + 20, paddingBottom: 40 }}
         blurRadius={3}
@@ -113,13 +113,14 @@ export default function ClientHome() {
         <TouchableOpacity
           onPress={() => router.push("/orders/new" as any)}
           activeOpacity={0.8}
-          className="w-full rounded-3xl overflow-hidden shadow-xl shadow-[#FFD700]/40 mb-8"
+          className="w-full rounded-3xl overflow-hidden shadow-xl shadow-[#FFD700]/40 mb-4"
         >
           <LinearGradient
             colors={["#FFD700", "#FFA500"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="py-5 items-center flex-row justify-center px-6"
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+            className="py-5 items-center flex-row flex justify-center px-6"
           >
             <View className="bg-white/20 p-2 rounded-full mr-3">
               <Plus size={24} color="#fff" strokeWidth={3} />
@@ -132,26 +133,26 @@ export default function ClientHome() {
 
         {/* Navigation Cards Grid */}
         <View className="flex-1 bg-white rounded-3xl p-4 shadow-lg shadow-gray-300/50">
-          <View className="flex-row">
+          <View className="flex-row gap-3 mb-3 flex-1">
             <NavCard
-              icon={<Package size={32} color="#FFD700" strokeWidth={2.5} />}
+              icon={<Package size={36} color="#FFD700" strokeWidth={2.5} />}
               label="In Progress"
               onPress={() => router.push("/orders" as any)}
             />
             <NavCard
-              icon={<ClipboardList size={32} color="#FFD700" strokeWidth={2.5} />}
+              icon={<ClipboardList size={36} color="#FFD700" strokeWidth={2.5} />}
               label="History"
               onPress={() => router.push("/orders" as any)}
             />
           </View>
-          <View className="flex-row">
+          <View className="flex-row gap-3 flex-1">
             <NavCard
-              icon={<UserIcon size={32} color="#FFD700" strokeWidth={2.5} />}
+              icon={<UserIcon size={36} color="#FFD700" strokeWidth={2.5} />}
               label="Personal Profile"
               onPress={() => router.push("/profile" as any)}
             />
             <NavCard
-              icon={<SettingsIcon size={32} color="#FFD700" strokeWidth={2.5} />}
+              icon={<SettingsIcon size={36} color="#FFD700" strokeWidth={2.5} />}
               label="Settings"
               onPress={() => router.push("/profile" as any)}
             />
