@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Alert } from 'react-native';
 import { getApiClient } from '@/lib/api/client';
 import { useToast } from '@/components/ui/Toast';
@@ -50,6 +51,7 @@ export function useProfile() {
         setPhone(me.phone || '');
         setEmail(me.email || '');
         setRole(me.role || null);
+        setAvatarUrl((me as any).avatarUrl || null);
         // Optional verification statuses (if provided by backend)
         setPhoneVerifiedAt((me as any).phoneVerifiedAt || null);
         setEmailVerifiedAt((me as any).emailVerifiedAt || null);
@@ -65,6 +67,38 @@ export function useProfile() {
       mounted = false;
     };
   }, [api]);
+
+  // Auto-refresh on screen focus: keep avatarUrl and addresses in sync
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          if (editing) return; // do not override while user is editing
+          const [me, rows] = await Promise.all([
+            api.me.getApiMe().catch(() => null),
+            (api as any).addresses.getApiAddresses().catch(() => []),
+          ]);
+          if (!active) return;
+          if (me) {
+            setAvatarUrl((me as any).avatarUrl || null);
+          }
+          if (Array.isArray(rows)) {
+            const list = rows.map((r: any) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', isDefault: !!r.isDefault }));
+            setAddresses(list);
+            const first = list[0] || null;
+            setAddressEdit(first?.detail ?? '');
+            setAddressEditId(first ? first.id : null);
+            setInitialProfile(prev => ({ ...prev, addressDetail: first?.detail ?? '', addressId: first ? first.id : null }));
+          }
+        } catch (e) {
+          // non-bloquant
+          console.warn('focus refresh failed', e);
+        }
+      })();
+      return () => { active = false; };
+    }, [editing, api])
+  );
 
   const isDirty = useMemo(
     () => name !== initialProfile.name || phone !== initialProfile.phone || email !== initialProfile.email || addressEdit !== initialProfile.addressDetail,
