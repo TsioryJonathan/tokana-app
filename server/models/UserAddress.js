@@ -10,6 +10,10 @@ const UserAddress = sequelize.define('UserAddress', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  mapboxAddress: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   detail: {
     type: DataTypes.STRING,
     allowNull: false,
