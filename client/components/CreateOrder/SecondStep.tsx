@@ -1,5 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground } from "react-native";
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useState } from "react";
 import { User, Phone, MapPin, ChevronRight } from "lucide-react-native";
 import { SenderState } from "@/types/createorder.type";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
@@ -9,15 +9,20 @@ const SecondStep = ({
   sender,
   setSender,
   onPickupSelected,
+  savedAddresses = [],
   bbox = [47.4, -19.1, 47.7, -18.7] as [number, number, number, number],
   coordsText,
 }: {
   sender: SenderState;
   setSender: Dispatch<SetStateAction<SenderState>>;
   onPickupSelected?: (sel: { label: string; lat: number; lng: number }) => void;
+  savedAddresses?: { id: string; label: string; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null }[];
   bbox?: [number, number, number, number];
   coordsText?: string | null;
 }) => {
+  const [showSaved, setShowSaved] = useState(false);
+  const [mapboxInputValue, setMapboxInputValue] = useState(sender.address || '');
+  
   return (
     <View className="flex-1">
       {/* Illustration Header */}
@@ -81,7 +86,66 @@ const SecondStep = ({
           </View>
         </View>
 
-        {/* Address Input */}
+        {/* Adresses enregistrées (optionnel) */}
+        {savedAddresses.length > 0 && (
+          <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+            <TouchableOpacity
+              className="flex-row items-center justify-between px-5 py-4"
+              onPress={() => setShowSaved((s) => !s)}
+              activeOpacity={0.8}
+            >
+              <Text className="font-quicksand-semibold text-gray-800">Adresses enregistrées</Text>
+              <ChevronRight size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+            {showSaved && (
+              <View className="border-t border-gray-100">
+                {savedAddresses.map((a) => (
+                  <TouchableOpacity
+                    key={a.id}
+                    className="px-5 py-3 border-b border-gray-50"
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      const mapboxAddr = a.mapboxAddress || '';
+                      const exactAddr = a.detail || '';
+                      setMapboxInputValue(mapboxAddr);
+                      setSender({ 
+                        ...sender, 
+                        address: mapboxAddr, 
+                        adresseExacte: exactAddr,
+                        savedAddressId: a.id 
+                      });
+                      if (a.lat != null && a.lng != null) {
+                        onPickupSelected?.({ label: mapboxAddr, lat: a.lat, lng: a.lng });
+                      }
+                      setShowSaved(false);
+                    }}
+                  >
+                    <Text className="text-sm font-quicksand-semibold text-gray-800">{a.label || 'Adresse'}</Text>
+                    <Text className="text-xs text-gray-500">{a.mapboxAddress || a.detail}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Adresse exacte (complément) */}
+        <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+          <View className="flex-row items-center px-5 py-4">
+            <View className="bg-[#FFD700]/10 p-2 rounded-full">
+              <MapPin size={20} color="#FFD700" strokeWidth={2.5} />
+            </View>
+            <TextInput
+              value={sender.adresseExacte || ''}
+              onChangeText={(t) => setSender({ ...sender, adresseExacte: t })}
+              placeholder="Adresse exacte (bâtiment, étage, porte…)"
+              placeholderTextColor="#9CA3AF"
+              className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
+            />
+          </View>
+        </View>
+
+        {/* Address Input (autocomplétion) */}
         <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
           <View className="flex-row items-center px-5 py-4">
             <View className="bg-[#FFD700]/10 p-2 rounded-full">
@@ -89,13 +153,19 @@ const SecondStep = ({
             </View>
             <View className="flex-1">
               <AddressAutocomplete
-                placeholder="Address"
+                key={`mapbox-sender-${mapboxInputValue}`}
+                placeholder="Quartier (autocomplétion)"
                 bbox={bbox}
                 onSelected={({ label, lat, lng }) => {
+                  setMapboxInputValue(label);
+                  setSender({ ...sender, address: label });
                   onPickupSelected?.({ label, lat, lng });
                 }}
-                onTextChange={(t) => setSender({ ...sender, address: t })}
-                initialText={sender.address}
+                onTextChange={(t) => {
+                  setMapboxInputValue(t);
+                  setSender({ ...sender, address: t });
+                }}
+                initialText={mapboxInputValue}
                 containerClassName="ml-3"
                 inputClassName="font-quicksand text-gray-900 text-base"
               />

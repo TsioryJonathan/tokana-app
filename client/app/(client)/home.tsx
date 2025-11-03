@@ -83,7 +83,7 @@ export default function ClientHome() {
         <View className="px-6 relative z-10">
           {/* Welcome Text */}
           <Text className="text-white text-5xl font-clash font-bold mb-6">
-            Welcome back!
+            Bon retour !
           </Text>
 
           {/* User Info */}
@@ -126,7 +126,7 @@ export default function ClientHome() {
               <Plus size={24} color="#fff" strokeWidth={3} />
             </View>
             <Text className="text-white font-quicksand-bold text-xl uppercase tracking-wide">
-              Create Delivery
+              Créer une livraison
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -136,24 +136,24 @@ export default function ClientHome() {
           <View className="flex-row gap-3 mb-3 flex-1">
             <NavCard
               icon={<Package size={36} color="#FFD700" strokeWidth={2.5} />}
-              label="In Progress"
-              onPress={() => router.push("/orders" as any)}
+              label="En cours"
+              onPress={() => router.push({ pathname: "/orders" as any, params: { filter: "ACTIVE" } })}
             />
             <NavCard
               icon={<ClipboardList size={36} color="#FFD700" strokeWidth={2.5} />}
-              label="History"
+              label="Historique"
               onPress={() => router.push("/orders" as any)}
             />
           </View>
           <View className="flex-row gap-3 flex-1">
             <NavCard
               icon={<UserIcon size={36} color="#FFD700" strokeWidth={2.5} />}
-              label="Personal Profile"
+              label="Mon profil"
               onPress={() => router.push("/profile" as any)}
             />
             <NavCard
               icon={<SettingsIcon size={36} color="#FFD700" strokeWidth={2.5} />}
-              label="Settings"
+              label="Paramètres"
               onPress={() => router.push("/profile" as any)}
             />
           </View>

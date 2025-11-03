@@ -20,6 +20,7 @@ import {
 import { formatAr, toNumberSafe } from "@/utils/price.helper";
 import type { LocalityItem } from "@/lib/hooks/useLocalities";
 import { normalizeLocalPhone } from "@/utils/phone";
+import { useProfile } from "@/hooks/useProfile";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -52,6 +53,7 @@ type Step = 0 | 1 | 2 | 3 | 4;
 export default function NewOrderWizard() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { addresses } = useProfile();
   const [step, setStep] = useState<Step>(0);
   const [parcel, setParcel] = useState<ParcelState>(INITIAL_PARCEL);
   const [sender, setSender] = useState<SenderState>(INITIAL_SENDER);
@@ -259,6 +261,7 @@ export default function NewOrderWizard() {
           <SecondStep
             sender={sender}
             setSender={setSender}
+            savedAddresses={addresses}
             onPickupSelected={({ label, lat, lng }) => {
               setPickupLatLng({ lat, lng });
               showToast('Adresse de collecte sélectionnée', 'success');
@@ -271,6 +274,7 @@ export default function NewOrderWizard() {
           <ThirdStep
             recipient={recipient}
             setRecipient={setRecipient}
+            savedAddresses={addresses}
             onDropoffSelected={({ label, lat, lng }) => {
               setDropoffLatLng({ lat, lng });
               showToast('Adresse sélectionnée', 'success');

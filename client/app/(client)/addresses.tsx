@@ -3,8 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Tex
 import { getApiClient } from '@/lib/api/client';
 import { Ionicons } from '@expo/vector-icons';
 import { useToast } from '@/components/ui/Toast';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
-type Addr = { id: string; label?: string | null; detail: string };
+type Addr = { id: string; label?: string | null; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null };
 
 export default function AddressesScreen() {
   const api = useMemo(getApiClient, []);
@@ -18,17 +19,24 @@ export default function AddressesScreen() {
   const [editId, setEditId] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [detail, setDetail] = useState('');
+  const [mapboxText, setMapboxText] = useState('');
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
 
   const openCreate = () => {
     setEditId(null);
     setLabel('');
     setDetail('');
+    setMapboxText('');
+    setLat(null); setLng(null);
     setVisible(true);
   };
   const openEdit = (a: Addr) => {
     setEditId(a.id);
     setLabel(a.label || '');
     setDetail(a.detail);
+    setMapboxText(a.mapboxAddress || '');
+    setLat(a.lat ?? null); setLng(a.lng ?? null);
     setVisible(true);
   };
   const closeForm = () => {
@@ -38,7 +46,7 @@ export default function AddressesScreen() {
 
   const refresh = async () => {
     const data: any[] = await (api as any).addresses.getApiAddresses();
-    const normalized = (Array.isArray(data) ? data : []).map((r) => ({ id: String(r.id), label: r.label, detail: r.detail }));
+    const normalized = (Array.isArray(data) ? data : []).map((r) => ({ id: String(r.id), label: r.label, detail: r.detail, mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null }));
     setRows(normalized);
   };
 
@@ -58,16 +66,20 @@ export default function AddressesScreen() {
 
   const onSubmit = async () => {
     if (!detail.trim()) {
-      showToast('Le champ adresse est requis', 'error');
+      showToast('Le champ adresse exacte est requis', 'error');
+      return;
+    }
+    if (!mapboxText.trim() || lat == null || lng == null) {
+      showToast("Sélectionne un quartier (autocomplétion)", 'error');
       return;
     }
     setSaving(true);
     try {
       if (editId) {
-        await (api as any).addresses.putApiAddresses(Number(editId), { label: label || null, detail });
+        await (api as any).addresses.putApiAddresses(Number(editId), { label: label || null, detail, mapboxAddress: mapboxText, lat, lng });
         showToast('Adresse mise à jour', 'success');
       } else {
-        await (api as any).addresses.postApiAddresses({ label: label || null, detail });
+        await (api as any).addresses.postApiAddresses({ label: label || null, detail, mapboxAddress: mapboxText, lat, lng });
         showToast('Adresse ajoutée', 'success');
       }
       await refresh();
@@ -145,9 +157,21 @@ export default function AddressesScreen() {
               <Text className="text-[12px] text-slate-500 mb-1">Libellé (optionnel)</Text>
               <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Travail..." className="border border-slate-200 rounded-xl px-3 py-2 text-[14px] text-slate-700" />
             </View>
+            <View className="mb-3">
+              <Text className="text-[12px] text-slate-500 mb-1">Quartier (autocomplétion)</Text>
+              <AddressAutocomplete
+                placeholder="Ex: Ankorondrano, Analakely…"
+                onSelected={({ label: lbl, lat: la, lng: ln }) => {
+                  setMapboxText(lbl);
+                  setLat(la); setLng(ln);
+                }}
+                initialText={mapboxText}
+                onTextChange={(t) => setMapboxText(t)}
+              />
+            </View>
             <View className="mb-4">
-              <Text className="text-[12px] text-slate-500 mb-1">Adresse</Text>
-              <TextInput value={detail} onChangeText={setDetail} placeholder="Lot, rue, quartier" multiline className="border border-slate-200 rounded-xl px-3 py-2 text-[14px] text-slate-700 min-h-[80px]" />
+              <Text className="text-[12px] text-slate-500 mb-1">Adresse exacte</Text>
+              <TextInput value={detail} onChangeText={setDetail} placeholder="Bâtiment, étage, porte…" multiline className="border border-slate-200 rounded-xl px-3 py-2 text-[14px] text-slate-700 min-h-[80px]" />
             </View>
             <View className="flex-row gap-3">
               <TouchableOpacity disabled={saving} onPress={closeForm} className="flex-1 rounded-full bg-slate-100 border border-slate-300 py-3 items-center">

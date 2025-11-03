@@ -28,7 +28,7 @@ export function useProfile() {
 
   // Minimal addresses used for count in UI
   const [addresses, setAddresses] = useState<
-    { id: string; label: string; detail: string; isDefault?: boolean }[]
+    { id: string; label: string; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null; isDefault?: boolean }[]
   >([]);
   const [addressEdit, setAddressEdit] = useState('');
   const [addressEditId, setAddressEditId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function useProfile() {
             setAvatarUrl((me as any).avatarUrl || null);
           }
           if (Array.isArray(rows)) {
-            const list = rows.map((r: any) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', isDefault: !!r.isDefault }));
+            const list = rows.map((r: any) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null, isDefault: !!r.isDefault }));
             setAddresses(list);
             const first = list[0] || null;
             setAddressEdit(first?.detail ?? '');
@@ -115,7 +115,7 @@ export function useProfile() {
         const rows: any = await (api as any).addresses.getApiAddresses();
         if (!mounted) return;
         const list = Array.isArray(rows)
-          ? rows.map((r) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', isDefault: !!r.isDefault }))
+          ? rows.map((r) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null, isDefault: !!r.isDefault }))
           : [];
         setAddresses(list);
         const first = list[0] || null;

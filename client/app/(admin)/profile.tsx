@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { getApiClient } from "@/lib/api/client";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import { useRouter } from "expo-router";
@@ -48,41 +48,50 @@ export default function AdminProfile() {
           Profil admin
         </Text>
       </View>
-      <View
-        className="m-4 bg-white border border-slate-200 rounded-2xl p-4"
-        style={{
-          elevation: 1,
-          shadowColor: "#000",
-          shadowOpacity: 0.06,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 2 },
-        }}
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-slate-700 mb-1">
-          Nom:{" "}
-          <Text className="font-quicksand-bold text-slate-900">
-            {me?.name ?? "—"}
+        <View
+          className="m-4 bg-white border border-slate-200 rounded-2xl p-4"
+          style={{
+            elevation: 1,
+            shadowColor: "#000",
+            shadowOpacity: 0.06,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+          }}
+        >
+          <Text className="text-slate-700 mb-1">
+            Nom:{" "}
+            <Text className="font-quicksand-bold text-slate-900">
+              {me?.name ?? "—"}
+            </Text>
           </Text>
-        </Text>
-        <Text className="text-slate-700 mb-1">
-          Email: <Text className="text-slate-900">{me?.email ?? "—"}</Text>
-        </Text>
-        <Text className="text-slate-700 mb-1">
-          Téléphone: <Text className="text-slate-900">{me?.phone ?? "—"}</Text>
-        </Text>
-        <Text className="text-slate-700">
-          Rôle: <Text className="text-slate-900">{me?.role ?? "—"}</Text>
-        </Text>
-      </View>
-      <View className="px-4">
-        <LogoutButton
-          title="Se déconnecter"
-          confirm
-          className="bg-slate-900 rounded-xl text-white"
-          textClassName="font-quicksand-bold"
-          onLoggedOut={() => router.replace("/(auth)/login")}
-        />
-      </View>
+          <Text className="text-slate-700 mb-1">
+            Email: <Text className="text-slate-900">{me?.email ?? "—"}</Text>
+          </Text>
+          <Text className="text-slate-700 mb-1">
+            Téléphone: <Text className="text-slate-900">{me?.phone ?? "—"}</Text>
+          </Text>
+          <Text className="text-slate-700">
+            Rôle: <Text className="text-slate-900">{me?.role ?? "—"}</Text>
+          </Text>
+        </View>
+        <View className="px-4 mb-4">
+          <LogoutButton
+            title="Se déconnecter"
+            confirm
+            className="bg-slate-900 rounded-xl"
+            textClassName="font-quicksand-bold text-white"
+            onLoggedOut={() => {
+              router.replace("/(auth)/login" as any);
+            }}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }

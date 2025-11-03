@@ -99,10 +99,10 @@ export default function RegisterPage({
               <View className="ml-2 flex-1 h-1 bg-[#FFD700]/20 rounded-full" />
             </View>
             <Text className="text-5xl font-clash text-gray-900 font-bold leading-tight">
-              Sign Up
+              Inscription
             </Text>
             <Text className="text-base font-quicksand text-gray-500 mt-1">
-              Create your account to get started
+              Crée ton compte pour commencer
             </Text>
           </View>
         </View>
@@ -122,7 +122,7 @@ export default function RegisterPage({
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
-                  placeholder="Full Name"
+                  placeholder="Nom complet"
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="words"
                   className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
@@ -144,7 +144,7 @@ export default function RegisterPage({
                   <TextInput
                     value={phone}
                     onChangeText={setPhone}
-                    placeholder="Phone"
+                    placeholder="Téléphone"
                     placeholderTextColor="#9CA3AF"
                     keyboardType="phone-pad"
                     className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
@@ -162,7 +162,7 @@ export default function RegisterPage({
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="Email Address"
+                  placeholder="Adresse email"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -180,7 +180,7 @@ export default function RegisterPage({
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Password"
+                  placeholder="Mot de passe"
                   placeholderTextColor="#9CA3AF"
                   secureTextEntry
                   className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
@@ -207,7 +207,7 @@ export default function RegisterPage({
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text className="text-white font-quicksand-bold text-lg tracking-wide uppercase">
-                    Sign Up
+                    S'inscrire
                   </Text>
                 )}
               </LinearGradient>

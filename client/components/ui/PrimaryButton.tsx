@@ -21,9 +21,18 @@ function PrimaryButton({
   className?: string;
 }) {
   const isDisabled = disabled || loading;
+  const handlePress = () => {
+    if (isDisabled) {
+      console.log("PrimaryButton: Press ignored (disabled or loading)");
+      return;
+    }
+    console.log("PrimaryButton: onPress called");
+    onPress();
+  };
+  
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
       activeOpacity={0.8}
       accessibilityRole="button"
@@ -31,13 +40,13 @@ function PrimaryButton({
       testID={testID}
       className={`w-full items-center justify-center rounded-xl py-4 ${
         isDisabled ? "bg-accent" : "bg-primary"
-      } ${className}`}
-      style={{ width: "100%" }}
+      } ${className || ""}`}
+      style={{ width: "100%", zIndex: 1 }}
     >
       {loading ? (
-        <ActivityIndicator />
+        <ActivityIndicator color="#FFFFFF" />
       ) : (
-        <Text className={` font-semibold text-white ${textClassName}`}>
+        <Text className={`font-semibold text-white ${textClassName || ""}`}>
           {children}
         </Text>
       )}
