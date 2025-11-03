@@ -16,6 +16,8 @@ export type UIOrder = {
   createdAt: string;
   from: string;
   to: string;
+  senderName?: string;
+  recipientName?: string;
   priceAr: number;
   service: ServiceType;
   status: OrderStatus;
@@ -46,13 +48,13 @@ export function mapBackendOrderToUI(o: any): UIOrder {
     createdAt: o.createdAt,
     from: o.pickupAddress,
     to: o.dropoffAddress,
+    senderName: (o as any).pickupName || (o as any).senderName || undefined,
+    recipientName: (o as any).dropoffName || (o as any).recipientName || undefined,
     priceAr: Number((o as any).priceTotal ?? (o as any).price ?? 0),
     service: (o.type === 'express' ? 'EXPRESS' : 'STANDARD') as ServiceType,
     status: mapBackendStatus(o.status),
   };
 }
-
-// ---- UI helpers centralized ----
 export const statusLabel: Record<OrderStatus, string> = {
   CREATED: 'Créée',
   PICKED_UP: 'Retirée',

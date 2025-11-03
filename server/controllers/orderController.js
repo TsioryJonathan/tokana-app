@@ -20,6 +20,8 @@ const createSchema = Joi.object({
   zoneLevel: Joi.string().valid("ville", "peripherie", "super-peripherie").optional(),
   lat: Joi.number().optional(),
   lng: Joi.number().optional(),
+  dropoffLat: Joi.number().optional(),
+  dropoffLng: Joi.number().optional(),
   pickupAddress: Joi.string().min(3).required(),
   dropoffAddress: Joi.string().min(3).required(),
   weight: Joi.number().positive().precision(2).required(),
@@ -43,9 +45,10 @@ const createSchema = Joi.object({
   slotStart: Joi.date().iso().allow(null),
   slotEnd: Joi.date().iso().allow(null),
 }).custom((val, helper) => {
-  const hasCoords = typeof val.lat === 'number' && typeof val.lng === 'number';
-  if (!hasCoords && !val.zoneLevel && !val.dropoffLocalityId) {
-    return helper.error('any.custom', { message: 'zoneLevel ou (lat,lng) ou dropoffLocalityId requis' });
+  const hasPrimaryCoords = typeof val.lat === 'number' && typeof val.lng === 'number';
+  const hasDropoffCoords = typeof val.dropoffLat === 'number' && typeof val.dropoffLng === 'number';
+  if (!hasPrimaryCoords && !hasDropoffCoords && !val.zoneLevel && !val.dropoffLocalityId) {
+    return helper.error('any.custom', { message: 'zoneLevel ou (lat,lng) ou (dropoffLat,dropoffLng) ou dropoffLocalityId requis' });
   }
   return val;
 });
@@ -105,10 +108,17 @@ export const listOrderRemarks = async (req, res, next) => {
       if (!userId || order.createdBy !== userId) {
         return res.status(403).json({ msg: "Accès refusé" });
       }
-    // If coords provided, infer zone from geometry (takes precedence)
-    if (typeof lat === 'number' && typeof lng === 'number') {
-      const inferred = await inferZoneLevel(lat, lng);
-      if (inferred) zoneLevel = inferred;
+
+    // If still no zoneLevel, try to infer from provided coordinates (prefer explicit lat/lng, else dropoffLat/dropoffLng)
+    if (!zoneLevel) {
+      const effLat = (typeof lat === 'number') ? lat : (typeof dropoffLat === 'number' ? dropoffLat : undefined);
+      const effLng = (typeof lng === 'number') ? lng : (typeof dropoffLng === 'number' ? dropoffLng : undefined);
+      if (typeof effLat === 'number' && typeof effLng === 'number') {
+        try {
+          const inferred = await inferZoneLevel(effLat, effLng);
+          if (inferred) zoneLevel = inferred;
+        } catch {}
+      }
     }
     }
 
@@ -181,6 +191,8 @@ export const createOrder = async (req, res, next) => {
       slotEnd,
       lat,
       lng,
+      dropoffLat,
+      dropoffLng,
     } = value;
 
     // Derive zoneLevel from dropoffLocalityId if provided (source of truth)
@@ -230,6 +242,9 @@ export const createOrder = async (req, res, next) => {
     }
 
     // Pricing
+    if (!zoneLevel) {
+      return res.status(400).json({ msg: 'zoneLevel introuvable: fournissez zoneLevel ou coordonnées valides' });
+    }
     const { total } = await computePrice({ zoneLevel, type, weight, parcels });
 
     const created = await Order.create({
@@ -243,8 +258,8 @@ export const createOrder = async (req, res, next) => {
       notes: value.notes ?? null,
       pickupLocalityId: value.pickupLocalityId ?? null,
       dropoffLocalityId: value.dropoffLocalityId ?? null,
-      dropoffLat: typeof lat === 'number' ? lat : null,
-      dropoffLng: typeof lng === 'number' ? lng : null,
+      dropoffLat: (typeof lat === 'number') ? lat : ((typeof dropoffLat === 'number') ? dropoffLat : null),
+      dropoffLng: (typeof lng === 'number') ? lng : ((typeof dropoffLng === 'number') ? dropoffLng : null),
       weight,
       parcels,
       cashToCollect: cashToCollect ?? null,

@@ -1,5 +1,4 @@
 import Constants from "expo-constants";
-import { Platform } from "react-native";
 import { TokanaApiClient } from "@/lib/api";
 import { FetchHttpRequest } from "@/lib/api/core/FetchHttpRequest";
 import type { OpenAPIConfig } from "@/lib/api/core/OpenAPI";
@@ -22,21 +21,12 @@ export function getApiClient(): TokanaApiClient {
   const envBase = process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined;
   if (envBase && envBase.trim().length > 0) {
     base = envBase.trim();
-  } else if (__DEV__) {
-    // Backward-compat: allow extra.API_BASE_DEV, else fall back to LAN IP or localhost
-    base = extra.API_BASE_DEV;
-    const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
-    const host = hostUri ? hostUri.split(":")[0] : undefined;
-    const nativeFallback = host ? `http://${host}:5000` : "http://localhost:5000";
-    if (!base) {
-      base = Platform.select({ web: "http://localhost:5000", default: nativeFallback }) as string;
-    } else if (Platform.OS !== "web" && /(^|\/)localhost(?=[:/]|$)/.test(base)) {
-      base = nativeFallback;
-    }
-    console.log("[TokanaApi] BASE (dev):", base, "| hostUri:", hostUri);
   } else {
-    // Production fallback if no env var provided
+    // Always use production API from app.json (Render)
     base = extra.API_BASE_PROD || "https://tokana-app.onrender.com";
+    if (__DEV__) {
+      console.log("[TokanaApi] BASE (using production API):", base);
+    }
   }
   currentBase = base!;
   // Custom HttpRequest to handle 401 globally

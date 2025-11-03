@@ -13,6 +13,8 @@ import zonesRoutes from "./routes/zonesRoutes.js";
 import zonesAdminRoutes from "./routes/admin/zonesAdminRoutes.js";
 import usersAdminRoutes from "./routes/admin/usersAdminRoutes.js";
 import statsAdminRoutes from "./routes/admin/statsAdminRoutes.js";
+import addressesRoutes from "./routes/addressesRoutes.js";
+import meRoutes from "./routes/meRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { protect } from "./middleware/authMiddleware.js";
 import User from "./models/User.js";
@@ -112,6 +114,17 @@ if (process.env.NODE_ENV === "production") {
 app.use(compression());
 app.use(express.json());
 
+// Optional: Sentry initialization if DSN provided
+try {
+  if (process.env.SENTRY_DSN) {
+    const Sentry = await import("@sentry/node");
+    Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 1.0 });
+    app.use(Sentry.Handlers.requestHandler());
+  }
+} catch (e) {
+  console.warn("Sentry not initialized:", e.message);
+}
+
 app.use("/api/auth", authRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/slots", slotRoutes);
@@ -120,6 +133,18 @@ app.use("/api/zones", zonesRoutes);
 app.use("/api/admin/zones", zonesAdminRoutes);
 app.use("/api/admin/users", usersAdminRoutes);
 app.use("/api/admin/stats", statsAdminRoutes);
+app.use("/api/addresses", addressesRoutes);
+app.use("/api/me", meRoutes);
+
+// Serve user uploads (avatars, etc.)
+try {
+  const __filename2 = fileURLToPath(import.meta.url);
+  const __dirname2 = path.dirname(__filename2);
+  app.use("/uploads", express.static(path.resolve(__dirname2, "uploads")));
+  console.log("Static uploads served at /uploads");
+} catch (e) {
+  console.warn("Uploads static not mounted:", e.message);
+}
 
 // Lightweight health check (unauthenticated)
 app.get("/api/health", (req, res) => {

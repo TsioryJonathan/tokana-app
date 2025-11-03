@@ -5,6 +5,7 @@
 import type { BaseHttpRequest } from './core/BaseHttpRequest';
 import type { OpenAPIConfig } from './core/OpenAPI';
 import { FetchHttpRequest } from './core/FetchHttpRequest';
+import { AddressesService } from './services/AddressesService';
 import { AdminStatsService } from './services/AdminStatsService';
 import { AdminUsersService } from './services/AdminUsersService';
 import { AdminZonesService } from './services/AdminZonesService';
@@ -17,6 +18,7 @@ import { SlotsService } from './services/SlotsService';
 import { ZonesService } from './services/ZonesService';
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
 export class TokanaApiClient {
+    public readonly addresses: AddressesService;
     public readonly adminStats: AdminStatsService;
     public readonly adminUsers: AdminUsersService;
     public readonly adminZones: AdminZonesService;
@@ -30,7 +32,7 @@ export class TokanaApiClient {
     public readonly request: BaseHttpRequest;
     constructor(config?: Partial<OpenAPIConfig>, HttpRequest: HttpRequestConstructor = FetchHttpRequest) {
         this.request = new HttpRequest({
-            BASE: config?.BASE ?? 'http://localhost:5000',
+            BASE: config?.BASE ?? 'https://tokana-app.onrender.com',
             VERSION: config?.VERSION ?? '1.0.0',
             WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
             CREDENTIALS: config?.CREDENTIALS ?? 'include',
@@ -40,6 +42,7 @@ export class TokanaApiClient {
             HEADERS: config?.HEADERS,
             ENCODE_PATH: config?.ENCODE_PATH,
         });
+        this.addresses = new AddressesService(this.request);
         this.adminStats = new AdminStatsService(this.request);
         this.adminUsers = new AdminUsersService(this.request);
         this.adminZones = new AdminZonesService(this.request);

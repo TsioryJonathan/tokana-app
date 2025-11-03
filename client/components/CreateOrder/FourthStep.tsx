@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
-import { PaperPlane, Rocket } from "lucide-react-native";
+import { Plane, Rocket } from "lucide-react-native";
 import { ServiceState } from "@/types/createorder.type";
 import { assets } from "@/assets/images/assets";
 import { ImageSourcePropType } from "react-native";
@@ -49,7 +49,7 @@ const FourthStep = ({
             }`}
           >
             <View className="mb-3">
-              <PaperPlane size={40} color="#0F172A" strokeWidth={1.5} />
+              <Plane size={40} color="#0F172A" strokeWidth={1.5} />
             </View>
             <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
               Standard
