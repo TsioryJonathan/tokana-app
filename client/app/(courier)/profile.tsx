@@ -130,7 +130,7 @@ export default function Profile() {
         <HeaderBackground source={require("@/assets/images/orders-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, marginTop: -120 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, marginTop: -120 }}>
         {/* Avatar camera circle */}
         <View className="self-center w-28 h-28 rounded-full bg-white/90 items-center justify-center border border-slate-200 shadow-sm">
           {avatarUrl ? (
@@ -159,8 +159,18 @@ export default function Profile() {
             <Text className="text-center text-slate-900 font-quicksand-bold">Save</Text>
           </View>
         </TouchableOpacity>
+
+        {/* Logout button */}
+        <View className="mt-6">
+          <LogoutButton
+            title="Se déconnecter"
+            confirm
+            onLoggedOut={() => {
+              router.replace("/(auth)/login" as any);
+            }}
+          />
+        </View>
       </ScrollView>
-      <LogoutButton />
     </View>
   );
 }

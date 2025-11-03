@@ -224,8 +224,9 @@ function OrderRow({
 // --- Page ---
 export default function OrdersList() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ highlight?: string }>();
+  const params = useLocalSearchParams<{ highlight?: string; filter?: string }>();
   const highlight = params?.highlight || "";
+  const initialFilter = (params?.filter as any) || "ALL";
   const { showToast } = useToast();
   const [items, setItems] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -233,7 +234,7 @@ export default function OrdersList() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<
     keyof typeof statusLabel | "ALL" | "ACTIVE"
-  >("ALL");
+  >(initialFilter);
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
   const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
   const isFocused = useIsFocused();
@@ -268,6 +269,12 @@ export default function OrdersList() {
       setLoading(false);
     }
   }, [api, q, expressEta, showToast]);
+
+  useEffect(() => {
+    if (params?.filter && params.filter !== filter) {
+      setFilter(params.filter as any);
+    }
+  }, [params?.filter]);
 
   useEffect(() => {
     load();

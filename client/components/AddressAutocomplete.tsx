@@ -23,6 +23,13 @@ export default function AddressAutocomplete({ label = 'Adresse (autocomplétion)
   });
   const [selectedAddress, setSelectedAddress] = React.useState<string>('');
 
+  // Sync initialText when it changes externally (e.g., when saved address is selected)
+  React.useEffect(() => {
+    if (initialText && initialText !== query && !selectedAddress) {
+      setQuery(initialText);
+    }
+  }, [initialText]);
+
   const handleSelect = (f: any) => {
     const [lng, lat] = f.center;
     const address = f.place_name;

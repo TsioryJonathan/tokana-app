@@ -81,13 +81,13 @@ export default function LoginPage({
               <View className="ml-2 w-16 h-1 bg-gradient-to-r from-[#FFD700] to-transparent rounded-full" />
             </View>
             <Text className="text-6xl font-clash text-gray-900 font-bold leading-tight">
-              Welcome
+              Bon retour
             </Text>
             <Text className="text-6xl font-clash text-gray-900 font-bold leading-tight">
-              Back!
+              !
             </Text>
             <Text className="text-lg font-quicksand text-gray-500 mt-3">
-              Sign in to continue your journey
+              Connecte-toi pour continuer
             </Text>
           </View>
 
@@ -104,7 +104,7 @@ export default function LoginPage({
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Phone Or Email"
+                    placeholder="Téléphone ou email"
                     placeholderTextColor="#9CA3AF"
                     keyboardType="default"
                     autoCapitalize="none"
@@ -122,7 +122,7 @@ export default function LoginPage({
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Password"
+                    placeholder="Mot de passe"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry
                     className="flex-1 ml-4 font-quicksand text-gray-900 text-lg"
@@ -148,7 +148,7 @@ export default function LoginPage({
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text className="text-white font-quicksand-bold text-xl tracking-wide uppercase">
-                    Login
+                    Connexion
                   </Text>
                 )}
               </LinearGradient>
@@ -161,7 +161,7 @@ export default function LoginPage({
               className="w-full py-5 rounded-3xl items-center border-2 border-[#FFD700] bg-white/80 backdrop-blur-sm shadow-lg shadow-gray-200/50"
             >
               <Text className="text-[#FFD700] font-quicksand-bold text-xl uppercase tracking-wide">
-                Sign Up
+                S'inscrire
               </Text>
             </TouchableOpacity>
           </View>
@@ -169,7 +169,7 @@ export default function LoginPage({
           {/* Forgot Password */}
           <View className="items-center pb-4">
             <Text className="text-gray-500 font-quicksand text-base mb-2">
-              Did You Forget Your Password?
+              Mot de passe oublié ?
             </Text>
             <TouchableOpacity 
               onPress={onPressForgot} 
@@ -178,7 +178,7 @@ export default function LoginPage({
               className="bg-[#FFD700]/10 px-6 py-2 rounded-full"
             >
               <Text className="text-[#FFD700] font-quicksand-bold text-lg">
-                Retrieve It Now →
+                Récupérer maintenant →
               </Text>
             </TouchableOpacity>
           </View>

@@ -48,7 +48,7 @@ export default function LoginForm({
       <View className="w-full rounded-xl border border-white/40 bg-white/25 flex-row items-center px-3">
         <Mail size={18} color="#ffffff" />
         <TextInput
-          placeholder="Enter your email"
+          placeholder="Saisir ton email"
           placeholderTextColor="#F3F4F6"
           inputMode="email"
           keyboardType="email-address"
@@ -65,7 +65,7 @@ export default function LoginForm({
       <View className="w-full rounded-xl border border-white/40 bg-white/25 flex-row items-center px-3">
         <Lock size={18} color="#ffffff" />
         <TextInput
-          placeholder="Enter your password"
+          placeholder="Saisir ton mot de passe"
           placeholderTextColor="#F3F4F6"
           secureTextEntry={secure}
           value={password}
@@ -96,9 +96,9 @@ export default function LoginForm({
             value={remember}
             onValueChange={setRemember}
             thumbColor={remember ? "#60A5FA" : undefined}
-            accessibilityLabel="Remember me"
+            accessibilityLabel="Se souvenir de moi"
           />
-          <Text className="ml-2 text-white/90 font-quicksand">Remember me</Text>
+          <Text className="ml-2 text-white/90 font-quicksand">Se souvenir de moi</Text>
         </View>
 
         <TouchableOpacity
@@ -107,7 +107,7 @@ export default function LoginForm({
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
         >
           <Text className="text-white underline font-quicksand-medium">
-            Forgot Password?
+            Mot de passe oublié ?
           </Text>
         </TouchableOpacity>
       </View>
@@ -120,20 +120,20 @@ export default function LoginForm({
         accessibilityLabel="Login"
         className="bg-primary"
       >
-        <Text className="font-quicksand-medium">Login</Text>
+        <Text className="font-quicksand-medium">Connexion</Text>
       </PrimaryButton>
 
       {loading && (
         <View className="items-center">
           <ActivityIndicator />
-          <Text className="text-white/90 mt-2 font-quicksand">Checking…</Text>
+          <Text className="text-white/90 mt-2 font-quicksand">Vérification…</Text>
         </View>
       )}
 
       {/* OU - social login */}
       <View className="items-center mt-1">
         <Text className="text-white/70 font-quicksand text-xs">
-          Or login with
+          Ou connecte-toi avec
         </Text>
       </View>
 
@@ -149,13 +149,13 @@ export default function LoginForm({
       {/* Lien register */}
       <View className="items-center">
         <Text className="text-white/80 font-quicksand text-sm">
-          Don’t have an account?{" "}
+          Pas encore de compte ?{" "}
           <Text
             className="underline"
             onPress={onPressRegister}
             accessibilityRole="button"
           >
-            Create an account
+            Créer un compte
           </Text>
         </Text>
       </View>
