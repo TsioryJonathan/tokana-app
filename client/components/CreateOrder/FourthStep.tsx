@@ -1,10 +1,9 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity, Image } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
-import ToggleRow from "../ui/ToggleRow";
-import { Ionicons } from "@expo/vector-icons";
-import Chip from "../ui/Chip";
-import SectionHeader from "../ui/SectionHeader";
+import { Plane, Rocket } from "lucide-react-native";
 import { ServiceState } from "@/types/createorder.type";
+import { assets } from "@/assets/images/assets";
+import { ImageSourcePropType } from "react-native";
 
 const FourthStep = ({
   service,
@@ -16,54 +15,84 @@ const FourthStep = ({
   lockDistance?: boolean;
 }) => {
   return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-      <SectionHeader
-        icon={<Ionicons name="bicycle-outline" size={16} color="#0F172A" />}
-        title="Service & distance"
-      />
-      <Text className="mb-1 text-[12px] text-slate-600">Type de service</Text>
-      <View className="flex-row mb-2">
-        <Chip
-          label="Standard"
-          active={service.service === "STANDARD"}
-          onPress={() => setService({ ...service, service: "STANDARD" })}
+    <View className="flex-1">
+      {/* Illustration Header */}
+      <View className="relative bg-[#FFF9E6] pt-8 pb-6 items-center">
+        <Image
+          source={assets.deliveryGuyMockup as ImageSourcePropType}
+          style={{ width: "90%", height: 180, opacity: 0.3 }}
+          resizeMode="contain"
         />
-        <Chip
-          label="Express"
-          active={service.service === "EXPRESS"}
-          onPress={() => setService({ ...service, service: "EXPRESS" })}
-        />
+        
+        {/* Step Indicator and Title */}
+        <View className="mt-4 px-6 w-full">
+          <Text className="text-5xl font-clash text-gray-900 font-bold">
+            04<Text className="text-gray-400">/05</Text>
+          </Text>
+          <Text className="text-2xl font-quicksand-bold text-gray-800 mt-2">
+            Service Selection
+          </Text>
+        </View>
       </View>
 
-      <Text className="mb-1 text-[12px] text-slate-600">Distance estimée {lockDistance ? '(verrouillée par localité)' : ''}</Text>
-      <View className={`flex-row ${lockDistance ? 'opacity-60' : ''}`}>
-        <Chip
-          label="< 5 km"
-          active={service.distanceKmBracket === "<5"}
-          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "<5" }); }}
-        />
-        <Chip
-          label="5 – 10 km"
-          active={service.distanceKmBracket === "5-10"}
-          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "5-10" }); }}
-        />
-        <Chip
-          label="10 – 20 km"
-          active={service.distanceKmBracket === "10-20"}
-          onPress={() => { if (!lockDistance) setService({ ...service, distanceKmBracket: "10-20" }); }}
-        />
-      </View>
-      {lockDistance ? (
-        <Text className="mt-1 text-[11px] text-slate-500">Zone fixée automatiquement par la localité de livraison.</Text>
-      ) : null}
+      {/* Service Selection Cards */}
+      <View className="flex-1 bg-white px-6 pt-6">
+        <View className="flex-row gap-4">
+          {/* Standard Service */}
+          <TouchableOpacity
+            onPress={() => setService({ ...service, service: "STANDARD" })}
+            activeOpacity={0.8}
+            className={`flex-1 rounded-3xl p-6 items-center border-2 shadow-lg ${
+              service.service === "STANDARD"
+                ? "bg-yellow-50 border-[#FFD700]"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <View className="mb-3">
+              <Plane size={40} color="#0F172A" strokeWidth={1.5} />
+            </View>
+            <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
+              Standard
+            </Text>
+            <Text className="text-sm text-gray-500 text-center mb-3">
+              Next-day delivery
+            </Text>
+            <View>
+              <Text className="text-xs text-gray-500">Estimated price</Text>
+              <Text className="text-lg font-quicksand-bold text-red-600">
+                10,000 Ar
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-      <View className="h-2" />
-      <ToggleRow
-        icon={<Ionicons name="refresh-outline" size={18} color="#0F172A" />}
-        label="Retour nécessaire"
-        value={service.needReturn}
-        onChange={(v) => setService({ ...service, needReturn: v })}
-      />
+          {/* Fast Service */}
+          <TouchableOpacity
+            onPress={() => setService({ ...service, service: "EXPRESS" })}
+            activeOpacity={0.8}
+            className={`flex-1 rounded-3xl p-6 items-center border-2 shadow-lg ${
+              service.service === "EXPRESS"
+                ? "bg-yellow-50 border-[#FFD700]"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <View className="mb-3">
+              <Rocket size={40} color="#0F172A" strokeWidth={1.5} />
+            </View>
+            <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
+              Fast
+            </Text>
+            <Text className="text-sm text-gray-500 text-center mb-3">
+              Same-day delivery
+            </Text>
+            <View>
+              <Text className="text-xs text-gray-500">Estimated price</Text>
+              <Text className="text-lg font-quicksand-bold text-red-600">
+                20,000 Ar
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };

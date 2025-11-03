@@ -8,13 +8,13 @@ import {
   ImageSourcePropType,
   Platform,
   KeyboardAvoidingView,
+  TextInput,
+  StatusBar,
 } from "react-native";
-import { AtSign, Lock } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { User, Lock, Sparkles } from "lucide-react-native";
 import { assets } from "@/assets/images/assets";
-import CustomInput from "../ui/CustomInput";
-import GoogleIcon from "../Icons/GoogleIcon";
-import FacebookIcon from "../Icons/FacebookIcon";
-import { useToast } from "../ui/Toast";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type LoginFormProps = {
   email: string;
@@ -25,6 +25,7 @@ type LoginFormProps = {
   canSubmit: boolean;
   onPressLogin: () => void;
   onPressForgot: () => void;
+  onPressSignUp?: () => void;
 };
 
 export default function LoginPage({
@@ -36,119 +37,153 @@ export default function LoginPage({
   canSubmit,
   onPressLogin,
   onPressForgot,
+  onPressSignUp,
 }: LoginFormProps) {
-  const { showToast } = useToast();
-
- 
+  const insets = useSafeAreaInsets();
 
   return (
-    <View className="flex-1 bg-customwhite">
+    <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      {/* Gradient Background */}
+      <LinearGradient
+        colors={["#FFF9E6", "#FFFDF7", "#FFFFFF"]}
+        locations={[0, 0.4, 0.8]}
+        className="absolute top-0 left-0 right-0 bottom-0"
+      />
+
+      {/* Decorative circles */}
+      <View className="absolute top-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#FFD700]/10" />
+      <View className="absolute top-[100px] left-[-80px] w-[200px] h-[200px] rounded-full bg-[#FFA500]/10" />
+
+      {/* Illustration Background with better visibility */}
+      <View className="absolute top-0 left-0 right-0 h-[500px] opacity-20">
+        <Image
+          source={assets.welcome as ImageSourcePropType}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="contain"
+        />
+      </View>
+
       <KeyboardAvoidingView
-        className="flex-1 px-6 mt-20"
+        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        {/* Illustration */}
-        <View className="w-full items-center justify-center mb-6">
-          <Image
-            source={assets.welcome as ImageSourcePropType}
-            style={{ width: "100%", height: 250 }}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Header */}
-        <View className="items-center mb-6 -mt-10">
-          <Text className="text-4xl font-clash text-gray-900">
-            Se connecter
-          </Text>
-          <Text className="text-sm text-gray-500 mt-1">
-            Entrer vos informations de connexion
-          </Text>
-        </View>
-
-        {/* Inputs */}
-        <View className="gap-4">
-          <CustomInput
-            value={email}
-            icon={AtSign}
-            setValue={setEmail}
-            placeholder="Email ou téléphone"
-            keyboardType="email-address"
-            className="border border-gray-300 rounded-lg bg-gray-50"
-          />
-
-          <CustomInput
-            value={password}
-            icon={Lock}
-            setValue={setPassword}
-            placeholder="Entrer votre mot de passe"
-            secureTextEntry
-            className="border border-gray-300 rounded-lg bg-gray-50"
-          />
-        </View>
-
-        {/* Forgot password */}
-        <TouchableOpacity
-          onPress={onPressForgot}
-          className="mt-2 self-end"
-          accessibilityRole="button"
+        <View 
+          className="flex-1 justify-between px-6"
+          style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }}
         >
-          <Text className="text-primary font-quicksand text-sm underline">
-           Mot de passe oublié ?
-          </Text>
-        </TouchableOpacity>
+          {/* Header with decorative elements */}
+          <View className="mt-4">
+            <View className="flex-row items-center mb-2">
+              <Sparkles size={32} color="#FFD700" fill="#FFD700" />
+              <View className="ml-2 w-16 h-1 bg-gradient-to-r from-[#FFD700] to-transparent rounded-full" />
+            </View>
+            <Text className="text-6xl font-clash text-gray-900 font-bold leading-tight">
+              Welcome
+            </Text>
+            <Text className="text-6xl font-clash text-gray-900 font-bold leading-tight">
+              Back!
+            </Text>
+            <Text className="text-lg font-quicksand text-gray-500 mt-3">
+              Sign in to continue your journey
+            </Text>
+          </View>
+
+          {/* Form Content */}
+          <View className="flex-1 justify-center -mt-8">
+            {/* Input Fields with enhanced design */}
+            <View className="gap-5 mb-8">
+              {/* Phone/Email Input */}
+              <View className="bg-white rounded-3xl shadow-lg shadow-gray-300/50">
+                <View className="flex-row items-center px-6 py-5">
+                  <View className="bg-[#FFD700]/10 p-2 rounded-full">
+                    <User size={22} color="#FFD700" strokeWidth={2.5} />
+                  </View>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Phone Or Email"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="default"
+                    autoCapitalize="none"
+                    className="flex-1 ml-4 font-quicksand text-gray-900 text-lg"
+                  />
+                </View>
+              </View>
+
+              {/* Password Input */}
+              <View className="bg-white rounded-3xl shadow-lg shadow-gray-300/50">
+                <View className="flex-row items-center px-6 py-5">
+                  <View className="bg-[#FFD700]/10 p-2 rounded-full">
+                    <Lock size={22} color="#FFD700" strokeWidth={2.5} />
+                  </View>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry
+                    className="flex-1 ml-4 font-quicksand text-gray-900 text-lg"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Login Button with gradient */}
+            <TouchableOpacity
+              disabled={!canSubmit || loading}
+              onPress={onPressLogin}
+              activeOpacity={0.8}
+              className="w-full rounded-3xl overflow-hidden mb-4 shadow-xl shadow-[#FFD700]/40"
+            >
+              <LinearGradient
+                colors={canSubmit ? ["#FFD700", "#FFA500"] : ["#D1D5DB", "#9CA3AF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="py-5 items-center"
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white font-quicksand-bold text-xl tracking-wide uppercase">
+                    Login
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Sign Up Button */}
+            <TouchableOpacity 
+              onPress={onPressSignUp}
+              activeOpacity={0.8}
+              className="w-full py-5 rounded-3xl items-center border-2 border-[#FFD700] bg-white/80 backdrop-blur-sm shadow-lg shadow-gray-200/50"
+            >
+              <Text className="text-[#FFD700] font-quicksand-bold text-xl uppercase tracking-wide">
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Forgot Password */}
+          <View className="items-center pb-4">
+            <Text className="text-gray-500 font-quicksand text-base mb-2">
+              Did You Forget Your Password?
+            </Text>
+            <TouchableOpacity 
+              onPress={onPressForgot} 
+              accessibilityRole="button"
+              activeOpacity={0.7}
+              className="bg-[#FFD700]/10 px-6 py-2 rounded-full"
+            >
+              <Text className="text-[#FFD700] font-quicksand-bold text-lg">
+                Retrieve It Now →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
-
-      <View className="px-6 pb-6 bg-customwhite">
-        {/* CTA principal */}
-        <TouchableOpacity
-          disabled={!canSubmit || loading}
-          onPress={onPressLogin}
-          className={`w-full py-4 rounded-lg items-center mt-2 ${
-            canSubmit ? "bg-primary" : "bg-gray-300"
-          }`}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-quicksand-medium text-base">
-              Connexion
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View className="flex-row items-center my-6">
-          <View className="flex-1 h-[1px] bg-gray-300" />
-          <Text className="mx-2 text-gray-400 font-quicksand">Ou</Text>
-          <View className="flex-1 h-[1px] bg-gray-300" />
-        </View>
-
-        {/* Social logins */}
-        <View className="flex-row gap-3">
-          <TouchableOpacity
-            className="flex-1 border border-gray-300 rounded-lg py-3 items-center bg-white flex-row justify-center gap-2"
-            onPress={() => {
-              showToast("Bientôt disponible !", "info");
-            }}
-          >
-            <GoogleIcon size={20} />
-            <Text className="font-quicksand-medium text-gray-700">Google</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 border border-gray-300 rounded-lg py-3 items-center bg-white flex-row justify-center gap-2"
-            onPress={() => {
-              showToast("Bientôt disponible !", "info");
-            }}
-          >
-            <FacebookIcon size={20} />
-            <Text className="font-quicksand-medium text-gray-700">
-              Facebook
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </View>
   );
 }

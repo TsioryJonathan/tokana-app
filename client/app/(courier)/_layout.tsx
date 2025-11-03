@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Tabs } from "expo-router";
 import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
-import CustomTabBar from "@/components/CustomTabBar";
 
 export default function CourierLayout() {
   const { checking } = useAuthGuard({
@@ -43,9 +42,9 @@ export default function CourierLayout() {
         backgroundColor="transparent"
       />
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} whereToSlice={3} />}
         screenOptions={{
           headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
       >
         <Tabs.Screen name="index" options={{ title: "Accueil" }} />

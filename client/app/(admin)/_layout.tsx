@@ -3,7 +3,6 @@ import { Tabs } from "expo-router";
 import { Text, Platform, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
-import CustomTabBar from "@/components/CustomTabBar";
 
 export default function AdminLayout() {
   const { checking } = useAuthGuard({
@@ -36,9 +35,9 @@ export default function AdminLayout() {
         backgroundColor="transparent"
       />
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} whereToSlice={5} />}
         screenOptions={{
           headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
       >
         <Tabs.Screen name="index" options={{ title: "Accueil" }} />

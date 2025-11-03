@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,43 +41,13 @@ const INITIAL_PAYMENT: PaymentState = { codAmountAr: "", notes: "" };
 const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 
 const steps = [
-  "Colis",
   "Expéditeur",
   "Destinataire",
+  "Colis",
   "Service",
   "Paiement",
 ] as const;
 type Step = 0 | 1 | 2 | 3 | 4;
-
-function Stepper({ step }: { step: Step }) {
-  return (
-    <View className="flex-row items-center justify-center px-5 py-3 bg-white border-b border-slate-200">
-      {steps.map((label, i) => {
-        const active = i <= step;
-        return (
-          <View key={label} className="flex-row items-center">
-            <View
-              className={`w-7 h-7 rounded-full items-center justify-center ${
-                active ? "bg-emerald-600" : "bg-slate-200"
-              }`}
-            >
-              <Text
-                className={`text-[12px] ${active ? "text-white" : "text-slate-600"} font-quicksand-bold`}
-              >
-                {i + 1}
-              </Text>
-            </View>
-            {i < steps.length - 1 && (
-              <View
-                className={`w-8 h-[2px] mx-1 ${i < step ? "bg-emerald-600" : "bg-slate-200"}`}
-              />
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function NewOrderWizard() {
   const router = useRouter();
@@ -127,15 +97,19 @@ export default function NewOrderWizard() {
 
   // Fetch real-time server quote when inputs change (zone/type/weight/parcels)
   React.useEffect(() => {
+    // Only fetch quote when we have weight (step 2 and beyond)
     const zoneLevel = toZoneLevel(service.distanceKmBracket);
     const type = service.service === "EXPRESS" ? "express" : "standard";
     const parcelsCount = Math.max(1, toNumberSafe(parcel.parcelsCount || "1"));
     const weight = toNumberSafe(parcel.weightKg);
-    if (!weight || weight <= 0) {
+    
+    // Don't fetch quote if no weight or no dropoff address selected
+    if (!weight || weight <= 0 || !dropoffLatLng) {
       setServerQuote(null);
       setQuoteError(null);
       return;
     }
+    
     let cancelled = false;
     (async () => {
       setQuoteLoading(true);
@@ -192,31 +166,50 @@ export default function NewOrderWizard() {
   const validateCurrent = (): string[] => {
     const errs: string[] = [];
     if (step === 0) {
-      if (toNumberSafe(parcel.weightKg) <= 0)
-        errs.push("Poids du colis invalide");
-      const n = toNumberSafe(parcel.parcelsCount || "1");
-      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
-        errs.push("Nombre de colis doit être un entier ≥ 1");
-    }
-    if (step === 1) {
+      // Sender validation
       if (!sender.name.trim()) errs.push("Nom expéditeur requis");
       const sPhone = normalizeLocalPhone(sender.phone);
       if (!mgPhoneRegex.test(sPhone)) errs.push("Téléphone expéditeur invalide");
       if (!sender.address.trim()) errs.push("Adresse expéditeur requise");
       if (!pickupLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de collecte");
     }
-    if (step === 2) {
+    if (step === 1) {
+      // Recipient validation
       if (!recipient.name.trim()) errs.push("Nom destinataire requis");
       const rPhone = normalizeLocalPhone(recipient.phone);
       if (!mgPhoneRegex.test(rPhone)) errs.push("Téléphone destinataire invalide");
       if (!dropoffLatLng) errs.push("Sélectionnez une suggestion d'adresse pour l'adresse de livraison");
     }
-    // Étape 3: plus de fallback localité, les coordonnées sont désormais requises à l'étape 2
-    // Étape paiement: non bloquante (en implémentation)
+    if (step === 2) {
+      // Parcel validation
+      if (toNumberSafe(parcel.weightKg) <= 0)
+        errs.push("Poids du colis invalide");
+      const n = toNumberSafe(parcel.parcelsCount || "1");
+      if (!Number.isFinite(n) || n < 1 || Math.floor(n) !== n)
+        errs.push("Nombre de colis doit être un entier ≥ 1");
+    }
+    // Étape 3 (Service): validation si nécessaire
+    // Étape 4 (Paiement): non bloquante
     return errs;
   };
 
-  const goNext = () => {
+  const resetForm = useCallback(() => {
+    setParcel(INITIAL_PARCEL);
+    setSender(INITIAL_SENDER);
+    setRecipient(INITIAL_RECIPIENT);
+    setService(INITIAL_SERVICE);
+    setPayment(INITIAL_PAYMENT);
+    setStep(0);
+    setPickupLatLng(null);
+    setDropoffLatLng(null);
+    setSelectedPickupLocality(null);
+    setSelectedDropoffLocality(null);
+    setServerQuote(null);
+    setQuoteError(null);
+    setExpressEta(null);
+  }, []);
+
+  const goNext = useCallback(() => {
     const errs = validateCurrent();
     if (errs.length) {
       showToast(errs.join("\n"), "error");
@@ -240,198 +233,29 @@ export default function NewOrderWizard() {
       try {
         const encoded = encodeURIComponent(JSON.stringify(draft));
         router.push({ pathname: "/orders/recap" as any, params: { draft: encoded } });
+        // Reset form after navigating to recap so if user comes back, form is clean
+        resetForm();
       } catch (e) {
         showToast("Impossible d'ouvrir le récap", "error");
       }
     }
-  };
+  }, [step, sender, recipient, parcel, service, payment, pickupLatLng, dropoffLatLng, selectedPickupLocality, selectedDropoffLocality, router, showToast, resetForm]);
   const goPrev = () => {
     if (step > 0) setStep((s) => (s - 1) as Step);
     else router.back();
   };
-  const submit = async () => {
-    if (submitting) return; // debounce
-    const errs = validateCurrent();
-    if (errs.length) {
-      showToast(errs.join("\n"), "error");
-      return;
-    }
-    // Require a valid server quote before proceeding to avoid confusion
-    if (quoteLoading) {
-      showToast("Calcul du devis en cours…", "info");
-      return;
-    }
-    if (!serverQuote || serverQuote.total == null) {
-      showToast("Devis indisponible. Vérifie le poids, la zone et réessaie.", "error");
-      return;
-    }
-    if (serverQuote.manual) {
-      showToast(serverQuote.instructions || "Traitement manuel requis. Contactez le support.", "info");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      const zoneLevel = toZoneLevel(service.distanceKmBracket);
-      const type = service.service === "EXPRESS" ? "express" : "standard";
-      let slotStart: string | undefined;
-      let slotEnd: string | undefined;
-      const parcelsCount = Math.max(1, toNumberSafe(parcel.parcelsCount || "1"));
 
-      // 1) Express availability check
-      if (type === "express") {
-        try {
-          const avail = await api.slots.getApiSlotsExpress();
-          if (avail && avail.allowed === false) {
-            showToast(avail.reason || "Express indisponible", "error");
-            return;
-          }
-          if (avail && typeof (avail as any).eta?.minMinutes === "number" && typeof (avail as any).eta?.maxMinutes === "number") {
-            setExpressEta({ min: (avail as any).eta.minMinutes, max: (avail as any).eta.maxMinutes });
-          } else {
-            setExpressEta({ min: 60, max: 120 });
-          }
-        } catch (e) {
-          console.warn("express availability failed", e);
-          // Conserver une UX stricte: bloquer si indisponible/inconnue
-          showToast("Vérification express indisponible", "error");
-          return;
-        }
-      }
-
-      // 2) Standard slot required
-      if (type === "standard") {
-        try {
-          let slotsResp: any;
-          if (dropoffLatLng) {
-            slotsResp = await api.slots.getApiSlotsStandard(undefined, dropoffLatLng.lat, dropoffLatLng.lng);
-          } else {
-            slotsResp = await api.slots.getApiSlotsStandard(zoneLevel);
-          }
-          const slots = Array.isArray(slotsResp) ? slotsResp : slotsResp?.slots;
-          if (!Array.isArray(slots) || slots.length === 0) {
-            showToast("Aucun créneau standard disponible", "error");
-            return;
-          }
-          slotStart = slots[0].startISO;
-          slotEnd = slots[0].endISO;
-        } catch (e) {
-          console.warn("slots fetch failed", e);
-          showToast("Créneaux indisponibles", "error");
-          return;
-        }
-      }
-
-      // 3) Pricing quote (alignement backend)
-      try {
-        const typeEnum =
-          type === "express"
-            ? PricingQuoteRequest.type.EXPRESS
-            : PricingQuoteRequest.type.STANDARD;
-        const body: any = {
-          type: typeEnum,
-          weight: toNumberSafe(parcel.weightKg),
-          parcels: parcelsCount,
-        };
-        if (dropoffLatLng) {
-          body.lat = dropoffLatLng.lat;
-          body.lng = dropoffLatLng.lng;
-        } else {
-          const zoneEnum =
-            zoneLevel === "ville"
-              ? PricingQuoteRequest.zoneLevel.VILLE
-              : zoneLevel === "peripherie"
-              ? PricingQuoteRequest.zoneLevel.PERIPHERIE
-              : PricingQuoteRequest.zoneLevel.SUPER_PERIPHERIE;
-          body.zoneLevel = zoneEnum;
-        }
-        const quote = await api.pricing.postApiPricingQuote(body);
-        if (quote?.requiresManualHandling) {
-          showToast(
-            quote.instructions ||
-              "Traitement manuel requis. Merci de contacter le support.",
-            "info"
-          );
-          return;
-        }
-      } catch (e) {
-        console.warn("pricing quote failed", e);
-        showToast("Devis indisponible", "error");
-        return;
-      }
-
-      const cleanedSenderPhone = normalizeLocalPhone(sender.phone);
-      const cleanedRecipientPhone = normalizeLocalPhone(recipient.phone);
-      const orderPayload: any = {
-        type,
-        pickupAddress: sender.address.trim(),
-        pickupName: sender.name.trim() || undefined,
-        pickupPhone: cleanedSenderPhone || undefined,
-        dropoffAddress: (recipient.address || '').trim() || (selectedDropoffLocality?.name ?? ''),
-        dropoffName: recipient.name.trim() || undefined,
-        category: parcel.category,
-        fragile: !!parcel.fragile,
-        bulky: !!parcel.bulky,
-        weight: toNumberSafe(parcel.weightKg),
-        parcels: parcelsCount,
-        cashToCollect: Math.max(0, toNumberSafe(payment.codAmountAr) || 0),
-        notes: (payment.notes || '').trim() || undefined,
-        recipientPhone: cleanedRecipientPhone || undefined,
-        recipientEmail: recipient.email?.trim() || undefined,
-        needReturn: !!service.needReturn,
-        slotStart,
-        slotEnd,
-        // Optional fields for future server-side zone derivation
-        ...(selectedDropoffLocality ? { dropoffLocalityId: selectedDropoffLocality.id } : {}),
-        ...(pickupLatLng ? { pickupLat: pickupLatLng.lat, pickupLng: pickupLatLng.lng } : {}),
-        ...(dropoffLatLng ? { dropoffLat: dropoffLatLng.lat, dropoffLng: dropoffLatLng.lng } : {}),
-      };
-      if (!dropoffLatLng) {
-        orderPayload.zoneLevel = zoneLevel;
-      }
-      // Always include zoneLevel for backend pricing/slots, preferring server-inferred zone (from coords)
-      orderPayload.zoneLevel = ((serverQuote?.inferredZone as any) || zoneLevel);
-
-      const created = await api.orders.postApiOrders(orderPayload as any);
-      resetForm();
-      showToast("Commande créée", "success");
-      // Navigate to tracking with created id for MVP
-      router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(created.id) } });
-    } catch (e: any) {
-      console.warn("create order error", e);
-      showToast("Création échouée", "error");
-      // toast only, avoid blocking modal
-    } finally {
-      setSubmitting(false);
-    }
-  };
-  const resetForm = () => {
-    setParcel(INITIAL_PARCEL);
-    setSender(INITIAL_SENDER);
-    setRecipient(INITIAL_RECIPIENT);
-    setService(INITIAL_SERVICE);
-    setPayment(INITIAL_PAYMENT);
-    setStep(0);
-  };
   return (
-    <View className="flex-1 bg-slate-50">
-      <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
+    <View className="flex-1 bg-gray-50">
+      {/* Back Button */}
+      <View className="absolute top-12 left-6 z-50">
         <TouchableOpacity onPress={goPrev} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#0F172A" />
+          <Ionicons name="arrow-back" size={24} color="#0F172A" />
         </TouchableOpacity>
-        <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">
-          Nouvelle commande
-        </Text>
-        <Text className="text-[12px] text-slate-500">
-          {step + 1}/{steps.length}
-        </Text>
       </View>
 
-      <Stepper step={step} />
-
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {step === 0 && <FirstStep parcel={parcel} setParcel={setParcel} />}
-
-        {step === 1 && (
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        {step === 0 && (
           <SecondStep
             sender={sender}
             setSender={setSender}
@@ -443,7 +267,7 @@ export default function NewOrderWizard() {
           />
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <ThirdStep
             recipient={recipient}
             setRecipient={setRecipient}
@@ -455,114 +279,72 @@ export default function NewOrderWizard() {
           />
         )}
 
+        {step === 2 && <FirstStep parcel={parcel} setParcel={setParcel} />}
+
         {step === 3 && <FourthStep service={service} setService={setService} lockDistance={true} />}
-        {/* Service hints based on selection */}
-        {step === 3 && (
-          <View className="mt-2 flex-row items-center">
-            {service.service === "EXPRESS" ? (
-              <View className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-                <Text className="text-[11px] text-emerald-700">⚡ Express: 06:00–15:00 (jour même, selon dispo)</Text>
-              </View>
-            ) : (
-              <View className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
-                <Text className="text-[11px] text-slate-700">
-                  {(() => {
-                    const z = (serverQuote?.inferredZone as any) || toZoneLevel(service.distanceKmBracket);
-                    if (z === "ville") return "Standard (demain): 10:00–17:00";
-                    if (z === "peripherie") return "Standard (demain): 12:00–17:00";
-                    return "Standard (demain): 14:00–17:00";
-                  })()}
-                </Text>
-              </View>
-            )}
+
+        {step === 4 && (
+          <FifthStep 
+            payment={payment} 
+            setPayment={setPayment}
+            sender={{ name: sender.name, phone: sender.phone, address: sender.address }}
+            recipient={{ name: recipient.name, phone: recipient.phone, address: recipient.address }}
+            parcel={{ 
+              type: parcel.fragile ? "Fragile" : parcel.category === "ENVELOPE" ? "Document" : "Other",
+              weight: `${parcel.weightKg}KG`,
+              size: parcel.category === "SMALL" ? "Small" : parcel.category === "MEDIUM" ? "Medium" : "Large"
+            }}
+            service={{ service: service.service, distanceKmBracket: service.distanceKmBracket }}
+            estimatedPrice={serverQuote?.total || 0}
+          />
+        )}
+      </ScrollView>
+
+      {/* Fixed Bottom Buttons */}
+      <View className="bg-white px-6 py-4 border-t border-gray-200">
+        {/* Price display */}
+        {serverQuote?.total != null && !serverQuote?.manual && (
+          <View className="mb-3 items-center">
+            <Text className="text-xs text-gray-500">Estimated price</Text>
+            <Text className="text-xl font-quicksand-bold text-red-600">{formatAr(serverQuote.total)}</Text>
           </View>
         )}
 
-        {/* ETA Express (affiché si service Express et dispo) */}
-        {service.service === "EXPRESS" && expressEta && (
-          <View className="mt-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-            <Text className="text-[12px] text-emerald-700">
-              Livraison estimée {expressEta.min}–{expressEta.max} minutes
-            </Text>
-          </View>
-        )}
-
-        {step === 4 && <FifthStep payment={payment} setPayment={setPayment} />}
-
-        {/* Footer: devis serveur + actions (responsive vertical) */}
-        <View className="mt-4">
-          {/* Devis serveur */}
-          <View>
-            <Text className="text-[12px] text-slate-500">Devis</Text>
-            {quoteLoading ? (
-              <View>
-                <View className="mt-1 h-5 w-40 bg-slate-200 rounded" />
-                <View className="mt-1 h-3 w-64 bg-slate-100 rounded" />
-              </View>
-            ) : serverQuote?.manual ? (
-              <Text className="text-[12px] text-amber-700">
-                {serverQuote.instructions || "Traitement manuel requis. Contactez le support."}
-              </Text>
-            ) : serverQuote?.total != null ? (
-              <Text className="text-xl font-quicksand-bold text-emerald-700">{formatAr(serverQuote.total)}</Text>
-            ) : quoteError ? (
-              <Text className="text-[12px] text-rose-700">{quoteError}</Text>
-            ) : (
-              <Text className="text-[12px] text-slate-500">Indique le poids et l'adresse ou la localité pour obtenir le devis</Text>
-            )}
-            {serverQuote && !serverQuote.manual && (
-              <Text className="mt-0.5 text-[11px] text-slate-500">
-                {`Pickup: ${serverQuote.pickup ? formatAr(serverQuote.pickup) : '—'} · Livraison: ${serverQuote.delivery ? formatAr(serverQuote.delivery) : '—'} · Express: ${serverQuote.express ? formatAr(serverQuote.express) : '—'}`}
-              </Text>
-            )}
-            {/* Zone inférée affichée si disponible */}
-            {serverQuote?.inferredZone && (
-              <Text className="mt-0.5 text-[11px] text-slate-500">Zone détectée: {serverQuote.inferredZone}</Text>
-            )}
-          </View>
-
-          {/* Manual handling prominent banner */}
-          {serverQuote?.manual && (
-            <View className="mt-3 p-3 rounded-xl border border-amber-300 bg-amber-50">
-              <Text className="text-[12px] text-amber-800 font-quicksand-semibold">Traitement manuel requis</Text>
-              {serverQuote.instructions ? (
-                <Text className="mt-1 text-[12px] text-amber-800">{serverQuote.instructions}</Text>
-              ) : null}
-              {serverQuote.contactPhone ? (
-                <Text className="mt-1 text-[12px] text-amber-800">Contact: {serverQuote.contactPhone}</Text>
-              ) : null}
-            </View>
-          )}
-
-          {/* Actions */}
-          <View className="mt-3">
+        {/* Navigation Buttons */}
+        <View className="gap-3">
             {step > 0 && (
               <TouchableOpacity
                 onPress={goPrev}
-                activeOpacity={0.9}
-                className="w-full px-4 py-3 rounded-xl bg-slate-200 mb-2"
+              activeOpacity={0.8}
+              className="w-full rounded-3xl border-2 border-[#FFD700] py-4 items-center justify-center"
               >
-                <Text className="text-center font-quicksand-bold text-slate-800">
-                  Précédent
-                </Text>
+              <Text className="text-[#FFD700] font-quicksand-bold text-base">Previous step</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              onPress={goNext}
-              activeOpacity={0.9}
-              disabled={submitting || quoteLoading || !serverQuote || serverQuote?.manual}
-              className={`w-full px-5 py-3 rounded-xl ${submitting || quoteLoading || !serverQuote || serverQuote?.manual ? "bg-emerald-300" : "bg-emerald-600"}`}
-            >
-              <View className="flex-row items-center justify-center">
-                <Text className="text-white font-quicksand-bold mr-1">
-                  {step < steps.length - 1 ? "Suivant" : submitting ? "Envoi…" : "Confirmer"}
+          <TouchableOpacity
+            onPress={goNext}
+            activeOpacity={0.8}
+            disabled={submitting}
+            className={`w-full rounded-3xl py-4 items-center justify-center ${
+              submitting ? "bg-gray-300" : "bg-[#FFD700]"
+            }`}
+          >
+            <Text className="text-white font-quicksand-bold text-base">
+              {step < steps.length - 1 ? "Next step" : submitting ? "Processing…" : "Payment"}
                 </Text>
-                <Ionicons name="chevron-forward" size={18} color="#fff" />
-              </View>
             </TouchableOpacity>
           </View>
-         </View>
-      </ScrollView>
+
+        {/* Quote error/status */}
+        {quoteError && (
+          <Text className="text-xs text-red-600 text-center mt-2">{quoteError}</Text>
+        )}
+        {serverQuote?.manual && (
+          <Text className="text-xs text-amber-700 text-center mt-2">
+            {serverQuote.instructions || "Manual handling required. Contact support."}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }

@@ -1,10 +1,9 @@
-import { View, Text } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
-import SectionHeader from "../ui/SectionHeader";
-import { Ionicons } from "@expo/vector-icons";
-import LabeledInput from "../ui/LabeledInput";
+import { User, Phone, MapPin, ChevronRight } from "lucide-react-native";
 import { SenderState } from "@/types/createorder.type";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { assets } from "@/assets/images/assets";
 
 const SecondStep = ({
   sender,
@@ -20,41 +19,97 @@ const SecondStep = ({
   coordsText?: string | null;
 }) => {
   return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-      <SectionHeader
-        icon={<Ionicons name="person-outline" size={16} color="#0F172A" />}
-        title="Expéditeur"
-      />
-      <LabeledInput
-        label="Nom complet"
-        placeholder="Ex: Rakoto Andry"
-        value={sender.name}
-        onChangeText={(t) => setSender({ ...sender, name: t })}
-      />
-      <LabeledInput
-        label="Téléphone"
-        placeholder="034..."
-        keyboardType="phone-pad"
-        value={sender.phone}
-        onChangeText={(t) => setSender({ ...sender, phone: t })}
-      />
-      <View className="h-2" />
-      <AddressAutocomplete
-        label="Adresse de collecte (autocomplétion)"
-        placeholder="Saisir l'adresse de collecte (Antananarivo)"
-        bbox={bbox}
-        onSelected={({ label, lat, lng }) => {
-          onPickupSelected?.({ label, lat, lng });
-        }}
-        onTextChange={(t) => setSender({ ...sender, address: t })}
-        initialText={sender.address}
-      />
-      <Text className="mt-1 text-[11px] text-slate-500">
-        La sélection d’une suggestion Mapbox nous aide à mieux situer la zone, mais votre adresse saisie reste telle quelle.
-      </Text>
-      {!!coordsText && (
-        <Text className="mt-2 text-[11px] text-slate-500">{coordsText}</Text>
-      )}
+    <View className="flex-1">
+      {/* Illustration Header */}
+      <View className="relative bg-[#FFF9E6] pt-8 pb-6 items-center">
+        <Image
+          source={assets.deliveryGuyMockup}
+          style={{ width: "90%", height: 180, opacity: 0.3 }}
+          resizeMode="contain"
+        />
+        
+        {/* Step Indicator and Title */}
+        <View className="mt-4 px-6 w-full">
+          <Text className="text-5xl font-clash text-gray-900 font-bold">
+            01<Text className="text-gray-400">/05</Text>
+          </Text>
+          <Text className="text-2xl font-quicksand-bold text-gray-800 mt-2">
+            Sender information
+          </Text>
+        </View>
+      </View>
+
+      {/* Form Section */}
+      <View className="flex-1 bg-white px-6 pt-6">
+        {/* Name Input */}
+        <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+          <View className="flex-row items-center px-5 py-4">
+            <View className="bg-[#FFD700]/10 p-2 rounded-full">
+              <User size={20} color="#FFD700" strokeWidth={2.5} />
+            </View>
+            <TextInput
+              value={sender.name}
+              onChangeText={(t) => setSender({ ...sender, name: t })}
+              placeholder="Name"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
+              className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
+            />
+          </View>
+        </View>
+
+        {/* Phone Input with Country Code */}
+        <View className="flex-row gap-3 mb-4">
+          <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 px-4 py-4 flex-row items-center justify-center border border-gray-100">
+            <Text className="text-lg mr-1">🇲🇬</Text>
+            <Text className="font-quicksand-bold text-gray-700 text-sm">+261</Text>
+          </View>
+          <View className="flex-1 bg-white rounded-2xl shadow-md shadow-gray-300/50 border border-gray-100">
+            <View className="flex-row items-center px-5 py-4">
+              <View className="bg-[#FFD700]/10 p-2 rounded-full">
+                <Phone size={20} color="#FFD700" strokeWidth={2.5} />
+              </View>
+              <TextInput
+                value={sender.phone}
+                onChangeText={(t) => setSender({ ...sender, phone: t })}
+                placeholder="Phone"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="phone-pad"
+                className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Address Input */}
+        <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+          <View className="flex-row items-center px-5 py-4">
+            <View className="bg-[#FFD700]/10 p-2 rounded-full">
+              <MapPin size={20} color="#FFD700" strokeWidth={2.5} />
+            </View>
+            <View className="flex-1">
+              <AddressAutocomplete
+                placeholder="Address"
+                bbox={bbox}
+                onSelected={({ label, lat, lng }) => {
+                  onPickupSelected?.({ label, lat, lng });
+                }}
+                onTextChange={(t) => setSender({ ...sender, address: t })}
+                initialText={sender.address}
+                containerClassName="ml-3"
+                inputClassName="font-quicksand text-gray-900 text-base"
+              />
+            </View>
+            <ChevronRight size={20} color="#9CA3AF" />
+          </View>
+        </View>
+
+        {coordsText && (
+          <Text className="text-xs text-gray-400 px-2">
+            {coordsText}
+          </Text>
+        )}
+      </View>
     </View>
   );
 };

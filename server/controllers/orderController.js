@@ -24,6 +24,8 @@ const createSchema = Joi.object({
   dropoffLng: Joi.number().optional(),
   pickupAddress: Joi.string().min(3).required(),
   dropoffAddress: Joi.string().min(3).required(),
+  pickupAddressDetail: Joi.string().min(0).max(255).allow('', null).optional(),
+  dropoffAddressDetail: Joi.string().min(0).max(255).allow('', null).optional(),
   weight: Joi.number().positive().precision(2).required(),
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
@@ -182,6 +184,8 @@ export const createOrder = async (req, res, next) => {
       type,
       pickupAddress,
       dropoffAddress,
+      pickupAddressDetail,
+      dropoffAddressDetail,
       weight,
       parcels,
       cashToCollect,
@@ -252,6 +256,8 @@ export const createOrder = async (req, res, next) => {
       zoneLevel,
       pickupAddress,
       dropoffAddress,
+      pickupAddressDetail: pickupAddressDetail ?? null,
+      dropoffAddressDetail: dropoffAddressDetail ?? null,
       pickupName: value.pickupName ?? null,
       pickupPhone: value.pickupPhone ?? null,
       dropoffName: value.dropoffName ?? null,
@@ -625,6 +631,8 @@ export const listOrders = async (req, res, next) => {
     });
     return res.json(orders);
   } catch (err) {
+    console.error("Error in listOrders:", err.message);
+    console.error("Full error:", err);
     next(err);
   }
 };

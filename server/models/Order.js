@@ -38,6 +38,15 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  // NEW: address details (free-form exact address)
+  pickupAddressDetail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  dropoffAddressDetail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   weight: {
     type: DataTypes.FLOAT,
     allowNull: false,
