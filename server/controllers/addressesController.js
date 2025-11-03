@@ -5,6 +5,7 @@ const idParamSchema = Joi.object({ id: Joi.number().integer().positive().require
 
 const upsertSchema = Joi.object({
   label: Joi.string().allow('', null).optional(),
+  mapboxAddress: Joi.string().allow('', null).optional(),
   detail: Joi.string().min(3).max(255).required(),
   lat: Joi.number().min(-90).max(90).optional(),
   lng: Joi.number().min(-180).max(180).optional(),
