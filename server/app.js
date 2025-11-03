@@ -166,6 +166,7 @@ app.get("/api/me", protect, async (req, res, next) => {
       emailVerifiedAt: user.emailVerifiedAt,
       accountOtpExpiresAt: user.accountOtpExpiresAt,
       accountOtpChannel: user.accountOtpChannel,
+      avatarUrl: user.avatarUrl,
     });
   } catch (err) {
     next(err);

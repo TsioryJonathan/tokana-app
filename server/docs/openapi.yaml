@@ -74,6 +74,10 @@ components:
           nullable: true
         name: { type: string, nullable: true }
         role: { type: string, enum: [client, livreur, admin] }
+        avatarUrl:
+          type: string
+          nullable: true
+          description: "Public URL of the user's profile avatar"
     UserAddress:
       type: object
       properties:

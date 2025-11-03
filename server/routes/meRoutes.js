@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { protect } from '../middleware/authMiddleware.js';
+import User from '../models/User.js';
 import { putMe } from '../controllers/meController.js';
 
 const router = express.Router();
@@ -30,12 +31,18 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } }); // 3MB
 
 // POST /api/me/avatar - upload avatar
-router.post('/avatar', protect, upload.single('avatar'), (req, res) => {
+router.post('/avatar', protect, upload.single('avatar'), async (req, res) => {
   if (!req.file) return res.status(400).json({ msg: 'Fichier manquant' });
   const publicPath = `/uploads/avatars/${req.file.filename}`;
   const proto = (req.headers['x-forwarded-proto'] || req.protocol);
   const host = req.get('host');
   const absolute = `${proto}://${host}${publicPath}`;
+  try {
+    await User.update({ avatarUrl: absolute }, { where: { id: req.user.id } });
+  } catch (e) {
+    // Even if DB update fails, return the uploaded URL so client can display it
+    console.warn('Failed to persist avatarUrl:', e?.message);
+  }
   res.status(201).json({ avatarUrl: absolute });
 });
 
