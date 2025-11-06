@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Alert } from 'react-native';
-import { getApiClient } from '@/lib/api/client';
+import { getApiClient, getApiBase } from '@/lib/api/client';
+import { getAccessToken } from '@/lib/auth/session';
 import { useToast } from '@/components/ui/Toast';
 
 export type MobileMoney = 'MVOLA' | 'AIRTEL' | 'ORANGE';
@@ -227,15 +228,39 @@ export function useProfile() {
       showToast('Téléchargement de la photo...', 'info');
       
       // Upload avatar to server
+      // Utiliser fetch directement car le client API généré ne gère pas bien les fichiers React Native
       try {
-        const form = new FormData();
-        // @ts-ignore - React Native FormData file
-        form.append('avatar', { 
-          uri: asset.uri, 
-          name: asset.name || 'avatar.jpg', 
-          type: asset.mimeType || 'image/jpeg' 
+        const token = await getAccessToken();
+        if (!token) {
+          showToast('Non authentifié', 'error');
+          return;
+        }
+        
+        const formData = new FormData();
+        // Format React Native pour FormData
+        formData.append('avatar', {
+          uri: asset.uri,
+          name: asset.name || 'avatar.jpg',
+          type: asset.mimeType || 'image/jpeg',
+        } as any);
+        
+        // Récupérer l'URL de base de l'API
+        const apiBase = getApiBase() || 'https://tokana-app.onrender.com';
+        const response = await fetch(`${apiBase}/api/me/avatar`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Ne pas définir Content-Type, laissez fetch le faire automatiquement pour FormData
+          },
+          body: formData as any,
         });
-        const uploaded = await (api as any).me.postApiMeAvatar(form);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ msg: 'Erreur serveur' }));
+          throw new Error(errorData.msg || `Erreur ${response.status}`);
+        }
+        
+        const uploaded = await response.json();
         if (uploaded?.avatarUrl) {
           setAvatarUrl(uploaded.avatarUrl);
           showToast('Photo de profil mise à jour', 'success');
@@ -244,7 +269,7 @@ export function useProfile() {
         }
       } catch (e: any) {
         console.warn('upload avatar failed', e);
-        const errorMsg = e?.body?.msg || e?.message || 'Erreur de téléchargement';
+        const errorMsg = e?.message || 'Erreur de téléchargement';
         showToast(`Échec: ${errorMsg}`, 'error');
         // Garder l'aperçu local même si l'upload échoue
       }

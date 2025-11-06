@@ -78,9 +78,9 @@ export function getApiClient(): TokanaApiClient {
             throw err;
           }
         } else if (status === 403) {
-          // If backend requires verified phone, redirect user to verification flow
+          // If backend requires verified email, redirect user to verification flow
           const msg: string | undefined = typeof body?.msg === 'string' ? body.msg : undefined;
-          if (msg && /téléphone non vérifié/i.test(msg)) {
+          if (msg && (/email non vérifié/i.test(msg) || /téléphone non vérifié/i.test(msg))) {
             try {
               // eslint-disable-next-line @typescript-eslint/no-require-imports
               const { router } = require("expo-router");
