@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Switch } from 'react-native';
-import { Link } from 'expo-router';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Switch, RefreshControl } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AvailabilityCards } from './components/AvailabilityCards';
 import { KpiSection } from './components/KpiSection';
 import { GlobalStats } from './components/GlobalStats';
@@ -9,6 +9,8 @@ import { useBusinessAvailability } from './hooks/useBusinessAvailability';
 import { useAdminStats } from './hooks/useAdminStats';
 import { useAutoRefresh } from './hooks/useAutoRefresh';
 import { useZonesGeom } from './hooks/useZonesGeom';
+import { RefreshCw, TrendingUp, AlertCircle, CheckCircle2, MapPin } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AdminDashboard() {
   const { isStandardOrderWindow, isExpressWindow, now } = useBusinessAvailability();
@@ -16,161 +18,285 @@ export default function AdminDashboard() {
   const { period, setPeriod, stats, loading: statsLoading, error: statsError, refresh } = useAdminStats('today');
   const { enabled: autoRefresh, setEnabled: setAutoRefresh } = useAutoRefresh(() => refresh(), { storageKey: 'admin_kpis_autorefresh', intervalMs: 60000, defaultEnabled: true });
   const [viewTab, setViewTab] = React.useState<'today' | 'global'>('today');
+  const [refreshing, setRefreshing] = React.useState(false);
   const activeTopTab: 'globalite' | 'today' | '7d' = viewTab === 'global' ? 'globalite' : (period === '7d' ? '7d' : 'today');
 
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
+
   return (
-    <ScrollView className="flex-1 bg-white p-4">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-xl font-quicksand-bold">Dashboard</Text>
-        <View className="flex-row items-center gap-3">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-slate-600 text-xs">Auto-refresh</Text>
-            <Switch
-              value={autoRefresh}
-              onValueChange={setAutoRefresh}
-              accessibilityLabel="Activer ou désactiver l'auto-refresh des KPIs toutes les 60 secondes"
-            />
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top']}>
+      <ScrollView 
+        className="flex-1"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header avec gradient */}
+        <LinearGradient
+          colors={['#059669', '#047857', '#065F46']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="pt-6 pb-8 px-6"
+        >
+          <View className="flex-row items-center justify-between mb-4">
+            <View>
+              <Text className="text-white text-3xl font-clash-bold mb-1">Dashboard</Text>
+              <Text className="text-emerald-100 text-sm font-quicksand">
+                {now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-3">
+              <View className="bg-white/20 rounded-full px-4 py-2 flex-row items-center gap-2">
+                <Text className="text-white text-xs font-quicksand-medium">Auto-refresh</Text>
+                <Switch
+                  value={autoRefresh}
+                  onValueChange={setAutoRefresh}
+                  trackColor={{ false: '#94A3B8', true: '#10B981' }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <TouchableOpacity
+                onPress={onRefresh}
+                className="bg-white/20 rounded-full p-2.5"
+                activeOpacity={0.7}
+              >
+                <RefreshCw size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
-          <TouchableOpacity
-            onPress={() => refresh()}
-            className="px-3 py-1 rounded border border-slate-300"
-            accessibilityLabel="Rafraîchir les données du dashboard"
-            accessibilityHint="Recharge les statistiques et KPIs visibles"
-          >
-            <Text className="text-slate-700">Rafraîchir</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* Disponibilités (cohérence TZ Indian/Antananarivo) */}
-      <AvailabilityCards isStandard={isStandardOrderWindow} isExpress={isExpressWindow} />
+          {/* Disponibilités */}
+          <AvailabilityCards isStandard={isStandardOrderWindow} isExpress={isExpressWindow} />
+        </LinearGradient>
 
-      {/* Vue: Globalité des données vs Aujourd’hui / Global (7j) */}
-      <View className="mt-3">
-        <View className="flex-row flex-wrap gap-2 bg-white border border-slate-200 rounded-2xl p-2 items-center">
-          <TouchableOpacity
-            onPress={() => setViewTab('global')}
-            className={`px-3 py-2 rounded-lg ${activeTopTab === 'globalite' ? 'bg-emerald-600' : 'bg-slate-100'}`}
-            accessibilityLabel="Afficher la vue Globalité des données"
-            accessibilityHint="Affiche les totaux globaux toutes périodes confondues"
-          >
-            <Text className={`${activeTopTab === 'globalite' ? 'text-white' : 'text-slate-700'}`}>Globalité</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setViewTab('today'); setPeriod('today'); }}
-            className={`px-3 py-2 rounded-lg ${activeTopTab === 'today' ? 'bg-emerald-600' : 'bg-slate-100'}`}
-            accessibilityLabel="Afficher la vue Aujourd’hui"
-            accessibilityHint="Affiche les KPIs du jour et les contrôles de période"
-          >
-            <Text className={`${activeTopTab === 'today' ? 'text-white' : 'text-slate-700'}`}>Aujourd’hui</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { setViewTab('today'); setPeriod('7d'); }}
-            className={`px-3 py-2 rounded-lg ${activeTopTab === '7d' ? 'bg-emerald-600' : 'bg-slate-100'}`}
-            accessibilityLabel="Afficher la période Global (7 jours)"
-            accessibilityHint="Affiche les KPIs agrégés sur les 7 derniers jours"
-          >
-            <Text className={`${activeTopTab === '7d' ? 'text-white' : 'text-slate-700'}`}>Global (7j)</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        {/* Contenu principal */}
+        <View className="px-6 pt-6 pb-24">
+          {/* Tabs de navigation */}
+          <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 mb-6">
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => setViewTab('global')}
+                className="flex-1 rounded-xl overflow-hidden"
+                activeOpacity={0.7}
+              >
+                {activeTopTab === 'globalite' ? (
+                  <LinearGradient
+                    colors={['#059669', '#047857']}
+                    className="py-3 items-center"
+                  >
+                    <Text className="font-quicksand-semibold text-white">
+                      Globalité
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View className="py-3 items-center bg-gray-50">
+                    <Text className="font-quicksand-semibold text-gray-600">
+                      Globalité
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setViewTab('today'); setPeriod('today'); }}
+                className="flex-1 rounded-xl overflow-hidden"
+                activeOpacity={0.7}
+              >
+                {activeTopTab === 'today' ? (
+                  <LinearGradient
+                    colors={['#059669', '#047857']}
+                    className="py-3 items-center"
+                  >
+                    <Text className="font-quicksand-semibold text-white">
+                      Aujourd'hui
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View className="py-3 items-center bg-gray-50">
+                    <Text className="font-quicksand-semibold text-gray-600">
+                      Aujourd'hui
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setViewTab('today'); setPeriod('7d'); }}
+                className="flex-1 rounded-xl overflow-hidden"
+                activeOpacity={0.7}
+              >
+                {activeTopTab === '7d' ? (
+                  <LinearGradient
+                    colors={['#059669', '#047857']}
+                    className="py-3 items-center"
+                  >
+                    <Text className="font-quicksand-semibold text-white">
+                      7 jours
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View className="py-3 items-center bg-gray-50">
+                    <Text className="font-quicksand-semibold text-gray-600">
+                      7 jours
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      {/* Zone métriques selon l'onglet */}
-      {viewTab === 'global' ? (
-        <View className="mt-3">
-          {statsLoading && (
-            <View className="mb-2"><ActivityIndicator size="small" color="#059669" /></View>
+          {/* Zone métriques selon l'onglet */}
+          {viewTab === 'global' ? (
+            <View className="mb-6">
+              {statsLoading && (
+                <View className="items-center py-8">
+                  <ActivityIndicator size="large" color="#059669" />
+                </View>
+              )}
+              {!!statsError && (
+                <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                  <Text className="text-red-600 font-quicksand-medium">{statsError}</Text>
+                </View>
+              )}
+              {stats && (
+                <GlobalStats
+                  data={{
+                    totalAll: stats.global?.totalAll ?? 0,
+                    deliveredAll: stats.global?.deliveredAll ?? 0,
+                    inProgressAll: stats.global?.inProgressAll ?? 0,
+                    lateAll: stats.global?.lateAll ?? 0,
+                  }}
+                />
+              )}
+            </View>
+          ) : (
+            <View>
+              {/* Graphique */}
+              {(() => { 
+                const series = stats?.seriesOrders7d ?? []; 
+                return series.length > 0 ? (
+                  <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+                    <View className="flex-row items-center justify-between mb-4">
+                      <Text className="text-gray-900 font-quicksand-bold text-lg">Évolution des commandes</Text>
+                      <TrendingUp size={20} color="#059669" />
+                    </View>
+                    <OrdersChart data={series} accessibilityLabel={`Graphique des commandes sur 7 jours: ${series.join(', ')}`} />
+                    <Text className="text-gray-400 text-xs mt-2 text-center font-quicksand">
+                      Commandes sur 7 jours
+                    </Text>
+                  </View>
+                ) : null; 
+              })()}
+
+              {/* KPIs */}
+              <KpiSection
+                period={period}
+                setPeriod={setPeriod}
+                loading={statsLoading}
+                error={statsError}
+                data={stats ? {
+                  ordersToday: stats.ordersToday ?? 0,
+                  deliveredToday: stats.deliveredToday ?? 0,
+                  inProgress: stats.inProgress ?? 0,
+                  late: stats.late ?? 0,
+                  revenueToday: stats.revenueToday ?? 0,
+                } : null}
+                onRefresh={() => refresh()}
+                showRefresh={false}
+                showPeriodControls={false}
+              />
+            </View>
           )}
-          {!!statsError && (<Text className="text-red-600 mb-2">{statsError}</Text>)}
+
+          {/* Alertes */}
           {stats && (
-            <GlobalStats
-              data={{
-                totalAll: stats.global?.totalAll ?? 0,
-                deliveredAll: stats.global?.deliveredAll ?? 0,
-                inProgressAll: stats.global?.inProgressAll ?? 0,
-                lateAll: stats.global?.lateAll ?? 0,
-              }}
-            />
+            <View className="mb-6">
+              <View className="flex-row items-center gap-2 mb-4">
+                <AlertCircle size={20} color="#F59E0B" />
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Alertes</Text>
+              </View>
+              <View className="flex-row gap-3 flex-wrap">
+                <View className={`flex-1 min-w-[140px] rounded-xl p-4 border ${
+                  (stats.heavyCount ?? 0) > 0 
+                    ? 'bg-amber-50 border-amber-200' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <Text className="text-gray-500 text-xs font-quicksand-medium mb-1">Colis lourds (&gt5kg)</Text>
+                  <Text className={`text-2xl font-clash-bold ${
+                    (stats.heavyCount ?? 0) > 0 ? 'text-amber-600' : 'text-gray-400'
+                  }`}>
+                    {stats.heavyCount ?? 0}
+                  </Text>
+                </View>
+                <View className={`flex-1 min-w-[140px] rounded-xl p-4 border ${
+                  (stats.otpPending ?? 0) > 0 
+                    ? 'bg-amber-50 border-amber-200' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <Text className="text-gray-500 text-xs font-quicksand-medium mb-1">OTP en attente</Text>
+                  <Text className={`text-2xl font-clash-bold ${
+                    (stats.otpPending ?? 0) > 0 ? 'text-amber-600' : 'text-gray-400'
+                  }`}>
+                    {stats.otpPending ?? 0}
+                  </Text>
+                </View>
+              </View>
+            </View>
           )}
-        </View>
-      ) : (
-        <View>
-          <View className="flex-row items-center justify-between">
-            <Text className="sr-only">En-tête KPIs</Text>
-            <View className="ml-auto" />
-          </View>
-          {/* Graphique sous le header KPIs, centré et largeur adaptable */}
-          {(() => { const series = stats?.seriesOrders7d ?? []; return series.length > 0 ? (
-            <View className="w-full items-center my-2">
-              <OrdersChart data={series} accessibilityLabel={`Graphique des commandes sur 7 jours: ${series.join(', ')}`} />
-              <Text accessibilityLabel="Légende graphique: Commandes sur 7 jours" className="text-[10px] text-slate-500 mt-1">Commandes 7j</Text>
-            </View>
-          ) : null; })()}
-          <KpiSection
-            period={period}
-            setPeriod={setPeriod}
-            loading={statsLoading}
-            error={statsError}
-            data={stats ? {
-              ordersToday: stats.ordersToday ?? 0,
-              deliveredToday: stats.deliveredToday ?? 0,
-              inProgress: stats.inProgress ?? 0,
-              late: stats.late ?? 0,
-              revenueToday: stats.revenueToday ?? 0,
-            } : null}
-            onRefresh={() => refresh()}
-            showRefresh={false}
-            showPeriodControls={false}
-          />
-        </View>
-      )}
 
-      {/* Alertes */}
-      {stats && (
-        <View className="mb-6">
-          <Text className="font-quicksand-bold mb-2">Alertes</Text>
-          <View className="flex-row gap-3 flex-wrap">
-            <View className={`px-4 py-3 rounded-md border ${(stats.heavyCount ?? 0) > 0 ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
-              <Text className="text-slate-500 text-xs">{`Colis > 5kg`}</Text>
-              <Text className="font-quicksand-bold">{stats.heavyCount ?? 0}</Text>
+          {/* Statut géométrie des zones */}
+          <View className="mb-6">
+            <View className="flex-row items-center gap-2 mb-4">
+              <MapPin size={20} color="#059669" />
+              <Text className="text-gray-900 font-quicksand-bold text-lg">Statut des zones</Text>
             </View>
-            <View className={`px-4 py-3 rounded-md border ${(stats.otpPending ?? 0) > 0 ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
-              <Text className="text-slate-500 text-xs">OTP en attente</Text>
-              <Text className="font-quicksand-bold">{stats.otpPending ?? 0}</Text>
+            <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              {loading && (
+                <View className="items-center py-4">
+                  <ActivityIndicator size="small" color="#059669" />
+                </View>
+              )}
+              {!!loadError && (
+                <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3">
+                  <Text className="text-red-600 text-sm font-quicksand">{loadError}</Text>
+                </View>
+              )}
+              {(zones || []).slice(0, 5).map((z) => {
+                const st = geomStatus[z.id!] || 'unknown';
+                const isOk = st === 'ok';
+                return (
+                  <View key={z.id} className="flex-row items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                    <View className="flex-1">
+                      <Text className="text-gray-900 font-quicksand-semibold">{z.label}</Text>
+                      <Text className="text-gray-400 text-xs font-quicksand">{z.key}</Text>
+                    </View>
+                    <View className={`flex-row items-center gap-2 px-3 py-1.5 rounded-full ${
+                      isOk ? 'bg-emerald-50' : 'bg-red-50'
+                    }`}>
+                      {isOk ? (
+                        <CheckCircle2 size={16} color="#059669" />
+                      ) : (
+                        <AlertCircle size={16} color="#EF4444" />
+                      )}
+                      <Text className={`text-xs font-quicksand-semibold ${
+                        isOk ? 'text-emerald-700' : 'text-red-600'
+                      }`}>
+                        {isOk ? 'OK' : 'Non configurée'}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+              {zones && zones.length > 5 && (
+                <Text className="text-gray-400 text-xs text-center mt-3 font-quicksand">
+                  +{zones.length - 5} autres zones
+                </Text>
+              )}
             </View>
           </View>
         </View>
-      )}
-
-      {/* Statut géométrie des zones */}
-      <View className="mb-6">
-        <Text className="font-quicksand-bold mb-2">Statut géométries des zones</Text>
-        {loading && (
-          <View className="mb-2">
-            <ActivityIndicator size="small" color="#64748b" />
-          </View>
-        )}
-        {!!loadError && (<Text className="text-red-600 mb-2">{loadError}</Text>)}
-        {(zones || []).map((z) => {
-          const st = geomStatus[z.id!] || 'unknown';
-          const isOk = st === 'ok';
-          return (
-            <View key={z.id} className="flex-row items-center justify-between border border-slate-200 rounded-md px-3 py-2 mb-2">
-              <Text>{z.key} — {z.label}</Text>
-              <Text className={isOk ? 'text-emerald-700' : 'text-red-600'}>{isOk ? 'OK' : 'Non configurée'}</Text>
-            </View>
-          );
-        })}
-        <View className="mt-2">
-          <Link href="/(admin)/zones" asChild>
-            <TouchableOpacity className="self-start px-3 py-2 rounded bg-emerald-600">
-              <Text className="text-white">Gérer les zones</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
-
-      <Text className="text-xs text-slate-500">Heure locale: {now.toLocaleString()}</Text>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

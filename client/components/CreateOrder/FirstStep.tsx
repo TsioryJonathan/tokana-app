@@ -1,6 +1,6 @@
 import { View, Text, Platform, TextInput, TouchableOpacity, Image } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
-import { Package, Scale, Maximize } from "lucide-react-native";
+import { Package, Scale, Maximize, FileText, Box, AlertTriangle } from "lucide-react-native";
 import { ParcelState } from "@/types/createorder.type";
 import { assets } from "@/assets/images/assets";
 
@@ -12,9 +12,9 @@ const FirstStep = ({
   setParcel: Dispatch<SetStateAction<ParcelState>>;
 }) => {
   const parcelTypes = [
-    { value: 'fragile', label: 'Fragile', icon: '📦' },
-    { value: 'document', label: 'Document', icon: '📄' },
-    { value: 'other', label: 'Other', icon: '⬛' },
+    { value: 'fragile', label: 'Fragile', icon: Package },
+    { value: 'document', label: 'Document', icon: FileText },
+    { value: 'other', label: 'Autre', icon: Box },
   ];
 
   return (
@@ -33,7 +33,7 @@ const FirstStep = ({
             03<Text className="text-gray-400">/05</Text>
           </Text>
           <Text className="text-2xl font-quicksand-bold text-gray-800 mt-2">
-            Parcel information
+            Informations du colis
           </Text>
         </View>
       </View>
@@ -46,26 +46,40 @@ const FirstStep = ({
         </Text>
         
         <View className="flex-row gap-3 mb-6">
-          {parcelTypes.map((type) => (
-            <TouchableOpacity
-              key={type.value}
-              onPress={() => setParcel({ ...parcel, fragile: type.value === 'fragile' })}
-              className={`flex-1 bg-white rounded-2xl shadow-md shadow-gray-300/50 border-2 ${
-                (type.value === 'fragile' && parcel.fragile) || 
-                (type.value === 'document' && !parcel.fragile && parcel.category === 'ENVELOPE') ||
-                (type.value === 'other' && !parcel.fragile && parcel.category !== 'ENVELOPE')
-                  ? 'border-[#FFD700]' 
-                  : 'border-gray-100'
-              }`}
-            >
-              <View className="items-center py-4">
-                <Text className="text-3xl mb-2">{type.icon}</Text>
-                <Text className="font-quicksand-semibold text-gray-700 text-sm">
-                  {type.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {parcelTypes.map((type) => {
+            const IconComponent = type.icon;
+            const isSelected = 
+              (type.value === 'fragile' && parcel.fragile) || 
+              (type.value === 'document' && !parcel.fragile && parcel.category === 'ENVELOPE') ||
+              (type.value === 'other' && !parcel.fragile && parcel.category !== 'ENVELOPE');
+            
+            return (
+              <TouchableOpacity
+                key={type.value}
+                onPress={() => setParcel({ ...parcel, fragile: type.value === 'fragile' })}
+                className={`flex-1 bg-white rounded-2xl shadow-md shadow-gray-300/50 border-2 ${
+                  isSelected
+                    ? 'border-[#FFD700]' 
+                    : 'border-gray-100'
+                }`}
+              >
+                <View className="items-center py-4">
+                  <View className={`mb-2 p-2 rounded-full ${
+                    isSelected ? 'bg-[#FFD700]/10' : 'bg-gray-100'
+                  }`}>
+                    <IconComponent 
+                      size={28} 
+                      color={isSelected ? "#FFD700" : "#64748B"} 
+                      strokeWidth={2}
+                    />
+                  </View>
+                  <Text className="font-quicksand-semibold text-gray-700 text-sm">
+                    {type.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Weight Input */}
@@ -77,7 +91,7 @@ const FirstStep = ({
             <TextInput
               value={parcel.weightKg}
               onChangeText={(t) => setParcel({ ...parcel, weightKg: t })}
-              placeholder="Weight (kg)"
+              placeholder="Poids (kg)"
               placeholderTextColor="#9CA3AF"
               keyboardType={Platform.select({
                 ios: "decimal-pad",
@@ -95,12 +109,12 @@ const FirstStep = ({
               <Maximize size={20} color="#FFD700" strokeWidth={2.5} />
             </View>
             <View className="flex-1 ml-3">
-              <Text className="font-quicksand text-gray-500 text-sm mb-1">Size</Text>
+              <Text className="font-quicksand text-gray-500 text-sm mb-1">Taille</Text>
               <View className="flex-row gap-2">
                 {[
-                  ["SMALL", "Small"],
-                  ["MEDIUM", "Medium"],
-                  ["LARGE", "Large"],
+                  ["SMALL", "Petit"],
+                  ["MEDIUM", "Moyen"],
+                  ["LARGE", "Grand"],
                 ].map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
@@ -124,9 +138,10 @@ const FirstStep = ({
         </View>
 
         {Number(parcel.weightKg) > 5 && (
-          <View className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <Text className="text-xs text-amber-800 font-quicksand">
-              ⚠️ Poids supérieur à 5 kg: un traitement manuel peut être nécessaire.
+          <View className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200 flex-row items-start">
+            <AlertTriangle size={16} color="#D97706" strokeWidth={2} style={{ marginTop: 2, marginRight: 8 }} />
+            <Text className="text-xs text-amber-800 font-quicksand flex-1">
+              Poids supérieur à 5 kg: un traitement manuel peut être nécessaire.
             </Text>
           </View>
         )}

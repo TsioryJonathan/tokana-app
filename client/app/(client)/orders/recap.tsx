@@ -166,12 +166,21 @@ export default function OrderRecapPage() {
       </View>
     );
   }
+  const handleBack = () => {
+    router.replace('/(client)/orders/new' as any);
+  };
+
   if (!draft) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-4">
         <Text className="text-lg font-quicksand-bold text-slate-900">Récap introuvable</Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-3">
-          <Text className="text-emerald-600">Retour</Text>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          className="mt-4 bg-gray-100 rounded-full px-6 py-3 flex-row items-center gap-2"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={18} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
         </TouchableOpacity>
       </View>
     );
@@ -187,10 +196,12 @@ export default function OrderRecapPage() {
       <View className="pt-4 pb-2 border-b border-slate-50 overflow-hidden">
         <View className="pb-5">
           <TouchableOpacity
-            onPress={() => router.replace({ pathname: "/orders/new" as any, params: { draft: encodeURIComponent(JSON.stringify(draft)) } })}
+            onPress={handleBack}
             activeOpacity={0.7}
+            className="mb-3 flex-row items-center gap-2 bg-white/80 rounded-full px-4 py-2 self-start"
           >
-            <Ionicons name="arrow-back" size={22} color={COLORS.textMain} className="py-2"/>
+            <Ionicons name="arrow-back" size={20} color={COLORS.textMain} />
+            <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
           </TouchableOpacity>
           <View className="">
             <Text className="text-4xl font-quicksand-bold text-slate-900">
@@ -224,7 +235,14 @@ export default function OrderRecapPage() {
           <Row label="Nombre" value={`${draft.parcel.parcelsCount || '1'}`} />
           <Row label="Catégorie" value={draft.parcel.category || '—'} />
           <Row label="Service" value={draft.service.service === 'EXPRESS' ? 'Express' : 'Standard'} />
-          <Row label="Zone" value={zone} />
+          <Row 
+            label="Zone" 
+            value={
+              quote?.inferredZone 
+                ? `${quote.inferredZone === 'ville' ? 'Ville' : quote.inferredZone === 'peripherie' ? 'Périphérie' : 'Super Périphérie'} (détectée automatiquement)`
+                : zone
+            } 
+          />
           {toNumberSafe(draft.payment.codAmountAr) > 0 && (
             <Row label="Encaissement (COD)" value={`${formatAr(toNumberSafe(draft.payment.codAmountAr))}`} />
           )}

@@ -319,8 +319,14 @@ export default function OrdersList() {
       <View className="pl-8 pt-3 pb-1">
         <View className="flex-row items-end justify-between mb-2 mt-10">
           <View className="flex-col items-start gap-2">
-            <TouchableOpacity onPress={() => router.back()} hitSlop={8} activeOpacity={0.7}>
-              <ArrowLeft size={20} color="#0F172A" />
+            <TouchableOpacity 
+              onPress={() => router.replace('/(client)/home' as any)} 
+              hitSlop={8} 
+              activeOpacity={0.7}
+              className="flex-row items-center gap-2 bg-white/80 rounded-full px-3 py-1.5"
+            >
+              <ArrowLeft size={18} color="#0F172A" />
+              <Text className="text-slate-900 font-quicksand-semibold text-sm">Retour</Text>
             </TouchableOpacity>
             <Text className="text-[16px] font-quicksand-bold text-slate-900">{todayDisplay}</Text>
           </View>

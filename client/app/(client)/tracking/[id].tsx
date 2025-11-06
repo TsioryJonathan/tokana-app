@@ -57,25 +57,53 @@ export default function TrackingScreen() {
     );
   }
 
+  const handleBack = () => {
+    router.replace('/(client)/orders' as any);
+  };
+
   if (!order) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-4">
         <Text className="text-lg font-bold text-slate-900">
           Suivi indisponible
         </Text>
-        <TouchableOpacity onPress={() => router.back()} className="mt-4">
-          <Text className="text-emerald-600">Retour</Text>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          className="mt-4 bg-gray-100 rounded-full px-6 py-3 flex-row items-center gap-2"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={18} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
+    <View className="flex-1 bg-slate-50">
+      {/* Header avec bouton retour */}
+      <View className="px-4 py-4 flex-row items-center bg-white border-b border-slate-200">
+        <TouchableOpacity 
+          onPress={handleBack} 
+          activeOpacity={0.7}
+          className="flex-row items-center gap-2 bg-gray-100 rounded-full px-4 py-2"
+        >
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
+        </TouchableOpacity>
+        <View className="flex-1 ml-3">
+          <Text className="text-lg font-quicksand-bold text-slate-900">
+            Suivi de commande
+          </Text>
+        </View>
+      </View>
+
     <ScrollView
-      className="flex-1 bg-slate-50"
+      className="flex-1"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#059669"]} tintColor="#059669" />
       }
+      contentContainerStyle={{ paddingBottom: 24 }}
     >
       <HeaderBackground source={require("@/assets/images/tracking-bg.png")} height={350} opacity={0.70} />
 
@@ -129,12 +157,13 @@ export default function TrackingScreen() {
               key={`${h.id}-${idx}`}
               className="flex-row items-start py-2 border-b border-slate-100"
             >
-              <Ionicons
-                name="time-outline"
-                size={16}
-                color="#64748B"
-                className="mt-1 mr-2"
-              />
+              <View style={{ marginTop: 4, marginRight: 8 }}>
+                <Ionicons
+                  name="time-outline"
+                  size={16}
+                  color="#64748B"
+                />
+              </View>
               <View className="flex-1">
                 <Text className="font-semibold text-slate-800">
                   {statusLabel[mapBackendStatus(String(h.toStatus || ""))] || String(h.toStatus)}
@@ -148,5 +177,6 @@ export default function TrackingScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }

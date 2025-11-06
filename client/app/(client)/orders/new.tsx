@@ -306,10 +306,19 @@ export default function NewOrderWizard() {
 
       {/* Fixed Bottom Buttons */}
       <View className="bg-white px-6 py-4 border-t border-gray-200">
+        {/* Zone detection display */}
+        {serverQuote?.inferredZone && dropoffLatLng && (
+          <View className="mb-2 items-center">
+            <Text className="text-xs text-emerald-600 font-quicksand-semibold">
+              Zone détectée: {serverQuote.inferredZone === 'ville' ? 'Ville' : serverQuote.inferredZone === 'peripherie' ? 'Périphérie' : 'Super Périphérie'}
+            </Text>
+          </View>
+        )}
+        
         {/* Price display */}
         {serverQuote?.total != null && !serverQuote?.manual && (
           <View className="mb-3 items-center">
-            <Text className="text-xs text-gray-500">Estimated price</Text>
+            <Text className="text-xs text-gray-500">Prix estimé</Text>
             <Text className="text-xl font-quicksand-bold text-red-600">{formatAr(serverQuote.total)}</Text>
           </View>
         )}
@@ -322,7 +331,7 @@ export default function NewOrderWizard() {
               activeOpacity={0.8}
               className="w-full rounded-3xl border-2 border-[#FFD700] py-4 items-center justify-center"
               >
-              <Text className="text-[#FFD700] font-quicksand-bold text-base">Previous step</Text>
+              <Text className="text-[#FFD700] font-quicksand-bold text-base">Étape précédente</Text>
               </TouchableOpacity>
             )}
           <TouchableOpacity
@@ -334,7 +343,7 @@ export default function NewOrderWizard() {
             }`}
           >
             <Text className="text-white font-quicksand-bold text-base">
-              {step < steps.length - 1 ? "Next step" : submitting ? "Processing…" : "Payment"}
+              {step < steps.length - 1 ? "Étape suivante" : submitting ? "Traitement…" : "Paiement"}
                 </Text>
             </TouchableOpacity>
           </View>

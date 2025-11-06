@@ -30,7 +30,7 @@ const FourthStep = ({
             04<Text className="text-gray-400">/05</Text>
           </Text>
           <Text className="text-2xl font-quicksand-bold text-gray-800 mt-2">
-            Service Selection
+            Sélection du service
           </Text>
         </View>
       </View>
@@ -55,10 +55,10 @@ const FourthStep = ({
               Standard
             </Text>
             <Text className="text-sm text-gray-500 text-center mb-3">
-              Next-day delivery
+              Livraison le lendemain
             </Text>
             <View>
-              <Text className="text-xs text-gray-500">Estimated price</Text>
+              <Text className="text-xs text-gray-500">Prix estimé</Text>
               <Text className="text-lg font-quicksand-bold text-red-600">
                 10,000 Ar
               </Text>
@@ -79,13 +79,13 @@ const FourthStep = ({
               <Rocket size={40} color="#0F172A" strokeWidth={1.5} />
             </View>
             <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
-              Fast
+              Express
             </Text>
             <Text className="text-sm text-gray-500 text-center mb-3">
-              Same-day delivery
+              Livraison le jour même
             </Text>
             <View>
-              <Text className="text-xs text-gray-500">Estimated price</Text>
+              <Text className="text-xs text-gray-500">Prix estimé</Text>
               <Text className="text-lg font-quicksand-bold text-red-600">
                 20,000 Ar
               </Text>

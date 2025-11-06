@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
-import { User, Phone, MapPin, ChevronRight } from "lucide-react-native";
+import { User, Phone, MapPin, ChevronRight, Globe } from "lucide-react-native";
 import { SenderState } from "@/types/createorder.type";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { assets } from "@/assets/images/assets";
@@ -39,7 +39,7 @@ const SecondStep = ({
             01<Text className="text-gray-400">/05</Text>
           </Text>
           <Text className="text-2xl font-quicksand-bold text-gray-800 mt-2">
-            Sender information
+            Informations expéditeur
           </Text>
         </View>
       </View>
@@ -55,7 +55,7 @@ const SecondStep = ({
             <TextInput
               value={sender.name}
               onChangeText={(t) => setSender({ ...sender, name: t })}
-              placeholder="Name"
+              placeholder="Nom"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="words"
               className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
@@ -66,8 +66,8 @@ const SecondStep = ({
         {/* Phone Input with Country Code */}
         <View className="flex-row gap-3 mb-4">
           <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 px-4 py-4 flex-row items-center justify-center border border-gray-100">
-            <Text className="text-lg mr-1">🇲🇬</Text>
-            <Text className="font-quicksand-bold text-gray-700 text-sm">+261</Text>
+            <Globe size={18} color="#64748B" strokeWidth={2} />
+            <Text className="font-quicksand-bold text-gray-700 text-sm ml-2">+261</Text>
           </View>
           <View className="flex-1 bg-white rounded-2xl shadow-md shadow-gray-300/50 border border-gray-100">
             <View className="flex-row items-center px-5 py-4">
@@ -77,7 +77,7 @@ const SecondStep = ({
               <TextInput
                 value={sender.phone}
                 onChangeText={(t) => setSender({ ...sender, phone: t })}
-                placeholder="Phone"
+                placeholder="Téléphone"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="phone-pad"
                 className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
