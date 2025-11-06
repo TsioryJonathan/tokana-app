@@ -1,0 +1,58 @@
+# Fichiers à exclure du build EAS pour réduire la taille
+
+# Dépendances de développement
+node_modules/.cache/
+node_modules/.bin/
+
+# Fichiers de développement
+*.log
+*.md
+!README.md
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Tests
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Fichiers temporaires
+.tmp/
+tmp/
+temp/
+
+# Fichiers de build locaux
+dist/
+build/
+.expo/
+.expo-shared/
+
+# Fichiers de configuration de développement
+.env.local
+.env.development
+.env.test
+
+# Assets non utilisés (si vous avez des assets de test)
+assets/images/test/
+assets/images/mockup/
+
+# Fichiers de données de test
+data/*.csv
+data/*.json
+!data/zones-*.json
+
+# Scripts de développement
+scripts/
+!scripts/reset-project.js
+

@@ -19,7 +19,10 @@
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.tokanaapp"
+      "package": "com.anonymous.tokanaapp",
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true,
+      "jsEngine": "hermes"
     },
     "androidStatusBar": {
       "barStyle": "light-content",
