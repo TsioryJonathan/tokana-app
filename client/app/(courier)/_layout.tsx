@@ -51,14 +51,12 @@ export default function CourierLayout() {
           }}
         >
           <Tabs.Screen name="index" options={{ title: "Accueil" }} />
-          <Tabs.Screen name="delivery" options={{ title: "Livraison" }} />
           <Tabs.Screen name="profile" options={{ title: "Profile" }} />
           <Tabs.Screen name="orders/[id]" options={{ href: null }} />
         </Tabs>
         <Navbar
           items={[
             { path: "/(courier)", label: "Accueil", icon: <Home size={24} strokeWidth={2} /> },
-            { path: "/(courier)/delivery", label: "Livraisons", icon: <Truck size={24} strokeWidth={2} /> },
             { path: "/(courier)/profile", label: "Profil", icon: <User size={24} strokeWidth={2} /> },
           ]}
         />

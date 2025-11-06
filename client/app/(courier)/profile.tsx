@@ -1,167 +1,206 @@
-// app/(client)/profile.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Switch,
-  Alert,
-  Platform,
+  ActivityIndicator,
   Image,
 } from "react-native";
-// import LogoutButton from "@/components/Auth/LogoutButton";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Truck, Package, TrendingUp, Award, Clock, CheckCircle } from "lucide-react-native";
 import { getApiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/Toast";
-import { normalizeLocalPhone } from "@/utils/phone";
 import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
-
-type MobileMoney = "MVOLA" | "AIRTEL" | "ORANGE";
-
-const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+import { mapBackendOrderToUI } from "@/lib/mappers/order";
 
 export default function Profile() {
   const router = useRouter();
   const api = useMemo(getApiClient, []);
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
 
-  // --- User depuis API ---
   const [avatarUrl] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const [editing, setEditing] = useState(false);
-
-  // Notifications & sécurité
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [smsEnabled, setSmsEnabled] = useState(true);
-  const [twoFA, setTwoFA] = useState(false);
-
-  // Carnet d’adresses
-  const [addresses, setAddresses] = useState([
-    { id: "1", label: "Maison", detail: "Ankorondrano, près de la station" },
-    { id: "2", label: "Bureau", detail: "Ivandry, Immeuble ABC – 2e étage" },
-  ]);
-
-  // Paiements (Mobile Money)
-  const [linkedPayments, setLinkedPayments] = useState<
-    Record<MobileMoney, boolean>
-  >({
-    MVOLA: true,
-    AIRTEL: false,
-    ORANGE: false,
+  const [stats, setStats] = useState({
+    totalDeliveries: 0,
+    todayDeliveries: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+    activeOrders: 0,
   });
 
-  const canSave = useMemo(() => {
-    const cleaned = normalizeLocalPhone(phone);
-    const emailOk = (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email) || email.trim() === "");
-    const phoneOk = (cleaned === "" || mgPhoneRegex.test(cleaned));
-    return name.trim().length > 1 && phoneOk && emailOk;
-  }, [name, phone, email]);
+  const loadProfile = useCallback(async () => {
+    try {
+      const me = await api.me.getApiMe();
+      setName(me.name || "");
+      setPhone(me.phone || "");
+      setEmail(me.email || "");
+      setRole(me.role || null);
+    } catch (e) {
+      console.warn("/api/me failed", e);
+      showToast("Impossible de charger le profil", "error");
+    }
+  }, [api, showToast]);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const orders = await api.orders.getApiOrders("me", undefined);
+      const mapped = (orders || []).map(mapBackendOrderToUI);
+      
+      const completed = mapped.filter(o => o.status === 'DELIVERED');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayCompleted = completed.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate >= today;
+      });
+      const active = mapped.filter(o => o.status === 'CREATED' || o.status === 'PICKED_UP' || o.status === 'IN_TRANSIT');
+      const totalRevenue = completed.reduce((sum, o) => sum + (o.priceAr || 0), 0);
+      
+      setStats({
+        totalDeliveries: completed.length,
+        todayDeliveries: todayCompleted.length,
+        totalRevenue,
+        averageRating: 0, // TODO: calculer depuis les avis
+        activeOrders: active.length,
+      });
+    } catch (e) {
+      console.warn("Failed to load stats", e);
+    }
+  }, [api]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        const me = await api.me.getApiMe();
-        if (!mounted) return;
-        setName(me.name || "");
-        setPhone(me.phone || "");
-        setEmail(me.email || "");
-        setRole(me.role || null);
-      } catch (e) {
-        console.warn("/api/me failed", e);
-        showToast("Impossible de charger le profil", "error");
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      await Promise.all([loadProfile(), loadStats()]);
+      if (mounted) setLoading(false);
     })();
     return () => {
       mounted = false;
     };
-  }, [api]);
-
-  const onSaveProfile = async () => {
-    if (!canSave) {
-      showToast("Vérifie tes informations", "error");
-      return;
-    }
-    showToast("Mise à jour du profil bientôt disponible", "info");
-  };
-
-  const toggleLink = async (m: MobileMoney) => {
-    // TODO: appeler ton backend pour lier / délier le moyen de paiement
-    setLinkedPayments((prev) => ({ ...prev, [m]: !prev[m] }));
-  };
-
-  const addAddress = () => {
-    // TODO: ouvrir une modale / écran dédié
-    const id = Date.now().toString();
-    setAddresses((prev) => [
-      ...prev,
-      { id, label: "Nouvelle adresse", detail: "Précise l’adresse…" },
-    ]);
-  };
-
-  const removeAddress = (id: string) =>
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
-
-  // Logout handled by reusable LogoutButton with confirm
+  }, [loadProfile, loadStats]);
 
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
-        <Text className="text-slate-600">Chargement du profil…</Text>
+        <ActivityIndicator color="#059669" size="large" />
+        <Text className="mt-3 text-slate-600 font-quicksand-medium">Chargement du profil…</Text>
       </View>
     );
   }
 
+  function formatAr(n: number) {
+    return `${n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Ar`;
+  }
+
   return (
-    <View className="flex-1 bg-white">
-      {/* Header illustration with gradient */}
-      <View style={{ height: 260 }}>
-        <HeaderBackground source={require("@/assets/images/orders-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
+    <View className="flex-1 bg-slate-50">
+      {/* Header avec illustration */}
+      <View className="relative" style={{ paddingTop: insets.top }}>
+        <HeaderBackground 
+          source={require("@/assets/images/tracking-bg.png")} 
+          height={220} 
+          opacity={0.7} 
+        />
+        <View className="absolute inset-0 justify-end px-6 pb-6" style={{ paddingTop: insets.top + 20 }}>
+          <Text className="text-3xl font-quicksand-bold text-white mb-1">
+            Mon profil
+          </Text>
+          <Text className="text-white/90 text-sm font-quicksand-medium">
+            Livreur
+          </Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, marginTop: -120 }}>
-        {/* Avatar camera circle */}
-        <View className="self-center w-28 h-28 rounded-full bg-white/90 items-center justify-center border border-slate-200 shadow-sm">
+      <ScrollView 
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, marginTop: -80 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Avatar */}
+        <View className="self-center w-24 h-24 rounded-full bg-white items-center justify-center border-4 border-white shadow-lg mb-4">
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={{ width: 112, height: 112, borderRadius: 9999 }} />
+            <Image source={{ uri: avatarUrl }} style={{ width: 96, height: 96, borderRadius: 9999 }} />
           ) : (
-            <Ionicons name="camera-outline" size={36} color="#64748B" />
+            <View className="bg-emerald-100 rounded-full p-4">
+              <Truck size={32} color="#059669" />
+            </View>
           )}
         </View>
 
-        {/* White card with rows */}
-        <View className="mt-6 bg-white rounded-2xl p-2 shadow-sm border border-slate-100">
-          <KVRow label="Name" value={name || "-"} onPress={() => setEditing(true)} showDivider />
-          <KVRow label="Phone" value={phone || "-"} onPress={() => setEditing(true)} showDivider />
-          <KVRow label="Gender" value={(role || "").toUpperCase() || "-"} onPress={() => setEditing(true)} showDivider />
-          <KVRow label="Saved Addresses" value={String(addresses.length)} onPress={() => { /* could navigate */ }} />
+        {/* Informations utilisateur */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+          <Text className="text-lg font-quicksand-bold text-slate-900 text-center mb-1">
+            {name || "Livreur"}
+          </Text>
+          <Text className="text-sm text-slate-500 text-center mb-4">
+            {phone || "—"} {email ? `· ${email}` : ""}
+          </Text>
+          <View className="h-px bg-slate-100 mb-4" />
+          <View className="flex-row items-center justify-center">
+            <View className="bg-emerald-50 rounded-full px-3 py-1.5">
+              <Text className="text-xs font-quicksand-bold text-emerald-700">
+                {role?.toUpperCase() || "LIVREUR"}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Save button */}
-        <TouchableOpacity
-          onPress={onSaveProfile}
-          activeOpacity={0.9}
-          disabled={!canSave}
-          className="mt-10 items-center"
-        >
-          <View className={`w-full py-4 rounded-full ${canSave ? 'bg-yellow-400' : 'bg-yellow-200'}`}>
-            <Text className="text-center text-slate-900 font-quicksand-bold">Save</Text>
+        {/* Statistiques de performance */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+          <Text className="text-base font-quicksand-bold text-slate-900 mb-4">
+            Statistiques
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
+            <StatItem
+              icon={<Package size={20} color="#8B5CF6" />}
+              label="Total livré"
+              value={stats.totalDeliveries.toString()}
+              color="#8B5CF6"
+            />
+            <StatItem
+              icon={<CheckCircle size={20} color="#10B981" />}
+              label="Aujourd'hui"
+              value={stats.todayDeliveries.toString()}
+              color="#10B981"
+            />
+            <StatItem
+              icon={<Clock size={20} color="#3B82F6" />}
+              label="En cours"
+              value={stats.activeOrders.toString()}
+              color="#3B82F6"
+            />
+            <StatItem
+              icon={<TrendingUp size={20} color="#F59E0B" />}
+              label="Revenus"
+              value={formatAr(stats.totalRevenue)}
+              color="#F59E0B"
+              small
+            />
           </View>
-        </TouchableOpacity>
+        </View>
+
+        {/* Informations de contact */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+          <Text className="text-base font-quicksand-bold text-slate-900 mb-3">
+            Informations
+          </Text>
+          <InfoRow icon="person-outline" label="Nom" value={name || "—"} />
+          <View className="h-px bg-slate-100 my-2" />
+          <InfoRow icon="call-outline" label="Téléphone" value={phone || "—"} />
+          <View className="h-px bg-slate-100 my-2" />
+          <InfoRow icon="mail-outline" label="Email" value={email || "—"} />
+        </View>
 
         {/* Logout button */}
-        <View className="mt-6">
+        <View className="mt-4">
           <LogoutButton
             title="Se déconnecter"
             confirm
@@ -175,145 +214,61 @@ export default function Profile() {
   );
 }
 
-/* ====== Petits composants réutilisables ====== */
-function KVRow({ label, value, onPress, showDivider }: { label: string; value: string; onPress?: () => void; showDivider?: boolean }) {
+// Composant d'item de statistique
+function StatItem({ 
+  icon, 
+  label, 
+  value, 
+  color,
+  small = false 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string; 
+  color: string;
+  small?: boolean;
+}) {
   return (
-    <>
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={onPress ? 0.8 : 1}
-        className="flex-row items-center justify-between px-3 py-3 rounded-xl"
-      >
-        <Text className="text-[13px] text-slate-800 font-quicksand-semibold">{label}</Text>
-        <View className="flex-row items-center">
-          <Text className="mr-1 text-[13px] text-slate-500">{value}</Text>
-          <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+    <View className="w-[48%] mb-3">
+      <View className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+        <View className="mb-2" style={{ backgroundColor: `${color}15`, padding: 6, borderRadius: 8, alignSelf: 'flex-start' }}>
+          {icon}
         </View>
-      </TouchableOpacity>
-      {showDivider ? <View className="h-[1px] bg-slate-100 mx-3" /> : null}
-    </>
+        <Text className={`font-quicksand-bold text-slate-900 ${small ? 'text-sm' : 'text-lg'}`} numberOfLines={1}>
+          {value}
+        </Text>
+        <Text className="text-xs text-slate-500 font-quicksand-medium mt-1" numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+    </View>
   );
 }
-function Labeled({
-  label,
-  value,
-  onChangeText,
-  keyboardType,
-}: {
-  label: string;
+
+// Composant de ligne d'information
+function InfoRow({ 
+  icon, 
+  label, 
+  value 
+}: { 
+  icon: string; 
+  label: string; 
   value: string;
-  onChangeText: (t: string) => void;
-  keyboardType?: any;
 }) {
   return (
-    <View className="mb-2">
-      <Text className="text-[11px] text-slate-500">{label}</Text>
-      <View className="bg-white rounded-xl border border-slate-200 px-3">
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={label}
-          placeholderTextColor="#94A3B8"
-          keyboardType={keyboardType}
-          className="py-2 text-[14px] text-slate-900"
-        />
+    <View className="flex-row items-center">
+      <View className="bg-slate-50 rounded-lg p-2 mr-3">
+        <Ionicons name={icon as any} size={18} color="#64748B" />
       </View>
-    </View>
-  );
-}
-
-function SectionHeader({
-  icon,
-  title,
-}: {
-  icon: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <View className="flex-row items-center mb-2">
-      <View className="mr-2">{icon}</View>
-      <Text className="text-[13px] font-quicksand-bold text-slate-900">
-        {title}
-      </Text>
-    </View>
-  );
-}
-
-function PaymentRow({
-  icon,
-  brand,
-  linked,
-  onToggle,
-}: {
-  icon: React.ReactNode;
-  brand: string;
-  linked: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <View className="flex-row items-center justify-between px-3 py-3 rounded-xl border border-slate-200">
-      <View className="flex-row items-center">
-        {icon}
-        <Text className="ml-2 font-quicksand-semibold text-slate-800">
-          {brand}
+      <View className="flex-1">
+        <Text className="text-xs text-slate-500 font-quicksand-medium mb-0.5">
+          {label}
+        </Text>
+        <Text className="text-sm font-quicksand-semibold text-slate-900">
+          {value}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={onToggle}
-        activeOpacity={0.85}
-        className={`px-3 py-1.5 rounded-full ${
-          linked ? "bg-emerald-50" : "bg-slate-100"
-        }`}
-      >
-        <Text
-          className={`text-[12px] font-quicksand-semibold ${
-            linked ? "text-emerald-700" : "text-slate-700"
-          }`}
-        >
-          {linked ? "Lié" : "Lier"}
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
-function ToggleLine({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <View className="flex-row items-center justify-between px-3 py-3 rounded-xl border border-slate-200">
-      <Text className="font-quicksand-semibold text-slate-800">{label}</Text>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ true: "#10B981", false: "#CBD5E1" }}
-        thumbColor={
-          Platform.OS === "android"
-            ? value
-              ? "#059669"
-              : "#F8FAFC"
-            : undefined
-        }
-      />
-    </View>
-  );
-}
-
-function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      className="flex-row items-center justify-between px-3 py-3 rounded-xl border border-slate-200"
-    >
-      <Text className="font-quicksand-semibold text-slate-800">{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#64748B" />
-    </TouchableOpacity>
-  );
-}

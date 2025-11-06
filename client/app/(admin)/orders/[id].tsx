@@ -310,23 +310,27 @@ export default function AdminOrderDetail() {
       <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-4">
         <Text className="font-quicksand-bold text-slate-900 mb-2">Expéditeur</Text>
         {(() => { const o = order as any; return (
-          <Text className="text-slate-700">{o?.pickupName ?? '—'} · {o?.pickupPhone ?? '—'}</Text>
-        ); })()}
-        <Text className="text-slate-700">{order.pickupAddress}</Text>
-        {(() => { const o = order as any; return (
-          <Text className="text-slate-500">Localité: {o?.pickupLocalityId ?? '—'}</Text>
+          <>
+            <Text className="text-slate-700">{o?.pickupName ?? '—'} · {o?.pickupPhone ?? '—'}</Text>
+            <Text className="text-slate-700 mt-1">{order.pickupAddress}</Text>
+            {o?.pickupAddressDetail && (
+              <Text className="text-slate-600 mt-1 text-sm">Détails: {o.pickupAddressDetail}</Text>
+            )}
+            <Text className="text-slate-500 mt-1 text-sm">Localité: {o?.pickupLocalityId ?? '—'}</Text>
+          </>
         ); })()}
       </View>
 
       <View className="mx-4 bg-white border border-slate-200 rounded-2xl p-4 mb-4">
         <Text className="font-quicksand-bold text-slate-900 mb-2">Destinataire</Text>
         {(() => { const o = order as any; return (
-          <Text className="text-slate-700">{o?.dropoffName ?? '—'} · {order.recipientPhone ?? '—'}{order.recipientEmail ? ` · ${order.recipientEmail}` : ''}</Text>
-        ); })()}
-        <Text className="text-slate-700">{order.dropoffAddress}</Text>
-        {(() => { const o = order as any; return (
           <>
-            <Text className="text-slate-500">Localité: {o?.dropoffLocalityId ?? '—'}</Text>
+            <Text className="text-slate-700">{o?.dropoffName ?? '—'} · {order.recipientPhone ?? '—'}{order.recipientEmail ? ` · ${order.recipientEmail}` : ''}</Text>
+            <Text className="text-slate-700 mt-1">{order.dropoffAddress}</Text>
+            {o?.dropoffAddressDetail && (
+              <Text className="text-slate-600 mt-1 text-sm">Détails: {o.dropoffAddressDetail}</Text>
+            )}
+            <Text className="text-slate-500 mt-1 text-sm">Localité: {o?.dropoffLocalityId ?? '—'}</Text>
             {o?.notes ? <Text className="text-slate-700 mt-1">Notes: {o.notes}</Text> : null}
           </>
         ); })()}

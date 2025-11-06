@@ -230,19 +230,19 @@ export default function OrderRecapPage() {
       </View>
 
         {/* Sender information */}
-        <Text className="text-[16px] text-slate-900 mb-2">Informations expéditeur</Text>
+        <Text className="text-[16px] text-slate-900 mb-2 font-quicksand-semibold">Informations expéditeur</Text>
         <View className="bg-white rounded-2xl border border-slate-200 p-4">
           <Row label="Nom" value={draft.sender.name || '—'} />
           <Row label="Téléphone" value={draft.sender.phone || '—'} />
-          <Row label="Adresse" value={draft.sender.address || '—'} />
+          <Row label="Adresse" value={draft.sender.address || '—'} multiline={true} />
         </View>
 
         {/* Recipient information */}
-        <Text className="text-[16px] text-slate-900 mt-4">Informations destinataire</Text>
+        <Text className="text-[16px] text-slate-900 mt-4 font-quicksand-semibold">Informations destinataire</Text>
         <View className="mt-2 bg-white rounded-2xl border border-slate-200 p-4">
           <Row label="Nom" value={draft.recipient.name || '—'} />
           <Row label="Téléphone" value={draft.recipient.phone || '—'} />
-          <Row label="Adresse" value={draft.recipient.address || draft.selectedDropoffLocality?.name || '—'} />
+          <Row label="Adresse" value={draft.recipient.address || draft.selectedDropoffLocality?.name || '—'} multiline={true} />
         </View>
 
         {/* Details card (type, weight, parcels, category, service, estimated price) */}
@@ -262,6 +262,9 @@ export default function OrderRecapPage() {
           />
           {toNumberSafe(draft.payment.codAmountAr) > 0 && (
             <Row label="Encaissement (COD)" value={`${formatAr(toNumberSafe(draft.payment.codAmountAr))}`} />
+          )}
+          {draft.payment.notes && draft.payment.notes.trim() && (
+            <Row label="Notes" value={draft.payment.notes} multiline={true} />
           )}
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-slate-500">Prix estimé</Text>

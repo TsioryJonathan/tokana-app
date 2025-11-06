@@ -15,10 +15,81 @@ import {
   mapBackendOrderToUI,
   mapBackendStatus,
   statusLabel,
+  statusBadge,
   type UIOrder,
   type OrderStatus,
 } from "@/lib/mappers/order";
-import { OTPRequest } from "@/lib/api/models/OTPRequest";
+import Row from "@/components/CreateOrder/Row";
+
+// Composant d'info badge
+function InfoBadge({ 
+  icon, 
+  label, 
+  value, 
+  color 
+}: { 
+  icon: string; 
+  label: string; 
+  value: string; 
+  color: string;
+}) {
+  return (
+    <View className="flex-row items-center bg-slate-50 rounded-lg px-3 py-2">
+      <Ionicons name={icon as any} size={16} color={color} />
+      <View className="ml-2">
+        <Text className="text-[10px] text-slate-500 font-quicksand-medium">{label}</Text>
+        <Text className="text-xs font-quicksand-bold text-slate-900">{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+// Composant de bouton d'action
+function ActionButton({
+  label,
+  icon,
+  onPress,
+  disabled,
+  variant = "primary",
+  subtitle,
+}: {
+  label: string;
+  icon: string;
+  onPress: () => void;
+  disabled: boolean;
+  variant?: "primary" | "success";
+  subtitle?: string;
+}) {
+  const bgColor = disabled 
+    ? "bg-slate-100" 
+    : variant === "success" 
+      ? "bg-emerald-600" 
+      : "bg-blue-600";
+  const textColor = disabled ? "text-slate-400" : "text-white";
+  const iconColor = disabled ? "#94A3B8" : "#FFFFFF";
+
+  return (
+    <TouchableOpacity
+      disabled={disabled}
+      onPress={onPress}
+      activeOpacity={0.8}
+      className={`${bgColor} rounded-xl p-4 flex-row items-center`}
+    >
+      <Ionicons name={icon as any} size={22} color={iconColor} />
+      <View className="flex-1 ml-3">
+        <Text className={`font-quicksand-bold text-base ${textColor}`}>
+          {label}
+        </Text>
+        {subtitle && (
+          <Text className="text-xs text-slate-400 font-quicksand-medium mt-0.5">
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={iconColor} />
+    </TouchableOpacity>
+  );
+}
 
 export default function CourierOrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +98,7 @@ export default function CourierOrderDetail() {
   const { showToast } = useToast();
 
   const [order, setOrder] = useState<UIOrder | null>(null);
+  const [rawOrder, setRawOrder] = useState<any | null>(null);
   const [history, setHistory] = useState<
     { id: number; from?: OrderStatus | null; to: OrderStatus; at: string }[]
   >([]);
@@ -38,9 +110,6 @@ export default function CourierOrderDetail() {
   >([]);
   const [loadingRemarks, setLoadingRemarks] = useState(false);
   const [newRemark, setNewRemark] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [isOutForDelivery, setIsOutForDelivery] = useState(false);
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -49,10 +118,7 @@ export default function CourierOrderDetail() {
       const data = await api.orders.getApiOrders1(Number(id));
 
       setOrder(mapBackendOrderToUI(data));
-      setIsOutForDelivery(
-        String((data as any).status) === "en_chemin_pour_livraison"
-      );
-      setOtpVerified(Boolean((data as any).deliveryOtpVerifiedAt));
+      setRawOrder(data as any);
       const h = await api.orders.getApiOrdersHistory(Number(id));
       const mapped = (h || [])
         .map((it) => ({
@@ -177,41 +243,6 @@ export default function CourierOrderDetail() {
     }
   };
 
-  const requestOtp = async (channel: OTPRequest["channel"]) => {
-    if (!id) return;
-    setSubmitting(true);
-    try {
-      await api.deliveryOtp.postApiOrdersRequestOtp(Number(id), { channel });
-      showToast(`OTP ${channel} envoyé`, "success");
-    } catch (err: any) {
-      const msg: string = err?.body?.msg || err?.message || "Erreur OTP";
-      showToast(msg, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    if (!id) return;
-    const code = otpCode.trim();
-    if (!/^\d{6}$/.test(code)) {
-      showToast("Code OTP invalide (6 chiffres)", "error");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api.deliveryOtp.postApiOrdersVerifyOtp(Number(id), { code });
-      showToast("OTP vérifié, vous pouvez marquer expédié", "success");
-      setOtpCode("");
-      setOtpVerified(true);
-      await reload();
-    } catch (err: any) {
-      const msg: string = err?.body?.msg || err?.message || "Erreur OTP";
-      showToast(msg, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   if (loading || !order) {
     return (
@@ -226,7 +257,7 @@ export default function CourierOrderDetail() {
     order.status === "PICKED_UP" || order.status === "CREATED";
   const canToOutForDelivery =
     order.status === "IN_TRANSIT" || order.status === "PICKED_UP";
-  const canToExpedie = order.status === "IN_TRANSIT"; // côté API: nécessite OTP vérifié
+  const canToExpedie = order.status === "IN_TRANSIT"; // Peut marquer expédié directement
 
   const handleBack = () => {
     router.replace('/(courier)' as any);
@@ -250,147 +281,155 @@ export default function CourierOrderDetail() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <Text className="text-slate-500 text-sm">Statut actuel</Text>
-          <Text className="mt-1 text-base font-quicksand-bold text-emerald-600">
-            {statusLabel[order.status]}
-          </Text>
-          <Text className="mt-2 text-slate-600 text-sm">
-            Type: {order.service === "EXPRESS" ? "Express" : "Standard"}
-          </Text>
-          {order.service === "EXPRESS" && eta && (
-            <Text className="text-[12px] text-emerald-700 mt-1">
-              ETA: {eta.min}–{eta.max} min
-            </Text>
-          )}
-          {typeof order.priceAr === "number" ? (
-            <Text className="text-slate-600 text-sm">
-              Prix: {order.priceAr.toLocaleString()} Ar
-            </Text>
-          ) : null}
-          {typeof (order as any).cashToCollect === "number" ? (
-            <Text className="text-slate-600 text-sm">
-              À encaisser: {(order as any).cashToCollect.toLocaleString()} Ar
-            </Text>
-          ) : null}
-          <Text className="mt-1 text-[12px] text-slate-500">
-            OTP: {otpVerified ? "Vérifié" : "Non vérifié"}
-          </Text>
-        </View>
-
-        <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-          <Text className="text-base font-quicksand-bold text-slate-900">
-            Actions
-          </Text>
-          <View className="mt-3 gap-8">
-            <View>
-              <Text className="text-slate-700 font-quicksand-semibold">
-                Transitions
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        {/* Carte de statut améliorée */}
+        <View className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-1">
+              <Text className="text-xs text-slate-500 font-quicksand-medium mb-1">Statut actuel</Text>
+              <Text className="text-xl font-quicksand-bold text-emerald-600">
+                {statusLabel[order.status]}
               </Text>
-              <View className="mt-2 flex-row flex-wrap gap-8">
-                <TouchableOpacity
-                  disabled={!canToPickup || submitting}
-                  onPress={() => updateStatus("en_route_vers_recuperation")}
-                >
-                  <Text
-                    className={`${canToPickup && !submitting ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                  >
-                    Aller récupérer
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  disabled={!canToEnChemin || submitting}
-                  onPress={() => updateStatus("en_chemin")}
-                >
-                  <Text
-                    className={`${canToEnChemin && !submitting ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                  >
-                    En chemin
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  disabled={!canToOutForDelivery || submitting}
-                  onPress={() => updateStatus("en_chemin_pour_livraison")}
-                >
-                  <Text
-                    className={`${canToOutForDelivery && !submitting ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                  >
-                    En chemin pour la livraison
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  disabled={!canToExpedie || submitting || !otpVerified}
-                  onPress={() => updateStatus("expedie")}
-                >
-                  <Text
-                    className={`${canToExpedie && !submitting && otpVerified ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                  >
-                    Expédié
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
-
-            {isOutForDelivery && (
-              <View>
-                <Text className="text-slate-700 font-quicksand-semibold">
-                  OTP Livraison
-                </Text>
-                <View className="mt-2 flex-row flex-wrap gap-8">
-                  <TouchableOpacity
-                    disabled={submitting}
-                    onPress={() => requestOtp(OTPRequest.channel.SMS)}
-                  >
-                    <Text
-                      className={`${!submitting ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                    >
-                      Demander OTP (SMS)
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    disabled={submitting}
-                    onPress={() => requestOtp(OTPRequest.channel.EMAIL)}
-                  >
-                    <Text
-                      className={`${!submitting ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                    >
-                      Demander OTP (Email)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="mt-3">
-                  <Text className="text-slate-600 text-sm">Code OTP</Text>
-                  <TextInput
-                    value={otpCode}
-                    onChangeText={setOtpCode}
-                    placeholder="ex: 123456"
-                    keyboardType="number-pad"
-                    className="mt-1 border border-slate-200 rounded-xl px-3 py-2 text-[14px] text-slate-900"
-                  />
-                  <View className="mt-2 flex-row gap-8">
-                    <TouchableOpacity
-                      disabled={submitting || !/^\d{6}$/.test(otpCode)}
-                      onPress={verifyOtp}
-                    >
-                      <Text
-                        className={`${!submitting && /^\d{6}$/.test(otpCode) ? "text-emerald-700" : "text-slate-400"} font-quicksand-semibold`}
-                      >
-                        Vérifier OTP
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text className="text-[12px] text-slate-500 mt-2">
-                  L’OTP est disponible au statut “En chemin pour la livraison”.{" "}
-                  {otpVerified
-                    ? "OTP vérifié."
-                    : "Vérifiez l’OTP pour activer “Expédié”."}
-                </Text>
-              </View>
+            <View className={`px-4 py-2 rounded-full ${statusBadge[order.status]}`}>
+              <Text className="text-xs font-quicksand-bold">
+                {statusLabel[order.status]}
+              </Text>
+            </View>
+          </View>
+          
+          <View className="flex-row flex-wrap gap-4 pt-4 border-t border-slate-100">
+            <InfoBadge 
+              icon="flash-outline" 
+              label="Type" 
+              value={order.service === "EXPRESS" ? "Express" : "Standard"}
+              color={order.service === "EXPRESS" ? "#F59E0B" : "#6B7280"}
+            />
+            {order.service === "EXPRESS" && eta && (
+              <InfoBadge 
+                icon="time-outline" 
+                label="ETA" 
+                value={`${eta.min}–${eta.max} min`}
+                color="#10B981"
+              />
+            )}
+            {typeof order.priceAr === "number" && (
+              <InfoBadge 
+                icon="cash-outline" 
+                label="Prix" 
+                value={`${order.priceAr.toLocaleString()} Ar`}
+                color="#3B82F6"
+              />
+            )}
+            {typeof (order as any).cashToCollect === "number" && (order as any).cashToCollect > 0 && (
+              <InfoBadge 
+                icon="wallet-outline" 
+                label="À encaisser" 
+                value={`${(order as any).cashToCollect.toLocaleString()} Ar`}
+                color="#8B5CF6"
+              />
             )}
           </View>
         </View>
+
+        {/* Actions améliorées */}
+        <View className="mt-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+          <Text className="text-lg font-quicksand-bold text-slate-900 mb-4">
+            Actions
+          </Text>
+          
+          {/* Boutons de transition */}
+          <View className="mb-6">
+            <Text className="text-sm text-slate-600 font-quicksand-medium mb-3">
+              Changer le statut
+            </Text>
+            <View className="gap-3">
+              <ActionButton
+                label="Aller récupérer"
+                icon="cube-outline"
+                onPress={() => updateStatus("en_route_vers_recuperation")}
+                disabled={!canToPickup || submitting}
+                variant="primary"
+              />
+              <ActionButton
+                label="En chemin"
+                icon="bicycle-outline"
+                onPress={() => updateStatus("en_chemin")}
+                disabled={!canToEnChemin || submitting}
+                variant="primary"
+              />
+              <ActionButton
+                label="En chemin pour la livraison"
+                icon="location-outline"
+                onPress={() => updateStatus("en_chemin_pour_livraison")}
+                disabled={!canToOutForDelivery || submitting}
+                variant="primary"
+              />
+              <ActionButton
+                label="Expédié"
+                icon="checkmark-circle-outline"
+                onPress={() => updateStatus("expedie")}
+                disabled={!canToExpedie || submitting}
+                variant="success"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Informations expéditeur */}
+        <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <Text className="text-base font-quicksand-bold text-slate-900 mb-3">
+            Informations expéditeur
+          </Text>
+          {(() => {
+            const p: any = rawOrder || {};
+            return (
+              <>
+                {p.pickupName && <Row label="Nom" value={p.pickupName} />}
+                {p.pickupPhone && <Row label="Téléphone" value={p.pickupPhone} />}
+                <Row label="Adresse" value={p.pickupAddress || order?.from || '—'} multiline={true} />
+                {p.pickupAddressDetail && (
+                  <Row label="Détails" value={p.pickupAddressDetail} multiline={true} />
+                )}
+              </>
+            );
+          })()}
+        </View>
+
+        {/* Informations destinataire */}
+        <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <Text className="text-base font-quicksand-bold text-slate-900 mb-3">
+            Informations destinataire
+          </Text>
+          {(() => {
+            const p: any = rawOrder || {};
+            return (
+              <>
+                {p.dropoffName && <Row label="Nom" value={p.dropoffName} />}
+                {p.recipientPhone && <Row label="Téléphone" value={p.recipientPhone} />}
+                <Row label="Adresse" value={p.dropoffAddress || order?.to || '—'} multiline={true} />
+                {p.dropoffAddressDetail && (
+                  <Row label="Détails" value={p.dropoffAddressDetail} multiline={true} />
+                )}
+              </>
+            );
+          })()}
+        </View>
+
+        {/* Notes */}
+        {(() => {
+          const p: any = rawOrder || {};
+          return p.notes && p.notes.trim() ? (
+            <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+              <Text className="text-base font-quicksand-bold text-slate-900 mb-2">
+                Notes
+              </Text>
+              <Text className="text-slate-700 text-sm">
+                {p.notes}
+              </Text>
+            </View>
+          ) : null;
+        })()}
 
         <View className="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
           <Text className="text-base font-quicksand-bold text-slate-900">

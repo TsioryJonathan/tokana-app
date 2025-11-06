@@ -45,7 +45,7 @@
       ]
     ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.10.30:5000",
+      "API_BASE_DEV": "https://tokana-app.onrender.com",
       "API_BASE_PROD": "https://tokana-app.onrender.com",
       "router": {},
       "eas": {

@@ -15,6 +15,7 @@ import {
   mapBackendStatus,
   statusLabel,
 } from "@/lib/mappers/order";
+import Row from "@/components/CreateOrder/Row";
 
 function formatAr(amount: number) {
   return `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Ar`;
@@ -248,18 +249,44 @@ export default function OrderDetails() {
             {statusLabel[order.status]}
           </Text>
 
+          {/* Informations expéditeur */}
           <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Lieu de départ</Text>
-            <Text className="text-base font-quicksand-semibold text-slate-900">
-              {order.from}
-            </Text>
+            <Text className="text-slate-500 text-sm mb-2">Informations expéditeur</Text>
+            <View className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              {(() => {
+                const p: any = rawOrder || {};
+                return (
+                  <>
+                    {p.pickupName && <Row label="Nom" value={p.pickupName} />}
+                    {p.pickupPhone && <Row label="Téléphone" value={p.pickupPhone} />}
+                    <Row label="Adresse" value={p.pickupAddress || order.from || '—'} multiline={true} />
+                    {p.pickupAddressDetail && (
+                      <Row label="Détails" value={p.pickupAddressDetail} multiline={true} />
+                    )}
+                  </>
+                );
+              })()}
+            </View>
           </View>
 
+          {/* Informations destinataire */}
           <View className="mt-4">
-            <Text className="text-slate-500 text-sm">Lieu de destination</Text>
-            <Text className="text-base font-quicksand-semibold text-slate-900">
-              {order.to}
-            </Text>
+            <Text className="text-slate-500 text-sm mb-2">Informations destinataire</Text>
+            <View className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+              {(() => {
+                const p: any = rawOrder || {};
+                return (
+                  <>
+                    {p.dropoffName && <Row label="Nom" value={p.dropoffName} />}
+                    {p.recipientPhone && <Row label="Téléphone" value={p.recipientPhone} />}
+                    <Row label="Adresse" value={p.dropoffAddress || order.to || '—'} multiline={true} />
+                    {p.dropoffAddressDetail && (
+                      <Row label="Détails" value={p.dropoffAddressDetail} multiline={true} />
+                    )}
+                  </>
+                );
+              })()}
+            </View>
           </View>
 
           <View className="mt-4">
@@ -319,6 +346,18 @@ export default function OrderDetails() {
               );
             })()}
           </View>
+
+          {(() => {
+            const p: any = rawOrder || {};
+            return p.notes && p.notes.trim() ? (
+              <View className="mt-4">
+                <Text className="text-slate-500 text-sm">Notes</Text>
+                <Text className="text-base text-slate-900 mt-1">
+                  {p.notes}
+                </Text>
+              </View>
+            ) : null;
+          })()}
 
           <View className="mt-4">
             <Text className="text-slate-500 text-sm">Date de création</Text>

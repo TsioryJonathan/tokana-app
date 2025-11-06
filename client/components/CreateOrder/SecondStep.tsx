@@ -153,7 +153,6 @@ const SecondStep = ({
             </View>
             <View className="flex-1">
               <AddressAutocomplete
-                key={`mapbox-sender-${mapboxInputValue}`}
                 placeholder="Quartier (autocomplétion)"
                 bbox={bbox}
                 onSelected={({ label, lat, lng }) => {

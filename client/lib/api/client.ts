@@ -13,19 +13,57 @@ export function getApiBase(): string | null {
   return currentBase;
 }
 
+export function resetApiClient(): void {
+  cached = null;
+  currentBase = null;
+}
+
 export function getApiClient(): TokanaApiClient {
   if (cached) return cached;
   const extra = (Constants as any)?.expoConfig?.extra || {};
 
-  let base: string | undefined;
+  // Diagnostic: afficher toutes les valeurs pour comprendre le problème
+  const useLocalApi = process.env.EXPO_PUBLIC_USE_LOCAL_API === "true";
   const envBase = process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined;
-  if (envBase && envBase.trim().length > 0) {
+  const apiBaseProd = extra.API_BASE_PROD;
+  const apiBaseDev = extra.API_BASE_DEV;
+  
+  console.log("[TokanaApi] 🔍 Diagnostic de configuration:");
+  console.log("  - EXPO_PUBLIC_USE_LOCAL_API:", useLocalApi);
+  console.log("  - EXPO_PUBLIC_API_BASE_URL:", envBase);
+  console.log("  - extra.API_BASE_PROD:", apiBaseProd);
+  console.log("  - extra.API_BASE_DEV:", apiBaseDev);
+  console.log("  - Constants.expoConfig.extra:", JSON.stringify(extra, null, 2));
+
+  let base: string | undefined;
+  
+  // Par défaut: toujours utiliser l'API de production (Render)
+  // Pour utiliser l'API locale, définissez EXPO_PUBLIC_USE_LOCAL_API=true ET EXPO_PUBLIC_API_BASE_URL
+  if (useLocalApi && envBase && envBase.trim().length > 0) {
+    // Mode développement avec API locale explicite (uniquement si EXPO_PUBLIC_USE_LOCAL_API=true)
     base = envBase.trim();
+    console.log("[TokanaApi] ⚠️ MODE DÉVELOPPEMENT - Utilisation de l'API LOCALE:", base);
   } else {
-    // Always use production API from app.json (Render)
-    base = extra.API_BASE_PROD || "https://tokana-app.onrender.com";
-    if (__DEV__) {
-      console.log("[TokanaApi] BASE (using production API):", base);
+    // FORCER l'utilisation de l'API Render, ignorer toute URL locale
+    const RENDER_API_URL = "https://tokana-app.onrender.com";
+    
+    // Vérifier si API_BASE_PROD est une URL Render valide
+    if (apiBaseProd && 
+        (apiBaseProd.includes("tokana-app.onrender.com") || 
+         apiBaseProd.includes("onrender.com") ||
+         apiBaseProd.startsWith("https://"))) {
+      // Utiliser API_BASE_PROD seulement s'il pointe vers Render ou une URL HTTPS valide
+      base = apiBaseProd;
+      console.log("[TokanaApi] ✅ Utilisation de API_BASE_PROD (Render):", base);
+    } else {
+      // Forcer l'URL Render si API_BASE_PROD est locale ou invalide
+      base = RENDER_API_URL;
+      if (apiBaseProd) {
+        console.log("[TokanaApi] ⚠️ API_BASE_PROD contient une URL locale/invalide:", apiBaseProd);
+        console.log("[TokanaApi] 🔧 Forçage de l'URL Render:", base);
+      } else {
+        console.log("[TokanaApi] ✅ Utilisation de l'API PRODUCTION (Render):", base);
+      }
     }
   }
   currentBase = base!;

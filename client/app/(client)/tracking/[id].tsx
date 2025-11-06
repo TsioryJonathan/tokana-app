@@ -120,21 +120,27 @@ export default function TrackingScreen() {
 
       {/* Sender information */}
       <View className="px-4 mt-3">
-        <Text className="text-[12px] text-slate-800 mb-2">Informations expéditeur</Text>
+        <Text className="text-[12px] text-slate-800 mb-2 font-quicksand-semibold">Informations expéditeur</Text>
         <View className="bg-white rounded-2xl border border-slate-200 p-4">
           <Row label="Nom" value={order.pickupName || '—'} />
           <Row label="Téléphone" value={order.pickupPhone || '—'} />
-          <Row label="Adresse" value={order.pickupAddress || '—'} />
+          <Row label="Adresse" value={order.pickupAddress || '—'} multiline={true} />
+          {order.pickupAddressDetail && (
+            <Row label="Détails" value={order.pickupAddressDetail} multiline={true} />
+          )}
         </View>
       </View>
 
       {/* Recipient information */}
       <View className="px-4 mt-4">
-        <Text className="text-[12px] text-slate-800 mb-2">Informations destinataire</Text>
+        <Text className="text-[12px] text-slate-800 mb-2 font-quicksand-semibold">Informations destinataire</Text>
         <View className="bg-white rounded-2xl border border-slate-200 p-4">
           <Row label="Nom" value={order.dropoffName || '—'} />
           <Row label="Téléphone" value={order.recipientPhone || '—'} />
-          <Row label="Adresse" value={order.dropoffAddress || '—'} />
+          <Row label="Adresse" value={order.dropoffAddress || '—'} multiline={true} />
+          {order.dropoffAddressDetail && (
+            <Row label="Détails" value={order.dropoffAddressDetail} multiline={true} />
+          )}
         </View>
       </View>
 

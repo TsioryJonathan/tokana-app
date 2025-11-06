@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useMapboxGeocoding } from '@/lib/hooks/useMapboxGeocoding';
 import type { MapboxFeature } from '@/lib/mapbox/geocoding';
@@ -22,34 +22,52 @@ export default function AddressAutocomplete({ label = 'Adresse (autocomplétion)
     debounceMs: 350,
   });
   const [selectedAddress, setSelectedAddress] = React.useState<string>('');
+  const inputRef = useRef<TextInput>(null);
+  const isInternalUpdate = useRef(false);
+  const lastInitialText = useRef(initialText);
 
   // Sync initialText when it changes externally (e.g., when saved address is selected)
+  // Only sync if it's a different value and not from user typing
   React.useEffect(() => {
-    if (initialText && initialText !== query && !selectedAddress) {
+    if (initialText !== lastInitialText.current && initialText !== query && !selectedAddress && !isInternalUpdate.current) {
+      lastInitialText.current = initialText;
       setQuery(initialText);
     }
-  }, [initialText]);
+  }, [initialText, query, selectedAddress]);
 
-  const handleSelect = (f: any) => {
+  const handleSelect = useCallback((f: any) => {
     const [lng, lat] = f.center;
     const address = f.place_name;
+    isInternalUpdate.current = true;
     setSelectedAddress(address);
     setQuery(''); // Clear query to close dropdown
     onTextChange?.(address); // Update parent with selected address
     onSelected({ label: address, lat, lng, feature: f });
-  };
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isInternalUpdate.current = false;
+    }, 100);
+  }, [onSelected, onTextChange]);
+
+  const handleTextChange = useCallback((t: string) => {
+    isInternalUpdate.current = true;
+    setQuery(t); 
+    setSelectedAddress(''); // Clear selected when typing
+    onTextChange?.(t);
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isInternalUpdate.current = false;
+    }, 50);
+  }, [onTextChange]);
 
   return (
     <View className={containerClassName}>
       {!!label && <Text className="text-[12px] text-slate-600 mb-1">{label}</Text>}
       <TextInput
+        ref={inputRef}
         placeholder={placeholder}
         value={selectedAddress || query}
-        onChangeText={(t) => { 
-          setQuery(t); 
-          setSelectedAddress(''); // Clear selected when typing
-          onTextChange?.(t); 
-        }}
+        onChangeText={handleTextChange}
         className={inputClassName || "px-3 py-2 rounded-xl bg-white border border-slate-200"}
         autoCorrect={false}
         autoCapitalize="none"

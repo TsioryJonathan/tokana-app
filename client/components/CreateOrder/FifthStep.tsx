@@ -1,6 +1,6 @@
-import { View, Text, Image, ImageSourcePropType } from "react-native";
+import { View, Text, Image, ImageSourcePropType, TextInput } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, DollarSign, FileText } from "lucide-react-native";
 import { PaymentState } from "@/types/createorder.type";
 import { assets } from "@/assets/images/assets";
 
@@ -147,6 +147,55 @@ const FifthStep = ({
             <Text className="text-lg font-quicksand-bold text-red-600">
               {estimatedPrice.toLocaleString()} Ar
             </Text>
+          </View>
+        </View>
+
+        {/* Payment Section */}
+        <View className="bg-white rounded-3xl shadow-lg shadow-gray-300/50 p-5 mt-4">
+          <Text className="text-lg font-quicksand-bold text-gray-900 mb-3">
+            Paiement
+          </Text>
+          
+          {/* COD Amount Input */}
+          <View className="bg-gray-50 rounded-2xl mb-4 border border-gray-200">
+            <View className="flex-row items-center px-5 py-4">
+              <View className="bg-[#FFD700]/10 p-2 rounded-full">
+                <DollarSign size={20} color="#FFD700" strokeWidth={2.5} />
+              </View>
+              <TextInput
+                value={payment.codAmountAr || ""}
+                onChangeText={(t) => setPayment({ ...payment, codAmountAr: t })}
+                placeholder="Montant à encaisser (COD) - Optionnel"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+                className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
+              />
+            </View>
+          </View>
+
+          {/* Notes Input */}
+          <View className="bg-gray-50 rounded-2xl border border-gray-200">
+            <View className="flex-row items-start px-5 py-4">
+              <View className="bg-[#FFD700]/10 p-2 rounded-full mt-1">
+                <FileText size={20} color="#FFD700" strokeWidth={2.5} />
+              </View>
+              <TextInput
+                value={payment.notes || ""}
+                onChangeText={(t) => setPayment({ ...payment, notes: t })}
+                placeholder="Notes (facultatif) - Ex: Instructions spéciales, informations de livraison..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                className="flex-1 ml-3 font-quicksand text-gray-900 text-base min-h-[100px]"
+                maxLength={1000}
+              />
+            </View>
+            {payment.notes && payment.notes.length > 0 && (
+              <Text className="text-xs text-gray-400 px-5 pb-2 text-right">
+                {payment.notes.length}/1000
+              </Text>
+            )}
           </View>
         </View>
       </View>
