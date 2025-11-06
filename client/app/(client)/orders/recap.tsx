@@ -152,8 +152,14 @@ export default function OrderRecapPage() {
       router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(created.id) } });
     } catch (e: any) {
       // Surface server error message to the user for better diagnosis (Joi/business errors)
-      const msg = e?.body?.msg || e?.message || "Création échouée";
+      let msg = e?.body?.msg || e?.message || "Création échouée";
       console.log('[recap] Erreur création commande:', e?.status, msg, e?.body);
+      
+      // Normaliser le message d'erreur : remplacer "Téléphone non vérifié" par "Email non vérifié"
+      // (au cas où le serveur n'a pas été redémarré et utilise encore l'ancien code)
+      if (msg.includes('Téléphone non vérifié') || msg.includes('téléphone non vérifié')) {
+        msg = msg.replace(/téléphone non vérifié/i, 'Email non vérifié');
+      }
       
       // Si l'erreur est liée à la vérification (email ou téléphone), rediriger vers la page de vérification
       if (e?.status === 403 && (msg.includes('non vérifié') || msg.includes('vérifié'))) {

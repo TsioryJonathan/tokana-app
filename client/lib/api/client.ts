@@ -81,6 +81,13 @@ export function getApiClient(): TokanaApiClient {
           // If backend requires verified email, redirect user to verification flow
           const msg: string | undefined = typeof body?.msg === 'string' ? body.msg : undefined;
           if (msg && (/email non vérifié/i.test(msg) || /téléphone non vérifié/i.test(msg))) {
+            // Normaliser le message d'erreur pour toujours afficher "Email non vérifié"
+            // même si le serveur envoie encore "Téléphone non vérifié" (ancien code)
+            const normalizedMsg = msg.replace(/téléphone non vérifié/i, 'Email non vérifié');
+            // Mettre à jour le message dans l'erreur pour que le client l'affiche correctement
+            if (typeof body === 'object' && body !== null) {
+              (body as any).msg = normalizedMsg;
+            }
             try {
               // eslint-disable-next-line @typescript-eslint/no-require-imports
               const { router } = require("expo-router");
