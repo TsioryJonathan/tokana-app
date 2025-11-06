@@ -330,8 +330,7 @@ export const requestAccountOtp = async (req, res, next) => {
 
     const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
     if (!user.email)
-      return res.status(400).json({ msg: "Email manquant" });
-    
+      return res.status(400).json({ msg: "Email manquant" });    
     try {
       await sendEmail(user.email, "Votre code Tokana", msg);
       console.log(`[requestAccountOtp] OTP envoyé à ${user.email}`);
