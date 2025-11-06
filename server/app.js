@@ -27,7 +27,18 @@ import { verifyEmailConfig } from "./services/emailService.js";
 
 
 
+// Charger les variables d'environnement
 dotenv.config();
+
+// Diagnostic des variables d'environnement (sans afficher les secrets)
+console.log('[app] Variables d\'environnement chargées:');
+console.log(`[app] NODE_ENV: ${process.env.NODE_ENV || 'NON DÉFINI'}`);
+console.log(`[app] PORT: ${process.env.PORT || 'NON DÉFINI'}`);
+console.log(`[app] SMTP_HOST: ${process.env.SMTP_HOST || 'NON DÉFINI'}`);
+console.log(`[app] SMTP_USER: ${process.env.SMTP_USER || 'NON DÉFINI'}`);
+console.log(`[app] SMTP_PASS: ${process.env.SMTP_PASS ? 'DÉFINI (' + process.env.SMTP_PASS.length + ' caractères)' : 'NON DÉFINI'}`);
+console.log(`[app] POSTGRES_URI: ${process.env.POSTGRES_URI ? 'DÉFINI' : 'NON DÉFINI'}`);
+
 const app = express();
 
 app.set("trust proxy", 1);

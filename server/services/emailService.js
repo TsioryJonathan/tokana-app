@@ -20,6 +20,14 @@ function getTransporter() {
   
   if (host && user && pass) {
     try {
+      // Log de debug (sans afficher le mot de passe)
+      console.log(`[emailService] Configuration SMTP détectée:`);
+      console.log(`[emailService]   Host: ${host}`);
+      console.log(`[emailService]   Port: ${port}`);
+      console.log(`[emailService]   User: ${user}`);
+      console.log(`[emailService]   Secure: ${secure}`);
+      console.log(`[emailService]   Password length: ${pass.length} caractères`);
+      
       const config = {
         host,
         port,
