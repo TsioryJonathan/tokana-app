@@ -1,46 +1,49 @@
-# Configuration SMTP pour l'envoi d'emails OTP
+# Guide de configuration SMTP pour Tokana
 
-Ce document explique comment configurer nodemailer pour envoyer des emails OTP dans l'application Tokana.
-
-## Variables d'environnement requises
+## 📋 Variables d'environnement requises
 
 Ajoutez ces variables dans votre fichier `.env` dans le dossier `server/`:
 
+### Configuration Gmail (Recommandé)
+
 ```env
-# Configuration SMTP de base
+# Configuration Gmail
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=votre-email@gmail.com
 SMTP_PASS=votre-mot-de-passe-application
 SMTP_FROM=votre-email@gmail.com
+SMTP_REJECT_UNAUTHORIZED=true
 ```
 
-## Configuration Gmail (Recommandé pour le développement)
+### ⚠️ IMPORTANT : Pour Gmail, vous DEVEZ utiliser un "Mot de passe d'application"
 
-### Étape 1: Activer l'authentification à deux facteurs
-1. Allez sur https://myaccount.google.com/security
-2. Activez la "Validation en deux étapes"
+**Étapes pour créer un mot de passe d'application Gmail :**
 
-### Étape 2: Créer un mot de passe d'application
-1. Allez sur https://myaccount.google.com/apppasswords
-2. Sélectionnez "Autre (nom personnalisé)" et entrez "Tokana App"
-3. Cliquez sur "Générer"
-4. Copiez le mot de passe généré (16 caractères)
+1. **Activez la validation en deux étapes** (obligatoire)
+   - Allez sur https://myaccount.google.com/security
+   - Activez "Validation en deux étapes"
 
-### Étape 3: Configurer les variables d'environnement
+2. **Créez un mot de passe d'application**
+   - Allez sur https://myaccount.google.com/apppasswords
+   - Sélectionnez "Autre (nom personnalisé)" et entrez "Tokana App"
+   - Cliquez sur "Générer"
+   - **Copiez le mot de passe généré** (16 caractères, format: `xxxx xxxx xxxx xxxx`)
+   - **Supprimez les espaces** avant de le mettre dans le .env
+
+3. **Dans votre .env, utilisez ce mot de passe d'application** (pas votre mot de passe Gmail normal)
+
 ```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=votre-email@gmail.com
-SMTP_PASS=xxxx xxxx xxxx xxxx  # Le mot de passe d'application (sans espaces)
-SMTP_FROM=votre-email@gmail.com
+SMTP_PASS=abcdefghijklmnop  # Le mot de passe d'application SANS espaces
 ```
 
-## Configuration avec d'autres services SMTP
+---
+
+## 🔧 Autres services SMTP
 
 ### SendGrid
+
 ```env
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
@@ -48,9 +51,11 @@ SMTP_SECURE=false
 SMTP_USER=apikey
 SMTP_PASS=votre-api-key-sendgrid
 SMTP_FROM=noreply@tokana.mg
+SMTP_REJECT_UNAUTHORIZED=true
 ```
 
 ### Mailgun
+
 ```env
 SMTP_HOST=smtp.mailgun.org
 SMTP_PORT=587
@@ -58,9 +63,11 @@ SMTP_SECURE=false
 SMTP_USER=postmaster@votre-domaine.mailgun.org
 SMTP_PASS=votre-mot-de-passe-mailgun
 SMTP_FROM=noreply@tokana.mg
+SMTP_REJECT_UNAUTHORIZED=true
 ```
 
-### SMTP personnalisé
+### SMTP personnalisé (votre propre serveur)
+
 ```env
 SMTP_HOST=smtp.votre-domaine.com
 SMTP_PORT=587
@@ -68,61 +75,115 @@ SMTP_SECURE=false
 SMTP_USER=noreply@votre-domaine.com
 SMTP_PASS=votre-mot-de-passe
 SMTP_FROM=noreply@votre-domaine.com
+SMTP_REJECT_UNAUTHORIZED=false  # Mettre à false si certificat auto-signé
 ```
 
-## Ports et sécurité
+---
 
-- **Port 587** (STARTTLS): Recommandé, utilise `SMTP_SECURE=false`
-- **Port 465** (SSL/TLS): Utilise `SMTP_SECURE=true` ou `SMTP_PORT=465`
-- **Port 25**: Généralement bloqué par les FAI, non recommandé
+## 🚨 Résolution du problème "Connection timeout"
 
-## Vérification de la configuration
+### 1. Vérifiez vos variables d'environnement
 
-Au démarrage du serveur, vous verrez un message indiquant si la configuration SMTP est correcte:
+Assurez-vous que toutes les variables sont bien définies dans `server/.env` :
+
+```bash
+# Vérifiez que le fichier existe
+ls server/.env
+
+# Vérifiez le contenu (sans afficher les mots de passe)
+cat server/.env | grep SMTP
+```
+
+### 2. Pour Gmail spécifiquement
+
+- ✅ Utilisez un **mot de passe d'application** (pas votre mot de passe normal)
+- ✅ Activez la **validation en deux étapes** avant de créer le mot de passe d'application
+- ✅ Supprimez **tous les espaces** du mot de passe d'application
+
+### 3. Vérifiez votre connexion internet
+
+```bash
+# Testez la connexion au serveur SMTP
+telnet smtp.gmail.com 587
+# ou
+nc -zv smtp.gmail.com 587
+```
+
+### 4. Vérifiez le pare-feu
+
+Assurez-vous que le port 587 (ou 465) n'est pas bloqué par votre pare-feu.
+
+### 5. Testez avec un autre port
+
+Si le port 587 ne fonctionne pas, essayez le port 465 avec SSL :
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=votre-email@gmail.com
+SMTP_PASS=votre-mot-de-passe-application
+SMTP_FROM=votre-email@gmail.com
+```
+
+---
+
+## 📝 Exemple complet de fichier .env
+
+```env
+# Base de données
+POSTGRES_URI=postgresql://user:password@localhost:5432/tokana
+
+# SMTP Configuration (Gmail)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=monemail@gmail.com
+SMTP_PASS=abcdefghijklmnop
+SMTP_FROM=monemail@gmail.com
+SMTP_REJECT_UNAUTHORIZED=true
+
+# Autres variables...
+NODE_ENV=development
+PORT=3000
+```
+
+---
+
+## ✅ Vérification
+
+Après avoir configuré votre `.env`, redémarrez le serveur. Vous devriez voir :
 
 ```
-[emailService] SMTP configuré: Gmail:587
+[emailService] SMTP configuré: Gmail
 [emailService] Configuration SMTP vérifiée avec succès
 ```
 
-Si vous voyez:
+Si vous voyez :
 ```
-[emailService] Variables SMTP manquantes (SMTP_HOST, SMTP_USER, SMTP_PASS). Mode DEV: emails seront loggés uniquement.
+[emailService] Erreur vérification SMTP: Connection timeout
 ```
 
-Cela signifie que les variables ne sont pas configurées et les emails seront seulement loggés dans la console (mode développement).
+Cela signifie :
+1. ❌ Les variables ne sont pas correctement chargées
+2. ❌ Le mot de passe est incorrect (pour Gmail, utilisez un mot de passe d'application)
+3. ❌ Le pare-feu bloque la connexion
+4. ❌ Problème de connexion internet
 
-## Dépannage
+---
 
-### Erreur: "Invalid login"
-- Vérifiez que `SMTP_USER` et `SMTP_PASS` sont corrects
-- Pour Gmail, assurez-vous d'utiliser un mot de passe d'application, pas votre mot de passe normal
+## 🔍 Mode développement (sans SMTP)
 
-### Erreur: "Connection timeout"
-- Vérifiez que `SMTP_HOST` et `SMTP_PORT` sont corrects
-- Vérifiez votre connexion internet
-- Vérifiez que le pare-feu n'bloque pas le port SMTP
-
-### Erreur: "Self signed certificate"
-- Ajoutez `SMTP_REJECT_UNAUTHORIZED=false` dans votre `.env` (uniquement pour les tests)
-
-### Les emails ne sont pas reçus
-- Vérifiez le dossier spam/courrier indésirable
-- Vérifiez les logs du serveur pour voir les erreurs détaillées
-- En mode développement, les emails sont loggés dans la console
-
-## Mode développement
-
-Si les variables SMTP ne sont pas configurées, le serveur fonctionnera en mode développement:
-- Les emails seront loggés dans la console au lieu d'être envoyés
+Si vous ne configurez pas SMTP, le serveur fonctionnera en mode développement :
+- Les emails seront **loggés dans la console** au lieu d'être envoyés
 - Aucune erreur ne sera levée
-- Utile pour le développement local sans configuration SMTP
+- Utile pour le développement local
 
-## Support HTML dans les emails
+---
 
-Le service email supporte maintenant les emails HTML. Vous pouvez passer un paramètre HTML optionnel:
+## 📞 Support
 
-```javascript
-await sendEmail(to, subject, text, html);
-```
-
+Si le problème persiste :
+1. Vérifiez les logs du serveur pour plus de détails
+2. Testez la connexion SMTP avec un client email (Thunderbird, Outlook)
+3. Vérifiez que votre compte email n'est pas suspendu ou limité
