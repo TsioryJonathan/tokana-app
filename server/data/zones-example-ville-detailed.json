@@ -1,0 +1,18 @@
+{
+  "description": "Exemple de géométrie GeoJSON pour la zone VILLE d'Antananarivo",
+  "zone": "ville",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [47.4800, -18.9500],
+        [47.5500, -18.9500],
+        [47.5500, -18.8500],
+        [47.4800, -18.8500],
+        [47.4800, -18.9500]
+      ]
+    ]
+  },
+  "note": "Coordonnées approximatives du centre-ville d'Antananarivo. À remplacer par des données précises."
+}
+

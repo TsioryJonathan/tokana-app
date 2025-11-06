@@ -109,14 +109,22 @@ export const register = async (req, res, next) => {
         user.accountOtpLockedUntil = null;
 
         const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
-        await sendEmail(email, "Votre code Tokana", msg);
-        user.accountOtpChannel = "email";
-        const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
-        otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
-        await user.save();
+        try {
+          await sendEmail(email, "Votre code Tokana", msg);
+          user.accountOtpChannel = "email";
+          const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
+          otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
+          await user.save();
+          console.log(`[register][auto-otp] OTP envoyé à ${email}`);
+        } catch (emailError) {
+          console.error(`[register][auto-otp] Échec envoi email à ${email}:`, emailError.message);
+          // Save user anyway but without OTP info
+          await user.save();
+          // Don't throw - registration succeeds even if OTP fails
+        }
       }
     } catch (e) {
-      console.warn('[register][auto-otp] send failed:', e?.message || e);
+      console.error('[register][auto-otp] Erreur génération OTP:', e?.message || e);
     }
 
     const token = generateAccessToken({ id: user.id, role: user.role });
@@ -323,7 +331,17 @@ export const requestAccountOtp = async (req, res, next) => {
     const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
     if (!user.email)
       return res.status(400).json({ msg: "Email manquant" });
-    await sendEmail(user.email, "Votre code Tokana", msg);
+    
+    try {
+      await sendEmail(user.email, "Votre code Tokana", msg);
+      console.log(`[requestAccountOtp] OTP envoyé à ${user.email}`);
+    } catch (emailError) {
+      console.error(`[requestAccountOtp] Échec envoi email à ${user.email}:`, emailError.message);
+      return res.status(500).json({ 
+        msg: "Échec envoi email. Vérifiez la configuration SMTP du serveur.",
+        error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+      });
+    }
 
     user.accountOtpLastRequestedAt = new Date(now);
     user.accountOtpRequestCount = count + 1;

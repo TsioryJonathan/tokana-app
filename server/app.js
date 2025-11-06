@@ -23,6 +23,7 @@ import yaml from "yaml";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { verifyEmailConfig } from "./services/emailService.js";
 
 
 
@@ -55,6 +56,11 @@ if (!process.env.POSTGRES_URI) {
   process.exit(1);
 }
 await connectDB();
+
+// Verify email configuration on startup
+verifyEmailConfig().catch((err) => {
+  console.warn('[app] Vérification SMTP échouée (mode DEV possible):', err.message);
+});
 
 // Security middlewares
 app.use(helmet());
