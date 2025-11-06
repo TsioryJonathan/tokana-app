@@ -8,7 +8,25 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
-      // Les console.log seront supprimés par Metro minifier en production
+      [
+        "module-resolver",
+        {
+          root: ["./"],
+          alias: {
+            "@": "./",
+          },
+          extensions: [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx",
+            ".android.js",
+            ".android.tsx",
+            ".ios.js",
+            ".ios.tsx",
+          ],
+        },
+      ],
     ],
   };
 };

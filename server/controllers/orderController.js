@@ -585,15 +585,6 @@ export const updateOrderStatus = async (req, res, next) => {
         .json({ msg: `Transition interdite: ${from} → ${to}` });
     }
 
-    // Enforce OTP verification before final delivery
-    if (to === "expedie") {
-      if (!order.deliveryOtpVerifiedAt) {
-        return res
-          .status(400)
-          .json({ msg: "OTP de preuve requis avant expédition" });
-      }
-    }
-
     order.status = to;
     await order.save();
     // Record status change history (fire-and-forget if desired)
