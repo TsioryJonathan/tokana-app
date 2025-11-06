@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { Order } from '@/lib/api/models/Order';
 import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
 import { useCourierSearch } from '../hooks/useCourierSearch';
+import { Package, MapPin, Weight, User, Search, ArrowRight, Eye } from 'lucide-react-native';
 
 export type AdminOrderItemProps = {
   order: Order;
@@ -15,6 +17,13 @@ export type AdminOrderItemProps = {
   onUnassign: () => void;
   onUpdateStatus: (uiStatus: OrderStatus) => void;
   onUpdateBackendStatus: (backendStatus: string) => void;
+};
+
+const statusColors: Record<OrderStatus, { gradient: string[]; text: string }> = {
+  CREATED: { gradient: ['#3B82F6', '#2563EB'], text: '#fff' },
+  PICKED_UP: { gradient: ['#F59E0B', '#D97706'], text: '#fff' },
+  IN_TRANSIT: { gradient: ['#8B5CF6', '#7C3AED'], text: '#fff' },
+  DELIVERED: { gradient: ['#059669', '#047857'], text: '#fff' },
 };
 
 export function AdminOrderItem({
@@ -37,130 +46,226 @@ export function AdminOrderItem({
     clear();
   };
 
+  const currentUi = mapBackendStatus(String(order.status)) as OrderStatus;
+  const statusColor = statusColors[currentUi] || { gradient: ['#64748B', '#475569'], text: '#fff' };
+
   return (
-    <View
-      className="border border-slate-200 rounded-xl p-4 mb-3 bg-white"
-      style={{ elevation: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}
-    >
-      <Text className="font-quicksand-bold text-slate-800">#{order.id} · {order.type?.toUpperCase()} · {statusLabel[mapBackendStatus(String(order.status))]}</Text>
-      <Text className="text-slate-600 mt-1">{order.pickupAddress} → {order.dropoffAddress}</Text>
-      <Text className="text-slate-600 mt-1">Poids: {order.weight}kg · Colis: {order.parcels}</Text>
-      <Text className="text-slate-600 mt-1">Assigné à: {order.assignedTo ?? '—'}</Text>
-      <View className="mt-2">
+    <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+      {/* Header */}
+      <View className="flex-row items-center justify-between mb-3">
+        <View className="flex-row items-center gap-2">
+          <View className="bg-emerald-100 rounded-lg p-2">
+            <Package size={18} color="#059669" strokeWidth={2.5} />
+          </View>
+          <View>
+            <Text className="text-gray-900 font-clash-bold text-lg">#{order.id}</Text>
+            <View className="flex-row items-center gap-2 mt-0.5">
+              <View className={`px-2 py-0.5 rounded-full`} style={{ backgroundColor: statusColor.gradient[0] + '20' }}>
+                <Text className="text-xs font-quicksand-bold" style={{ color: statusColor.gradient[0] }}>
+                  {order.type?.toUpperCase()}
+                </Text>
+              </View>
+              <View className={`px-2 py-0.5 rounded-full`} style={{ backgroundColor: statusColor.gradient[0] + '20' }}>
+                <Text className="text-xs font-quicksand-bold" style={{ color: statusColor.gradient[0] }}>
+                  {statusLabel[currentUi]}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
         <TouchableOpacity
-          className="self-start px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-300"
           onPress={onPressView}
-          accessibilityLabel={`Voir les détails de la commande #${order.id}`}
+          className="bg-emerald-50 rounded-lg px-3 py-2 flex-row items-center gap-1.5"
+          activeOpacity={0.7}
         >
+          <Eye size={16} color="#059669" />
           <Text className="text-emerald-700 text-xs font-quicksand-bold">Voir</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Rechercher livreur (autocomplétion) */}
-      <View className="mt-3">
-        <Text className="text-slate-600 mb-1">Rechercher livreur</Text>
-        <TextInput
-          className="border border-slate-300 rounded-lg px-3 py-2"
-          placeholder="Nom du livreur"
-          value={q}
-          onChangeText={setQ}
-          accessibilityLabel={`Rechercher un livreur par nom pour la commande #${order.id}`}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {searching ? (
-          <View className="mt-2"><ActivityIndicator size="small" color="#64748b" /></View>
-        ) : null}
+      {/* Informations */}
+      <View className="mb-4">
+        <View className="flex-row items-start gap-2">
+          <View style={{ marginTop: 2 }}>
+            <MapPin size={16} color="#64748B" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-gray-900 font-quicksand-semibold text-sm" numberOfLines={1}>
+              {order.pickupAddress}
+            </Text>
+            <View style={{ marginVertical: 4 }}>
+              <ArrowRight size={12} color="#94A3B8" />
+            </View>
+            <Text className="text-gray-700 font-quicksand text-sm" numberOfLines={1}>
+              {order.dropoffAddress}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-row items-center gap-4 mb-2">
+          <View className="flex-row items-center gap-1.5">
+            <Weight size={14} color="#64748B" />
+            <Text className="text-gray-600 text-xs font-quicksand">
+              {order.weight}kg · {order.parcels} colis
+            </Text>
+          </View>
+        </View>
+        {order.assignedTo && (
+          <View className="flex-row items-center gap-2">
+            <User size={14} color="#64748B" />
+            <Text className="text-gray-600 text-xs font-quicksand">
+              Assigné à: <Text className="font-quicksand-semibold">{order.assignedTo}</Text>
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Recherche livreur */}
+      <View className="mb-3">
+        <Text className="text-gray-700 text-xs font-quicksand-semibold mb-2">Rechercher livreur</Text>
+        <View className="relative">
+          <View className="absolute left-3 top-0 bottom-0 justify-center z-10">
+            <Search size={16} color="#94A3B8" />
+          </View>
+          <TextInput
+            className="border border-gray-200 rounded-xl px-10 py-3 bg-gray-50 font-quicksand"
+            placeholder="Nom du livreur"
+            value={q}
+            onChangeText={setQ}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        </View>
+        {searching && (
+          <View className="mt-2">
+            <ActivityIndicator size="small" color="#059669" />
+          </View>
+        )}
         {results.length > 0 && (
-          <View className="mt-2 border border-slate-200 rounded-lg bg-white">
+          <View className="mt-2 bg-white border border-gray-200 rounded-xl overflow-hidden">
             {results.map((u) => (
-              <TouchableOpacity key={u.id} className="px-3 py-2 border-b border-slate-100" onPress={() => pickCourier(u.id!, u.name ?? null)} accessibilityLabel={`Choisir ${u.name ?? 'livreur'} (${u.phone ?? '—'})`}>
-                <Text className="text-slate-800">{u.name ?? '(Sans nom)'} <Text className="text-slate-500">· #{u.id}</Text></Text>
-                {u.phone ? <Text className="text-slate-500 text-xs">{u.phone}</Text> : null}
+              <TouchableOpacity
+                key={u.id}
+                className="px-4 py-3 border-b border-gray-100 last:border-0"
+                onPress={() => pickCourier(u.id!, u.name ?? null)}
+                activeOpacity={0.7}
+              >
+                <Text className="text-gray-900 font-quicksand-semibold">
+                  {u.name ?? '(Sans nom)'}
+                </Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-0.5">
+                  #{u.id} {u.phone ? `· ${u.phone}` : ''}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
       </View>
-      <View className="mt-2 flex-row items-center gap-2">
+
+      {/* Assignation */}
+      <View className="flex-row items-center gap-2 mb-4">
         <TextInput
-          className="flex-1 border border-slate-300 rounded-lg px-3 py-2"
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 font-quicksand"
           placeholder="ID du livreur"
           keyboardType="number-pad"
           value={assignValue}
           onChangeText={onChangeAssignValue}
-          accessibilityLabel={`Saisir l'ID du livreur pour la commande #${order.id}`}
         />
         <TouchableOpacity
-          className={`px-3 py-2 rounded-lg ${busyAssign ? 'bg-emerald-300' : 'bg-emerald-600'}`}
+          className={`rounded-xl overflow-hidden ${busyAssign ? 'opacity-50' : ''}`}
           disabled={busyAssign}
           onPress={onAssign}
-          accessibilityLabel={`Assigner la commande #${order.id}`}
-          accessibilityState={{ disabled: busyAssign }}
+          activeOpacity={0.7}
         >
-          {busyAssign ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <Text className="text-white">Assigner</Text>
-          )}
+          <LinearGradient colors={['#059669', '#047857']} className="px-4 py-3">
+            {busyAssign ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-white font-quicksand-bold text-sm">Assigner</Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
         {order.assignedTo != null && (
           <TouchableOpacity
-            className={`px-3 py-2 rounded-lg ${busyAssign ? 'bg-rose-300' : 'bg-rose-600'}`}
+            className={`rounded-xl overflow-hidden ${busyAssign ? 'opacity-50' : ''}`}
             disabled={busyAssign}
             onPress={onUnassign}
-            accessibilityLabel={`Retirer l'assignation de la commande #${order.id}`}
-            accessibilityState={{ disabled: busyAssign }}
+            activeOpacity={0.7}
           >
-            {busyAssign ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text className="text-white">Retirer</Text>
-            )}
+            <LinearGradient colors={['#EF4444', '#DC2626']} className="px-4 py-3">
+              {busyAssign ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text className="text-white font-quicksand-bold text-sm">Retirer</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
+
       {/* Status actions */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mt-2"
+        contentContainerStyle={{ gap: 8 }}
+      >
         {(() => {
-          const pipeline: OrderStatus[] = ['CREATED','PICKED_UP','IN_TRANSIT','DELIVERED'];
-          const currentUi = mapBackendStatus(String(order.status)) as OrderStatus;
+          const pipeline: OrderStatus[] = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'];
           const idxCurrent = Math.max(0, pipeline.indexOf(currentUi));
           return pipeline.map((ui, i) => {
             const isCurrent = i === idxCurrent;
             const isNext = i === idxCurrent + 1;
-            const enabled = !busyStatus && isNext; // on n'autorise que l'étape suivante
-            const cls = enabled
-              ? 'bg-emerald-600 border-emerald-700'
-              : isCurrent
-                ? 'bg-emerald-50 border-emerald-300'
-                : 'bg-slate-100 border-slate-300';
-            const textCls = enabled ? 'text-white' : isCurrent ? 'text-emerald-700' : 'text-slate-400';
+            const enabled = !busyStatus && isNext;
+            const color = statusColors[ui] || { gradient: ['#64748B', '#475569'], text: '#fff' };
+
             return (
               <TouchableOpacity
                 key={ui}
-                className={`px-3 py-2 rounded-full border ${cls}`}
+                className="rounded-full overflow-hidden"
                 disabled={!enabled}
                 onPress={() => enabled && onUpdateStatus(ui)}
-                accessibilityLabel={`Changer le statut en ${statusLabel[ui]} pour la commande #${order.id}`}
-                accessibilityState={{ disabled: !enabled }}
+                activeOpacity={0.7}
               >
-                <Text className={`${textCls} text-xs font-quicksand-bold`}>{statusLabel[ui]}</Text>
+                {enabled ? (
+                  <LinearGradient colors={color.gradient} className="px-4 py-2">
+                    <Text className="text-white text-xs font-quicksand-bold">{statusLabel[ui]}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View
+                    className={`px-4 py-2 ${
+                      isCurrent ? 'bg-emerald-50' : 'bg-gray-100'
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-quicksand-bold ${
+                        isCurrent ? 'text-emerald-700' : 'text-gray-400'
+                      }`}
+                    >
+                      {statusLabel[ui]}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           });
         })()}
         <TouchableOpacity
-          className={`px-3 py-2 rounded-full border ${(() => {
-            const cur = String(order.status);
-            const allowed = cur === 'en_chemin';
-            return allowed ? 'bg-emerald-600 border-emerald-700' : 'bg-slate-100 border-slate-300';
-          })()}`}
-          disabled={(() => String(order.status) !== 'en_chemin')()}
+          className={`rounded-full overflow-hidden ${
+            String(order.status) === 'en_chemin' ? '' : 'opacity-50'
+          }`}
+          disabled={String(order.status) !== 'en_chemin'}
           onPress={() => String(order.status) === 'en_chemin' && onUpdateBackendStatus('en_chemin_pour_livraison')}
-          accessibilityState={{ disabled: String(order.status) !== 'en_chemin' }}
+          activeOpacity={0.7}
         >
-          <Text className={`${String(order.status) === 'en_chemin' ? 'text-white' : 'text-slate-400'} text-xs font-quicksand-bold`}>En chemin pour la livraison</Text>
+          {String(order.status) === 'en_chemin' ? (
+            <LinearGradient colors={['#8B5CF6', '#7C3AED']} className="px-4 py-2">
+              <Text className="text-white text-xs font-quicksand-bold">En chemin pour livraison</Text>
+            </LinearGradient>
+          ) : (
+            <View className="px-4 py-2 bg-gray-100">
+              <Text className="text-gray-400 text-xs font-quicksand-bold">En chemin pour livraison</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>

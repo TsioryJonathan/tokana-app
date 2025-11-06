@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getApiClient } from '@/lib/api/client';
 import { useToast } from '@/components/ui/Toast';
 import { ApiError, User } from '@/lib/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Users, UserPlus, Search, ChevronLeft, ChevronRight, Mail, Phone, Shield } from 'lucide-react-native';
 
 export default function AdminUsersPage() {
   const api = useMemo(getApiClient, []);
@@ -25,7 +28,6 @@ export default function AdminUsersPage() {
     return true;
   }, [name, phone, email, password]);
 
-  // Listing state
   const [roleTab, setRoleTab] = useState<'client' | 'livreur'>('client');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -49,7 +51,10 @@ export default function AdminUsersPage() {
       const res = await api.adminUsers.postApiAdminUsers({ name, phone: cleaned, email, password });
       setCreated(res);
       showToast('Livreur créé', 'success');
-      setName(''); setPhone(''); setEmail(''); setPassword('');
+      setName('');
+      setPhone('');
+      setEmail('');
+      setPassword('');
       setRoleTab('livreur');
       setPage(1);
       await fetchUsers({ role: 'livreur', q: '', page: 1, limit });
@@ -62,7 +67,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const fetchUsers = async (params?: { role?: 'client'|'livreur'|'admin'; q?: string; page?: number; limit?: number; }) => {
+  const fetchUsers = async (params?: { role?: 'client' | 'livreur' | 'admin'; q?: string; page?: number; limit?: number }) => {
     if (loadingList) return;
     setLoadingList(true);
     try {
@@ -71,7 +76,6 @@ export default function AdminUsersPage() {
       setTotal(res.total ?? 0);
       setPages(res.pages ?? 1);
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('[AdminUsers] getApiAdminUsers error:', e);
       let status: number | undefined;
       if (e instanceof ApiError) status = e.status;
@@ -87,13 +91,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Initial load and when role/page changes
   useEffect(() => {
     fetchUsers({ role: roleTab, q, page, limit });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleTab, page]);
 
-  // Debounce search
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -103,124 +104,261 @@ export default function AdminUsersPage() {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <View className="px-4 pt-4 pb-2 border-b border-slate-200 bg-white">
-        <Text className="text-xl font-quicksand-bold text-slate-900">Utilisateurs</Text>
-        <Text className="text-slate-500 mt-1">Gestion des utilisateurs (clients / livreurs)</Text>
-      </View>
-      <ScrollView className="p-4" contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Create Livreur */}
-        <View
-          className="bg-white border border-slate-200 rounded-2xl p-4"
-          style={{
-            elevation: 1,
-            shadowColor: '#000',
-            shadowOpacity: 0.06,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-          }}
-        >
-          <Text className="font-quicksand-bold mb-3 text-slate-900">Créer un livreur</Text>
-          <TextInput
-            className="border border-slate-300 rounded-lg px-3 py-2 mb-2"
-            placeholder="Nom (requis)"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            className="border border-slate-300 rounded-lg px-3 py-2 mb-2"
-            placeholder="Téléphone (requis) — ex: +2613XXXXXXXX ou 020XXXXXXX"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            textContentType="telephoneNumber"
-            autoComplete="tel"
-          />
-          <TextInput
-            className="border border-slate-300 rounded-lg px-3 py-2 mb-2"
-            placeholder="Email (optionnel)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            textContentType="username"
-            autoComplete="email"
-          />
-          <TextInput
-            className="border border-slate-300 rounded-lg px-3 py-2 mb-3"
-            placeholder="Mot de passe (requis, ≥ 6)"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            textContentType="newPassword"
-            autoComplete="new-password"
-          />
-          <TouchableOpacity className={`rounded-lg bg-emerald-600 ${loading || !canCreate ? 'opacity-50' : ''}`} onPress={createLivreur} disabled={loading || !canCreate}>
-            <Text className="text-white text-center py-3">{loading ? 'Création…' : 'Créer'}</Text>
-          </TouchableOpacity>
-          {created && (
-            <Text className="text-emerald-700 mt-3">Créé: {created.name} ({created.phone})</Text>
-          )}
-        </View>
-
-        {/* Tabs + Search */}
-        <View className="mt-6">
-          <View className="flex-row bg-white border border-slate-200 rounded-2xl p-2 items-center">
-            <View className="flex-row gap-2 flex-1">
-              <TouchableOpacity onPress={() => { setRoleTab('client'); setPage(1); }} className={`px-3 py-2 rounded-lg ${roleTab === 'client' ? 'bg-emerald-600' : 'bg-slate-100'}`}>
-                <Text className={`${roleTab === 'client' ? 'text-white' : 'text-slate-700'}`}>Clients</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setRoleTab('livreur'); setPage(1); }} className={`px-3 py-2 rounded-lg ${roleTab === 'livreur' ? 'bg-emerald-600' : 'bg-slate-100'}`}>
-                <Text className={`${roleTab === 'livreur' ? 'text-white' : 'text-slate-700'}`}>Livreurs</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="w-[1px] h-6 bg-slate-200 mx-2" />
-            <View className="flex-1">
-              <TextInput value={q} onChangeText={setQ} placeholder="Recherche (nom, email, téléphone)" className="border border-slate-300 rounded-lg px-3 py-2" />
-            </View>
+    <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top']}>
+      {/* Header avec gradient */}
+      <LinearGradient
+        colors={['#059669', '#047857', '#065F46']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="pt-6 pb-6 px-6"
+      >
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-white text-3xl font-clash-bold mb-1">Utilisateurs</Text>
+            <Text className="text-emerald-100 text-sm font-quicksand">
+              Gestion des clients et livreurs
+            </Text>
+          </View>
+          <View className="bg-white/20 rounded-full p-3">
+            <Users size={24} color="#fff" />
           </View>
         </View>
+      </LinearGradient>
 
-        {/* List */}
-        <View className="mt-3 bg-white border border-slate-200 rounded-2xl">
-          {loadingList ? (
-            <View className="p-6 items-center justify-center"><ActivityIndicator size="small" color="#059669" /></View>
-          ) : (
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <View className="px-6 pt-6">
+          {/* Créer un livreur */}
+          <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+            <View className="flex-row items-center gap-2 mb-4">
+              <View className="bg-emerald-100 rounded-lg p-2">
+                <UserPlus size={20} color="#059669" strokeWidth={2.5} />
+              </View>
+              <Text className="text-gray-900 font-quicksand-bold text-lg">Créer un livreur</Text>
+            </View>
             <View>
-              {items.length === 0 ? (
-                <Text className="p-4 text-slate-500">Aucun utilisateur trouvé.</Text>
-              ) : (
-                <View>
-                  {items.map((u) => (
-                    <View key={u.id} className="px-4 py-3 border-b border-slate-100">
-                      <Text className="text-slate-900 font-quicksand-bold">{u.name ?? '(Sans nom)'} <Text className="text-xs text-slate-500">#{u.id}</Text></Text>
-                      <Text className="text-slate-700">{u.phone}{u.email ? ` · ${u.email}` : ''}</Text>
-                      <View className="mt-1 self-start px-2 py-0.5 rounded-full bg-slate-100">
-                        <Text className="text-xs text-slate-700">{u.role}</Text>
-                      </View>
-                    </View>
-                  ))}
+              <TextInput
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 font-quicksand mb-3"
+                placeholder="Nom (requis)"
+                value={name}
+                onChangeText={setName}
+              />
+              <TextInput
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 font-quicksand mb-3"
+                placeholder="Téléphone (requis) — ex: +2613XXXXXXXX ou 020XXXXXXX"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                textContentType="telephoneNumber"
+                autoComplete="tel"
+              />
+              <TextInput
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 font-quicksand mb-3"
+                placeholder="Email (optionnel)"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                textContentType="username"
+                autoComplete="email"
+              />
+              <TextInput
+                className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 font-quicksand mb-3"
+                placeholder="Mot de passe (requis, ≥ 6)"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                textContentType="newPassword"
+                autoComplete="new-password"
+              />
+              <TouchableOpacity
+                className={`rounded-xl overflow-hidden ${loading || !canCreate ? 'opacity-50' : ''}`}
+                onPress={createLivreur}
+                disabled={loading || !canCreate}
+                activeOpacity={0.7}
+              >
+                <LinearGradient colors={['#059669', '#047857']} className="py-4">
+                  <Text className="text-white text-center font-quicksand-bold">
+                    {loading ? 'Création…' : 'Créer le livreur'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              {created && (
+                <View className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                  <Text className="text-emerald-700 font-quicksand-semibold text-sm">
+                    ✓ Créé: {created.name} ({created.phone})
+                  </Text>
                 </View>
               )}
-              {/* Pagination */}
-              <View className="flex-row items-center justify-between p-3">
-                <Text className="text-slate-500">Page {page} / {pages} · {total} utilisateurs</Text>
-                <View className="flex-row gap-2">
-                  <TouchableOpacity disabled={page <= 1} onPress={() => setPage((p) => Math.max(1, p - 1))} className={`px-3 py-2 rounded-lg ${page <= 1 ? 'bg-slate-100' : 'bg-slate-200'}`}>
-                    <Text className="text-slate-700">Précédent</Text>
+            </View>
+          </View>
+
+          {/* Tabs + Search */}
+          <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 mb-4">
+            <View className="flex-row gap-2 mb-3">
+              {(['client', 'livreur'] as const).map((tab) => {
+                const isActive = roleTab === tab;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    onPress={() => {
+                      setRoleTab(tab);
+                      setPage(1);
+                    }}
+                    className="flex-1 rounded-xl overflow-hidden"
+                    activeOpacity={0.7}
+                  >
+                    {isActive ? (
+                      <LinearGradient colors={['#059669', '#047857']} className="py-3 items-center">
+                        <Text className="text-white font-quicksand-semibold capitalize">{tab}s</Text>
+                      </LinearGradient>
+                    ) : (
+                      <View className="py-3 items-center bg-gray-50">
+                        <Text className="text-gray-600 font-quicksand-semibold capitalize">{tab}s</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
-                  <TouchableOpacity disabled={page >= pages} onPress={() => setPage((p) => Math.min(pages, p + 1))} className={`px-3 py-2 rounded-lg ${page >= pages ? 'bg-slate-100' : 'bg-slate-200'}`}>
-                    <Text className="text-slate-700">Suivant</Text>
-                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View className="relative">
+              <View className="absolute left-3 top-0 bottom-0 justify-center z-10">
+                <Search size={18} color="#94A3B8" />
+              </View>
+              <TextInput
+                value={q}
+                onChangeText={setQ}
+                placeholder="Recherche (nom, email, téléphone)"
+                className="border border-gray-200 rounded-xl px-12 py-3 bg-gray-50 font-quicksand"
+              />
+            </View>
+          </View>
+
+          {/* Liste */}
+          <View className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {loadingList ? (
+              <View className="p-8 items-center justify-center">
+                <ActivityIndicator size="large" color="#059669" />
+              </View>
+            ) : (
+              <View>
+                {items.length === 0 ? (
+                  <View className="p-8 items-center">
+                    <Users size={48} color="#94A3B8" />
+                    <Text className="p-4 text-gray-500 font-quicksand-medium">Aucun utilisateur trouvé.</Text>
+                  </View>
+                ) : (
+                  <View>
+                    {items.map((u, idx) => (
+                      <View
+                        key={u.id}
+                        className={`px-5 py-4 ${idx < items.length - 1 ? 'border-b border-gray-100' : ''}`}
+                      >
+                        <View className="flex-row items-start justify-between">
+                          <View className="flex-1">
+                            <View className="flex-row items-center gap-2 mb-2">
+                              <Text className="text-gray-900 font-quicksand-bold text-base">
+                                {u.name ?? '(Sans nom)'}
+                              </Text>
+                              <View className="bg-gray-100 rounded-full px-2 py-0.5">
+                                <Text className="text-xs text-gray-600 font-quicksand-semibold">#{u.id}</Text>
+                              </View>
+                            </View>
+                            <View>
+                              {u.phone && (
+                                <View className="flex-row items-center gap-2 mb-1">
+                                  <Phone size={14} color="#64748B" />
+                                  <Text className="text-gray-700 font-quicksand text-sm">{u.phone}</Text>
+                                </View>
+                              )}
+                              {u.email && (
+                                <View className="flex-row items-center gap-2">
+                                  <Mail size={14} color="#64748B" />
+                                  <Text className="text-gray-700 font-quicksand text-sm">{u.email}</Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                          <View className={`px-3 py-1.5 rounded-full ${
+                            u.role === 'admin' ? 'bg-purple-100' :
+                            u.role === 'livreur' ? 'bg-blue-100' : 'bg-emerald-100'
+                          }`}>
+                            <View className="flex-row items-center gap-1">
+                              <Shield size={12} color={
+                                u.role === 'admin' ? '#8B5CF6' :
+                                u.role === 'livreur' ? '#3B82F6' : '#059669'
+                              } />
+                              <Text className={`text-xs font-quicksand-bold capitalize ${
+                                u.role === 'admin' ? 'text-purple-700' :
+                                u.role === 'livreur' ? 'text-blue-700' : 'text-emerald-700'
+                              }`}>
+                                {u.role}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                {/* Pagination */}
+                <View className="flex-row items-center justify-between p-4 border-t border-gray-100">
+                  <Text className="text-gray-600 font-quicksand text-sm">
+                    Page {page} / {pages} · {total} utilisateurs
+                  </Text>
+                  <View className="flex-row gap-2">
+                    <TouchableOpacity
+                      disabled={page <= 1}
+                      onPress={() => setPage((p) => Math.max(1, p - 1))}
+                      className={`rounded-xl overflow-hidden ${page <= 1 ? 'opacity-50' : ''}`}
+                      activeOpacity={0.7}
+                    >
+                      {page > 1 ? (
+                        <LinearGradient colors={['#059669', '#047857']} className="px-4 py-2">
+                          <View className="flex-row items-center gap-1">
+                            <ChevronLeft size={16} color="#fff" />
+                            <Text className="text-white font-quicksand-semibold text-sm">Précédent</Text>
+                          </View>
+                        </LinearGradient>
+                      ) : (
+                        <View className="px-4 py-2 bg-gray-100">
+                          <View className="flex-row items-center gap-1">
+                            <ChevronLeft size={16} color="#94A3B8" />
+                            <Text className="text-gray-400 font-quicksand-semibold text-sm">Précédent</Text>
+                          </View>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      disabled={page >= pages}
+                      onPress={() => setPage((p) => Math.min(pages, p + 1))}
+                      className={`rounded-xl overflow-hidden ${page >= pages ? 'opacity-50' : ''}`}
+                      activeOpacity={0.7}
+                    >
+                      {page < pages ? (
+                        <LinearGradient colors={['#059669', '#047857']} className="px-4 py-2">
+                          <View className="flex-row items-center gap-1">
+                            <Text className="text-white font-quicksand-semibold text-sm">Suivant</Text>
+                            <ChevronRight size={16} color="#fff" />
+                          </View>
+                        </LinearGradient>
+                      ) : (
+                        <View className="px-4 py-2 bg-gray-100">
+                          <View className="flex-row items-center gap-1">
+                            <Text className="text-gray-400 font-quicksand-semibold text-sm">Suivant</Text>
+                            <ChevronRight size={16} color="#94A3B8" />
+                          </View>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

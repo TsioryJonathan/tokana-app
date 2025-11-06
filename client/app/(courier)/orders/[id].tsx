@@ -228,15 +228,26 @@ export default function CourierOrderDetail() {
     order.status === "IN_TRANSIT" || order.status === "PICKED_UP";
   const canToExpedie = order.status === "IN_TRANSIT"; // côté API: nécessite OTP vérifié
 
+  const handleBack = () => {
+    router.replace('/(courier)' as any);
+  };
+
   return (
     <View className="flex-1 bg-slate-50">
-      <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#0F172A" />
+      <View className="px-4 py-4 flex-row items-center bg-white border-b border-slate-200">
+        <TouchableOpacity 
+          onPress={handleBack} 
+          activeOpacity={0.7}
+          className="flex-row items-center gap-2 bg-gray-100 rounded-full px-4 py-2"
+        >
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
         </TouchableOpacity>
-        <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">
-          Course #{order.code}
-        </Text>
+        <View className="flex-1 ml-3">
+          <Text className="text-lg font-quicksand-bold text-slate-900">
+            Course #{order.code}
+          </Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>

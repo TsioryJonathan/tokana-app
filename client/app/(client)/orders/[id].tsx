@@ -155,8 +155,13 @@ export default function OrderDetails() {
           {error || "Aucune commande trouvée pour cet identifiant."}
         </Text>
         <View className="mt-6 flex-row gap-6">
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
-            <Text className="text-emerald-700 font-quicksand-semibold">
+          <TouchableOpacity 
+            onPress={handleBack} 
+            activeOpacity={0.8}
+            className="bg-gray-100 rounded-full px-6 py-3 flex-row items-center gap-2"
+          >
+            <Ionicons name="arrow-back" size={18} color="#0F172A" />
+            <Text className="text-slate-900 font-quicksand-semibold">
               Retour
             </Text>
           </TouchableOpacity>
@@ -206,21 +211,33 @@ export default function OrderDetails() {
     );
   }
 
+  const handleBack = () => {
+    // Rediriger vers la liste des commandes pour garantir la navigation
+    router.replace('/(client)/orders' as any);
+  };
+
   return (
     <View className="flex-1 bg-slate-50">
       {/* Header */}
-      <View className="px-4 py-3 flex-row items-center bg-white border-b border-slate-200">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#0F172A" />
+      <View className="px-4 py-4 flex-row items-center bg-white border-b border-slate-200">
+        <TouchableOpacity 
+          onPress={handleBack} 
+          activeOpacity={0.7}
+          className="flex-row items-center gap-2 bg-gray-100 rounded-full px-4 py-2"
+        >
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
         </TouchableOpacity>
-        <Text className="ml-4 text-lg font-quicksand-bold text-slate-900 flex-1">
-          Commande {order.code}
-        </Text>
-        {lastUpdatedISO && (
-          <Text className="text-[11px] text-slate-400">
-            {new Date(lastUpdatedISO).toLocaleTimeString()}
+        <View className="flex-1 ml-3">
+          <Text className="text-lg font-quicksand-bold text-slate-900">
+            Commande {order.code}
           </Text>
-        )}
+          {lastUpdatedISO && (
+            <Text className="text-[11px] text-slate-400 mt-0.5">
+              Mis à jour: {new Date(lastUpdatedISO).toLocaleTimeString()}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Contenu */}

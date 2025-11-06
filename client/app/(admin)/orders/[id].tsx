@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { mapBackendStatus, statusLabel } from '@/lib/mappers/order';
 import { PricingQuoteRequest } from '@/lib/api/models/PricingQuoteRequest';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -204,16 +205,28 @@ export default function AdminOrderDetail() {
     );
   }
 
+  const handleBack = () => {
+    router.replace('/(admin)/orders' as any);
+  };
+
   return (
     <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
-      <View className="px-4 pt-4 pb-2 border-b border-slate-200 bg-white">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-xl font-quicksand-bold text-slate-900">Commande #{order.id}</Text>
-          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Revenir à la liste des commandes">
-            <Text className="text-emerald-700">Retour</Text>
+      <View className="px-4 pt-4 pb-4 border-b border-slate-200 bg-white">
+        <View className="flex-row items-center justify-between mb-2">
+          <View className="flex-1">
+            <Text className="text-xl font-quicksand-bold text-slate-900">Commande #{order.id}</Text>
+            <Text className="text-slate-500 mt-1 text-sm">{order.type?.toUpperCase()} · Statut: {statusLabel[mapBackendStatus(String(order.status))]}</Text>
+          </View>
+          <TouchableOpacity 
+            onPress={handleBack} 
+            accessibilityLabel="Revenir à la liste des commandes"
+            activeOpacity={0.7}
+            className="flex-row items-center gap-2 bg-gray-100 rounded-full px-4 py-2 ml-3"
+          >
+            <Ionicons name="arrow-back" size={18} color="#0F172A" />
+            <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
           </TouchableOpacity>
         </View>
-        <Text className="text-slate-500 mt-1">{order.type?.toUpperCase()} · Statut: {statusLabel[mapBackendStatus(String(order.status))]}</Text>
       </View>
 
       <View className="m-4 bg-white border border-slate-200 rounded-2xl p-4">
