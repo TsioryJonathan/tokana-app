@@ -1,7 +1,6 @@
 import Joi from "joi";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { sendSms } from "../services/smsService.js";
 import { sendEmail } from "../services/emailService.js";
 import crypto from "crypto";
 import {
@@ -94,33 +93,28 @@ export const register = async (req, res, next) => {
     });
 
     // Auto-send account OTP after successful registration
-    // Prefer SMS if phone present, else email
+    // Only email OTP (no SMS for now)
     let otpInfo = null;
     try {
-      const ttlMin = parseInt(process.env.OTP_TTL_MINUTES || "5", 10);
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const secret = process.env.OTP_SECRET || "";
-      const hash = crypto.createHmac("sha256", secret).update(code).digest("hex");
+      if (email) {
+        const ttlMin = parseInt(process.env.OTP_TTL_MINUTES || "5", 10);
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const secret = process.env.OTP_SECRET || "";
+        const hash = crypto.createHmac("sha256", secret).update(code).digest("hex");
 
-      user.accountOtpHash = hash;
-      user.accountOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
-      // Reset OTP failure/lock on fresh code
-      user.accountOtpFailedAttempts = 0;
-      user.accountOtpLockedUntil = null;
+        user.accountOtpHash = hash;
+        user.accountOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+        // Reset OTP failure/lock on fresh code
+        user.accountOtpFailedAttempts = 0;
+        user.accountOtpLockedUntil = null;
 
-      const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
-      if (phone) {
-        await sendSms(phone, msg);
-        user.accountOtpChannel = "sms";
-        const maskPhone = (p) => p ? p.replace(/(\+?\d{2,3})(\d+)(\d{2})$/, (_, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`) : null;
-        otpInfo = { channel: 'sms', to: maskPhone(phone), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
-      } else if (email) {
+        const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
         await sendEmail(email, "Votre code Tokana", msg);
         user.accountOtpChannel = "email";
         const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
         otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
+        await user.save();
       }
-      await user.save();
     } catch (e) {
       console.warn('[register][auto-otp] send failed:', e?.message || e);
     }
@@ -267,9 +261,9 @@ export const logoutAll = async (req, res, next) => {
   }
 };
 
-// --- Account OTP (phone/email verification) ---
+// --- Account OTP (email verification only) ---
 const accountRequestOtpSchema = Joi.object({
-  channel: Joi.string().valid("sms", "email").required(),
+  channel: Joi.string().valid("email").required(),
 });
 
 const accountVerifyOtpSchema = Joi.object({
@@ -317,7 +311,6 @@ export const requestAccountOtp = async (req, res, next) => {
         .json({ msg: "Trop de demandes, réessayez plus tard", retryAfter });
     }
 
-    const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
     const ttlMin = parseInt(process.env.OTP_TTL_MINUTES || "5", 10);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const secret = process.env.OTP_SECRET || "";
@@ -325,37 +318,22 @@ export const requestAccountOtp = async (req, res, next) => {
 
     user.accountOtpHash = hash;
     user.accountOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
-    user.accountOtpChannel = value.channel;
+    user.accountOtpChannel = "email";
 
     const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
-    let dest = null;
-    if (value.channel === "sms") {
-      if (!user.phone)
-        return res.status(400).json({ msg: "Téléphone manquant" });
-      if (!mgPhone.test(user.phone))
-        return res.status(400).json({ msg: "Téléphone invalide (ex: +261381234567 ou 0381234567)" });
-      await sendSms(user.phone, msg);
-      dest = user.phone;
-    } else {
-      if (!user.email)
-        return res.status(400).json({ msg: "Email manquant" });
-      await sendEmail(user.email, "Votre code Tokana", msg);
-      dest = user.email;
-    }
+    if (!user.email)
+      return res.status(400).json({ msg: "Email manquant" });
+    await sendEmail(user.email, "Votre code Tokana", msg);
 
     user.accountOtpLastRequestedAt = new Date(now);
     user.accountOtpRequestCount = count + 1;
     await user.save();
 
-    const maskPhone = (p) =>
-      p
-        ? p.replace(/(\+?\d{2,3})(\d+)(\d{2})$/, (_, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`)
-        : null;
     const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
     return res.json({
       msg: "OTP envoyé",
-      to: value.channel === "sms" ? maskPhone(dest) : maskEmail(dest),
-      channel: value.channel,
+      to: maskEmail(user.email),
+      channel: "email",
     });
   } catch (err) {
     next(err);
@@ -411,13 +389,8 @@ export const verifyAccountOtp = async (req, res, next) => {
       return res.status(400).json({ msg: "OTP invalide" });
     }
 
-    // Mark verified according to channel used
-    const ch = user.accountOtpChannel;
-    if (ch === "sms") {
-      user.phoneVerifiedAt = new Date();
-    } else if (ch === "email") {
-      user.emailVerifiedAt = new Date();
-    }
+    // Mark email as verified (only email OTP is supported)
+    user.emailVerifiedAt = new Date();
     // Success: reset counters and invalidate OTP
     user.accountOtpFailedAttempts = 0;
     user.accountOtpLockedUntil = null;
@@ -428,7 +401,6 @@ export const verifyAccountOtp = async (req, res, next) => {
 
     return res.json({
       msg: "OTP vérifié",
-      phoneVerifiedAt: user.phoneVerifiedAt,
       emailVerifiedAt: user.emailVerifiedAt,
     });
   } catch (err) {

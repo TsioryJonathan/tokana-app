@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, ImageSourcePropType, Platform, KeyboardAvoidingView, ScrollView, TextInput } from "react-native";
-import { Lock, MessageCircle, Mail } from "lucide-react-native";
+import { Lock, Mail } from "lucide-react-native";
 import { assets } from "@/assets/images/assets";
 import CustomInput from "@/components/ui/CustomInput";
 
@@ -10,16 +10,12 @@ type VerifyPageProps = {
   canSubmit: boolean;
   loadingVerify: boolean;
   onPressVerify: () => void;
-  loadingSms: boolean;
-  onPressSendSms: () => void;
   loadingEmail: boolean;
   onPressSendEmail: () => void;
-  smsCooldown?: number;
   emailCooldown?: number;
-  lastChannel?: 'sms' | 'email' | null;
+  lastChannel?: 'email' | null;
   maskedTo?: string | null;
   expiresInSec?: number; // remaining seconds until OTP expiration
-  canSendSms?: boolean; // whether user has a phone to send SMS
   canSendEmail?: boolean; // whether user has an email to send email OTP
   codeInputRef?: React.RefObject<TextInput | null>;
   scrollToTopSignal?: number; // increment to trigger scroll-to-top
@@ -32,16 +28,12 @@ export default function VerifyPage({
   canSubmit,
   loadingVerify,
   onPressVerify,
-  loadingSms,
-  onPressSendSms,
   loadingEmail,
   onPressSendEmail,
-  smsCooldown = 0,
   emailCooldown = 0,
   lastChannel = null,
   maskedTo = null,
   expiresInSec = 0,
-  canSendSms = true,
   canSendEmail = true,
   codeInputRef,
   scrollToTopSignal,
@@ -74,11 +66,11 @@ export default function VerifyPage({
         <View className="items-center mb-6 -mt-6">
           <Text className="text-4xl font-clash text-gray-900">Vérifier mon compte</Text>
           <Text className="text-sm text-gray-500 mt-1 text-center">
-            Entrez le code à 6 chiffres reçu par SMS ou Email.
+            Entrez le code à 6 chiffres reçu par email.
           </Text>
           {maskedTo && (
             <Text className="text-xs text-gray-500 mt-1 text-center">
-              Dernier envoi via {lastChannel?.toUpperCase()} à {maskedTo}
+              Dernier envoi à {maskedTo}
             </Text>
           )}
           {expiresInSec > 0 && (
@@ -89,28 +81,11 @@ export default function VerifyPage({
         </View>
 
         {/* Actions envoyer OTP */}
-        <View className="flex-row gap-3 mb-6">
-          <TouchableOpacity
-            disabled={loadingSms || smsCooldown > 0 || !canSendSms}
-            onPress={onPressSendSms}
-            className={`flex-1 border border-gray-300 rounded-lg py-3 items-center bg-white ${loadingSms ? "opacity-60" : ""}`}
-            accessibilityRole="button"
-          >
-            {loadingSms ? (
-              <ActivityIndicator />
-            ) : (
-              <View className="flex-row items-center gap-2">
-                <MessageCircle color="#111827" size={18} />
-                <Text className="font-quicksand-medium text-gray-700 text-sm text-center" numberOfLines={1}>
-                  {!canSendSms ? 'SMS indisponible' : (smsCooldown > 0 ? `SMS dans ${smsCooldown}s` : 'Envoyer SMS')}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+        <View className="mb-6">
           <TouchableOpacity
             disabled={loadingEmail || emailCooldown > 0 || !canSendEmail}
             onPress={onPressSendEmail}
-            className={`flex-1 border border-gray-300 rounded-lg py-3 items-center bg-white ${loadingEmail ? "opacity-60" : ""}`}
+            className={`w-full border border-gray-300 rounded-lg py-3 items-center bg-white ${loadingEmail ? "opacity-60" : ""}`}
             accessibilityRole="button"
           >
             {loadingEmail ? (
@@ -119,7 +94,7 @@ export default function VerifyPage({
               <View className="flex-row items-center gap-2">
                 <Mail color="#111827" size={18} />
                 <Text className="font-quicksand-medium text-gray-700 text-sm text-center" numberOfLines={1}>
-                  {!canSendEmail ? 'Email indisponible' : (emailCooldown > 0 ? `Email dans ${emailCooldown}s` : 'Envoyer Email')}
+                  {!canSendEmail ? 'Email indisponible' : (emailCooldown > 0 ? `Renvoyer dans ${emailCooldown}s` : 'Envoyer le code par email')}
                 </Text>
               </View>
             )}

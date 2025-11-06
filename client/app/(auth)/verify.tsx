@@ -21,16 +21,13 @@ export default function Verify() {
 
   const [code, setCode] = useState("");
   const [loadingVerify, setLoadingVerify] = useState(false);
-  const [loadingSms, setLoadingSms] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
-  const [smsCooldown, setSmsCooldown] = useState(0);
   const [emailCooldown, setEmailCooldown] = useState(0);
-  const [lastChannel, setLastChannel] = useState<"sms" | "email" | null>(null);
+  const [lastChannel, setLastChannel] = useState<"email" | null>(null);
   const [maskedTo, setMaskedTo] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [expiresInSec, setExpiresInSec] = useState(0);
   const [expiredNotified, setExpiredNotified] = useState(false);
-  const [canSendSms, setCanSendSms] = useState<boolean>(true);
   const [canSendEmail, setCanSendEmail] = useState<boolean>(true);
   const codeInputRef = useRef<TextInput>(null);
   const [scrollToTopSignal, setScrollToTopSignal] = useState(0);
@@ -40,11 +37,6 @@ export default function Verify() {
     [code, loadingVerify, expiresInSec]
   );
 
-  const maskPhone = (p: string) =>
-    p.replace(
-      /(\+?\d{2,3})(\d+)(\d{2})$/,
-      (_m, a, mid, b) => `${a}${"*".repeat(Math.max(0, mid.length))}${b}`
-    );
   const maskEmail = (e: string) =>
     e.replace(/(^.).*(@.*$)/, (_m, a, b) => `${a}***${b}`);
 
@@ -54,29 +46,20 @@ export default function Verify() {
       try {
         const me = await api.me.getApiMe();
         if (!active) return;
-        // Channel availability
-        const hasPhone = !!me?.phone;
+        // Channel availability (only email now)
         const hasEmail = !!me?.email;
-        setCanSendSms(!!hasPhone);
         setCanSendEmail(!!hasEmail);
 
         // Initialize last channel and masked destination if server has info
         const serverChannel = (me as any)?.accountOtpChannel as
-          | "sms"
           | "email"
           | undefined;
-        if (serverChannel === "sms" && hasPhone) {
-          setLastChannel("sms");
-          setMaskedTo(maskPhone(String(me.phone)));
-        } else if (serverChannel === "email" && hasEmail) {
+        if (serverChannel === "email" && hasEmail) {
           setLastChannel("email");
           setMaskedTo(maskEmail(String(me.email)));
-        } else if (hasPhone) {
-          setMaskedTo(maskPhone(String(me.phone)));
         } else if (hasEmail) {
           setMaskedTo(maskEmail(String(me.email)));
         } else {
-          setCanSendSms(false);
           setCanSendEmail(false);
         }
 
@@ -125,20 +108,19 @@ export default function Verify() {
   }, [expiresInSec, expiresAt, expiredNotified, showToast]);
 
   useEffect(() => {
-    if (smsCooldown <= 0 && emailCooldown <= 0) return;
+    if (emailCooldown <= 0) return;
     const id = setInterval(() => {
-      setSmsCooldown((v) => (v > 0 ? v - 1 : 0));
       setEmailCooldown((v) => (v > 0 ? v - 1 : 0));
     }, 1000);
     return () => clearInterval(id);
-  }, [smsCooldown, emailCooldown]);
+  }, [emailCooldown]);
 
-  const requestOtp = async (channel: "sms" | "email") => {
+  const requestOtp = async () => {
     try {
-      // channel === "sms" ? setLoadingSms(true) : setLoadingEmail(true);
-      const res = await api.auth.postApiAuthRequestOtp({ channel } as any);
+      setLoadingEmail(true);
+      const res = await api.auth.postApiAuthRequestOtp({ channel: "email" } as any);
       const dest = (res as any)?.to || "";
-      setLastChannel(channel);
+      setLastChannel("email");
       setMaskedTo(dest || maskedTo);
       const exp = (res as any)?.expiresAt as string | undefined;
       if (exp) {
@@ -149,7 +131,7 @@ export default function Verify() {
       setScrollToTopSignal((v) => v + 1);
       requestAnimationFrame(() => codeInputRef.current?.focus());
       showToast(
-        `OTP envoyé via ${channel.toUpperCase()} ${dest ? `à ${dest}` : ""}`.trim(),
+        `OTP envoyé par email ${dest ? `à ${dest}` : ""}`.trim(),
         "success"
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -159,15 +141,13 @@ export default function Verify() {
       const msg: string = err?.body?.msg || err?.message || "Échec d'envoi OTP";
       const retry = Number(err?.body?.retryAfter || 0);
       if (err?.status === 429 && retry > 0) {
-        if (channel === "sms") setSmsCooldown(retry);
-        else setEmailCooldown(retry);
+        setEmailCooldown(retry);
       }
       showToast(msg, "error");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
         () => {}
       );
     } finally {
-      setLoadingSms(false);
       setLoadingEmail(false);
     }
   };
@@ -215,16 +195,12 @@ export default function Verify() {
         canSubmit={canSubmit}
         loadingVerify={loadingVerify}
         onPressVerify={onVerify}
-        loadingSms={loadingSms}
-        onPressSendSms={() => requestOtp("sms")}
         loadingEmail={loadingEmail}
-        onPressSendEmail={() => requestOtp("email")}
-        smsCooldown={smsCooldown}
+        onPressSendEmail={requestOtp}
         emailCooldown={emailCooldown}
         lastChannel={lastChannel}
         maskedTo={maskedTo}
         expiresInSec={expiresInSec}
-        canSendSms={canSendSms}
         canSendEmail={canSendEmail}
         codeInputRef={codeInputRef}
         scrollToTopSignal={scrollToTopSignal}
