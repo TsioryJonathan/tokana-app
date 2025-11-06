@@ -1,0 +1,82 @@
+{
+  "description": "Exemples de géométries GeoJSON pour les 3 zones d'Antananarivo",
+  "zones": {
+    "ville": {
+      "label": "TANA-VILLE",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [47.4800, -18.9500],
+            [47.5500, -18.9500],
+            [47.5500, -18.8500],
+            [47.4800, -18.8500],
+            [47.4800, -18.9500]
+          ]
+        ]
+      },
+      "description": "Zone centrale d'Antananarivo (centre-ville)"
+    },
+    "peripherie": {
+      "label": "PERIPHERIE",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [47.4500, -18.9800],
+            [47.5800, -18.9800],
+            [47.5800, -18.8200],
+            [47.4500, -18.8200],
+            [47.4500, -18.9800]
+          ]
+        ]
+      },
+      "description": "Zone périphérique autour du centre-ville",
+      "note": "Cette zone doit exclure la zone 'ville' - nécessite un MultiPolygon ou des polygones séparés"
+    },
+    "super-peripherie": {
+      "label": "SUPER-PERIPHERIE",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [47.4000, -19.0200],
+            [47.6500, -19.0200],
+            [47.6500, -18.7500],
+            [47.4000, -18.7500],
+            [47.4000, -19.0200]
+          ]
+        ]
+      },
+      "description": "Zone super-périphérique (grande banlieue)",
+      "note": "Cette zone doit exclure les zones 'ville' et 'peripherie'"
+    }
+  },
+  "instructions": {
+    "usage": "Pour utiliser ces géométries, envoyez une requête PUT à:",
+    "endpoints": [
+      "PUT /api/admin/zones/key/ville/geometry",
+      "PUT /api/admin/zones/key/peripherie/geometry",
+      "PUT /api/admin/zones/key/super-peripherie/geometry"
+    ],
+    "body_example": {
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[47.4800, -18.9500], [47.5500, -18.9500], [47.5500, -18.8500], [47.4800, -18.8500], [47.4800, -18.9500]]]
+      }
+    }
+  },
+  "warnings": [
+    "Ces coordonnées sont APPROXIMATIVES et doivent être remplacées par des données précises",
+    "Pour une délimitation précise, utilisez des données officielles ou des outils comme QGIS",
+    "Les zones doivent être mutuellement exclusives (une coordonnée ne peut être que dans une zone)",
+    "Pour des zones complexes, utilisez MultiPolygon au lieu de Polygon"
+  ],
+  "sources_recommandees": [
+    "OpenStreetMap (OSM) - https://www.openstreetmap.org",
+    "Données administratives officielles de Madagascar",
+    "QGIS pour créer/éditer les polygones",
+    "GeoJSON.io pour visualiser et éditer en ligne"
+  ]
+}
+

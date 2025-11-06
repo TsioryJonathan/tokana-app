@@ -380,7 +380,16 @@ export const requestDeliveryOtp = async (req, res, next) => {
     } else {
       if (!destEmail)
         return res.status(400).json({ msg: "Email destinataire manquant" });
-      await sendEmail(destEmail, "Votre code OTP Tokana", msg);
+      try {
+        await sendEmail(destEmail, "Votre code OTP Tokana", msg);
+        console.log(`[requestDeliveryOtp] OTP envoyé par email à ${destEmail}`);
+      } catch (emailError) {
+        console.error(`[requestDeliveryOtp] Échec envoi email à ${destEmail}:`, emailError.message);
+        return res.status(500).json({ 
+          msg: "Échec envoi email. Vérifiez la configuration SMTP du serveur.",
+          error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+        });
+      }
     }
 
     // Update rate-limit counters after successful send
