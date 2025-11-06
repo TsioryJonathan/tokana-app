@@ -153,6 +153,17 @@ export default function OrderRecapPage() {
     } catch (e: any) {
       // Surface server error message to the user for better diagnosis (Joi/business errors)
       const msg = e?.body?.msg || e?.message || "Création échouée";
+      console.log('[recap] Erreur création commande:', e?.status, msg, e?.body);
+      
+      // Si l'erreur est liée à la vérification (email ou téléphone), rediriger vers la page de vérification
+      if (e?.status === 403 && (msg.includes('non vérifié') || msg.includes('vérifié'))) {
+        showToast("Veuillez vérifier votre email avant de créer une commande", "error");
+        setTimeout(() => {
+          router.replace("/(auth)/verify" as any);
+        }, 1500);
+        return;
+      }
+      
       showToast(msg, "error");
     } finally {
       setSubmitting(false);

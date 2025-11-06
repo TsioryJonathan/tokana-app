@@ -32,13 +32,24 @@ const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } }); // 3M
 
 // POST /api/me/avatar - upload avatar
 router.post('/avatar', protect, upload.single('avatar'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ msg: 'Fichier manquant' });
+  console.log('[uploadAvatar] Requête reçue');
+  console.log('[uploadAvatar] req.file:', req.file);
+  console.log('[uploadAvatar] req.body:', req.body);
+  console.log('[uploadAvatar] Content-Type:', req.headers['content-type']);
+  
+  if (!req.file) {
+    console.error('[uploadAvatar] ❌ Aucun fichier reçu');
+    console.error('[uploadAvatar] req.files:', req.files);
+    return res.status(400).json({ msg: 'Fichier manquant' });
+  }
+  
   const publicPath = `/uploads/avatars/${req.file.filename}`;
   const proto = (req.headers['x-forwarded-proto'] || req.protocol);
   const host = req.get('host');
   const absolute = `${proto}://${host}${publicPath}`;
   try {
     await User.update({ avatarUrl: absolute }, { where: { id: req.user.id } });
+    console.log('[uploadAvatar] ✅ Avatar mis à jour pour user', req.user.id);
   } catch (e) {
     // Even if DB update fails, return the uploaded URL so client can display it
     console.warn('Failed to persist avatarUrl:', e?.message);
