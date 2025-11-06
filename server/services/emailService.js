@@ -6,13 +6,11 @@ let transporterInitialized = false;
 function getTransporter() {
   if (transporter) return transporter;
   
-  const host = process.env.SMTP_HOST?.trim();
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT.trim(), 10) : 587;
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
-  // Nettoyer SMTP_FROM des guillemets s'il y en a
-  const fromRaw = process.env.SMTP_FROM?.trim() || user || 'no-reply@tokana.local';
-  const from = fromRaw.replace(/^["']|["']$/g, ''); // Enlever les guillemets au début/fin
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.SMTP_FROM || user || 'no-reply@tokana.local';
   const secure = process.env.SMTP_SECURE === 'true' || port === 465;
   
   // Support for Gmail
@@ -39,10 +37,6 @@ function getTransporter() {
         tls: {
           rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false',
         },
-        connectionTimeout: 30000, // 30 secondes (augmenté pour Render/cloud)
-        greetingTimeout: 30000, // 30 secondes
-        socketTimeout: 30000, // 30 secondes
-        requireTLS: true, // Force STARTTLS
       };
 
       // Gmail-specific configuration
@@ -54,10 +48,6 @@ function getTransporter() {
             user,
             pass,
           },
-          connectionTimeout: 30000,
-          greetingTimeout: 30000,
-          socketTimeout: 30000,
-          requireTLS: true,
         });
         transporterInitialized = true;
         console.log(`[emailService] SMTP configuré: Gmail`);
@@ -98,54 +88,16 @@ function getTransporter() {
  */
 export async function verifyEmailConfig() {
   try {
-    // Afficher la configuration (sans le mot de passe)
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const hasPass = !!process.env.SMTP_PASS;
-    
-    console.log('[emailService] Vérification de la configuration SMTP...');
-    console.log(`[emailService] Host: ${host || 'NON DÉFINI'}`);
-    console.log(`[emailService] Port: ${port || 'NON DÉFINI'}`);
-    console.log(`[emailService] User: ${user || 'NON DÉFINI'}`);
-    console.log(`[emailService] Password: ${hasPass ? 'DÉFINI' : 'NON DÉFINI'}`);
-    
-    if (!host || !user || !hasPass) {
-      console.warn('[emailService] Variables SMTP manquantes. Mode DEV activé.');
-      return false;
-    }
-    
     const t = getTransporter();
     if (!transporterInitialized) {
       console.warn('[emailService] Configuration SMTP non initialisée (mode DEV)');
       return false;
     }
-    
-    console.log('[emailService] Tentative de connexion au serveur SMTP...');
     await t.verify();
-    console.log('[emailService] ✅ Configuration SMTP vérifiée avec succès');
+    console.log('[emailService] Configuration SMTP vérifiée avec succès');
     return true;
   } catch (error) {
-    console.error('[emailService] ❌ Erreur vérification SMTP:', error.message);
-    console.error('[emailService] Code erreur:', error.code);
-    console.error('[emailService] Stack:', error.stack);
-    
-    // Messages d'aide selon le type d'erreur
-    if (error.message.includes('timeout') || error.code === 'ETIMEDOUT') {
-      console.error('[emailService] 💡 Timeout détecté. Vérifiez:');
-      console.error('[emailService]   1. Votre connexion internet');
-      console.error('[emailService]   2. Que le port 587 n\'est pas bloqué par le pare-feu');
-      console.error('[emailService]   3. Essayez le port 465 avec SMTP_SECURE=true');
-      console.error('[emailService]   4. Pour Gmail, utilisez un mot de passe d\'application (pas votre mot de passe normal)');
-    } else if (error.message.includes('Invalid login') || error.code === 'EAUTH') {
-      console.error('[emailService] 💡 Erreur d\'authentification. Vérifiez:');
-      console.error('[emailService]   1. Que SMTP_USER et SMTP_PASS sont corrects');
-      console.error('[emailService]   2. Pour Gmail, utilisez un mot de passe d\'application');
-      console.error('[emailService]   3. Que la validation en deux étapes est activée sur Gmail');
-    } else if (error.message.includes('ENOTFOUND') || error.code === 'ENOTFOUND') {
-      console.error('[emailService] 💡 Serveur SMTP introuvable. Vérifiez SMTP_HOST');
-    }
-    
+    console.error('[emailService] Erreur vérification SMTP:', error.message);
     return false;
   }
 }
@@ -170,9 +122,7 @@ export async function sendEmail(to, subject, text, html = null) {
   }
 
   const t = getTransporter();
-  // Nettoyer SMTP_FROM des guillemets s'il y en a
-  const fromRaw = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || 'no-reply@tokana.local';
-  const from = fromRaw.replace(/^["']|["']$/g, ''); // Enlever les guillemets au début/fin
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@tokana.local';
   
   const mailOptions = {
     from: `"Tokana" <${from}>`,
