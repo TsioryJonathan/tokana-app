@@ -37,6 +37,7 @@ console.log(`[app] PORT: ${process.env.PORT || 'NON DÉFINI'}`);
 console.log(`[app] SMTP_HOST: ${process.env.SMTP_HOST || 'NON DÉFINI'}`);
 console.log(`[app] SMTP_USER: ${process.env.SMTP_USER || 'NON DÉFINI'}`);
 console.log(`[app] SMTP_PASS: ${process.env.SMTP_PASS ? 'DÉFINI (' + process.env.SMTP_PASS.length + ' caractères)' : 'NON DÉFINI'}`);
+console.log(`[app] SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'DÉFINI (' + process.env.SENDGRID_API_KEY.length + ' caractères)' : 'NON DÉFINI'}`);
 console.log(`[app] POSTGRES_URI: ${process.env.POSTGRES_URI ? 'DÉFINI' : 'NON DÉFINI'}`);
 
 const app = express();
@@ -68,10 +69,27 @@ if (!process.env.POSTGRES_URI) {
 }
 await connectDB();
 
-// Verify email configuration on startup
-verifyEmailConfig().catch((err) => {
-  console.warn('[app] Vérification SMTP échouée (mode DEV possible):', err.message);
-});
+// Verify email configuration on startup (non-blocking, avec retry)
+(async () => {
+  // Attendre un peu avant de vérifier pour laisser le temps au réseau
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  try {
+    const verified = await Promise.race([
+      verifyEmailConfig(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout après 15 secondes')), 15000)
+      )
+    ]);
+    
+    if (verified) {
+      console.log('[app] ✅ Configuration SMTP vérifiée avec succès');
+    }
+  } catch (err) {
+    console.warn('[app] ⚠️ Vérification SMTP échouée (le service fonctionnera quand même):', err.message);
+    console.warn('[app] Les emails seront envoyés lors de la première utilisation');
+  }
+})();
 
 // Security middlewares
 app.use(helmet());

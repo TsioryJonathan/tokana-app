@@ -9,7 +9,7 @@ import {
   getExpressAvailability,
 } from "../services/slotService.js";
 import { sendSms } from "../services/smsService.js";
-import { sendEmail } from "../services/emailService.js";
+import { sendEmail, generateOtpEmailHtml } from "../services/emailService.js";
 import User from "../models/User.js";
 import crypto from "crypto";
 import { inferZoneLevel } from "../utils/geo.js";
@@ -350,9 +350,25 @@ export const requestDeliveryOtp = async (req, res, next) => {
       .createHash("sha256")
       .update(code + secret)
       .digest("hex");
+    
+    // Calculer la date d'expiration AVANT de sauvegarder
+    const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    
     order.deliveryOtpHash = hash;
-    order.deliveryOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    order.deliveryOtpExpiresAt = expiresAt;
     order.deliveryOtpVerifiedAt = null;
+    order.deliveryOtpLastRequestedAt = new Date(now);
+    order.deliveryOtpRequestCount = count + 1;
+    
+    // Sauvegarder AVANT d'envoyer l'email pour s'assurer que la date est bien enregistrée
+    await order.save();
+    
+    // Log de debug
+    console.log(`[requestDeliveryOtp] OTP généré:`);
+    console.log(`  expiresAt: ${expiresAt.toISOString()}`);
+    console.log(`  expiresAt timestamp: ${expiresAt.getTime()}`);
+    console.log(`  now timestamp: ${Date.now()}`);
+    console.log(`  TTL: ${ttlMin} minutes`);
 
     // Destination
     const channel = value.channel;
@@ -369,6 +385,7 @@ export const requestDeliveryOtp = async (req, res, next) => {
     // Validate MG phone if SMS
     const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
     const msg = `Tokana OTP: ${code}. Valide ${ttlMin} min.`;
+    const html = generateOtpEmailHtml(code, ttlMin, 'delivery');
     if (channel === "sms") {
       if (!destPhone)
         return res.status(400).json({ msg: "Numéro destinataire manquant" });
@@ -381,7 +398,7 @@ export const requestDeliveryOtp = async (req, res, next) => {
       if (!destEmail)
         return res.status(400).json({ msg: "Email destinataire manquant" });
       try {
-        await sendEmail(destEmail, "Votre code OTP Tokana", msg);
+        await sendEmail(destEmail, "Votre code OTP Tokana", msg, html, { category: 'delivery-otp' });
         console.log(`[requestDeliveryOtp] OTP envoyé par email à ${destEmail}`);
       } catch (emailError) {
         console.error(`[requestDeliveryOtp] Échec envoi email à ${destEmail}:`, emailError.message);
@@ -391,11 +408,6 @@ export const requestDeliveryOtp = async (req, res, next) => {
         });
       }
     }
-
-    // Update rate-limit counters after successful send
-    order.deliveryOtpLastRequestedAt = new Date(now);
-    order.deliveryOtpRequestCount = count + 1;
-    await order.save();
 
     // Mask destination in response
     const maskPhone = (p) =>
@@ -444,9 +456,28 @@ export const verifyDeliveryOtp = async (req, res, next) => {
     if (!order.deliveryOtpHash || !order.deliveryOtpExpiresAt) {
       return res.status(400).json({ msg: "Aucun OTP actif" });
     }
-    if (new Date(order.deliveryOtpExpiresAt).getTime() < Date.now()) {
-      return res.status(400).json({ msg: "OTP expiré" });
+    
+    // Vérifier l'expiration - s'assurer que la date est correctement convertie
+    const expiresAt = order.deliveryOtpExpiresAt instanceof Date 
+      ? order.deliveryOtpExpiresAt 
+      : new Date(order.deliveryOtpExpiresAt);
+    const now = Date.now();
+    const expiresAtTime = expiresAt.getTime();
+    
+    // Log de debug
+    console.log(`[verifyDeliveryOtp] Vérification expiration:`);
+    console.log(`  expiresAt (raw): ${order.deliveryOtpExpiresAt}`);
+    console.log(`  expiresAt (parsed): ${expiresAt.toISOString()}`);
+    console.log(`  expiresAt (timestamp): ${expiresAtTime}`);
+    console.log(`  now (timestamp): ${now}`);
+    console.log(`  diff: ${now - expiresAtTime}ms (${(now - expiresAtTime) / 1000}s)`);
+    
+    if (expiresAtTime <= now) {
+      console.log(`[verifyDeliveryOtp] ❌ OTP expiré: expiresAt=${expiresAt.toISOString()}, now=${new Date(now).toISOString()}, diff=${(now - expiresAtTime) / 1000}s`);
+      return res.status(400).json({ msg: "Code expiré, renvoyez un code" });
     }
+    
+    console.log(`[verifyDeliveryOtp] ✅ OTP valide: expire dans ${(expiresAtTime - now) / 1000}s`);
 
     const secret = process.env.OTP_SECRET || "";
     const hash = crypto

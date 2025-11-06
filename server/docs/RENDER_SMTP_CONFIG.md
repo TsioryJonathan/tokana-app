@@ -36,30 +36,39 @@ SMTP_REJECT_UNAUTHORIZED = true
 Après avoir ajouté les variables, **redéployez** votre service :
 - Cliquez sur **"Manual Deploy"** → **"Deploy latest commit"**
 
-## 🔧 Alternative : Utiliser SendGrid (Recommandé pour Render)
+## 🔧 Alternative : Utiliser SendGrid API REST (RECOMMANDÉ pour Render)
 
-Gmail peut avoir des problèmes avec Render à cause des restrictions réseau. **SendGrid** fonctionne mieux :
+Gmail peut avoir des problèmes avec Render à cause des restrictions réseau. **SendGrid API REST** fonctionne beaucoup mieux car il utilise HTTP au lieu de SMTP :
 
-### Configuration SendGrid sur Render
+### Configuration SendGrid API sur Render
 
 1. Créez un compte sur https://sendgrid.com (gratuit jusqu'à 100 emails/jour)
 
 2. Créez une API Key :
    - Settings → API Keys → Create API Key
    - Donnez-lui les permissions "Mail Send"
-   - Copiez la clé API
+   - Copiez la clé API (commence par `SG.`)
 
-3. Dans Render, configurez :
+3. Installez le package SendGrid dans le dossier `server` :
+   ```bash
+   cd server
+   npm install @sendgrid/mail --save
+   ```
 
-```
-SMTP_HOST = smtp.sendgrid.net
-SMTP_PORT = 587
-SMTP_SECURE = false
-SMTP_USER = apikey
-SMTP_PASS = votre-api-key-sendgrid
-SMTP_FROM = noreply@tokana.mg
-SMTP_REJECT_UNAUTHORIZED = true
-```
+4. Dans Render Dashboard, configurez **UNIQUEMENT** :
+   ```
+   SENDGRID_API_KEY = SG.votre-cle-api-sendgrid
+   SENDGRID_FROM = noreply@tokana.mg
+   SENDGRID_FROM_NAME = Tokana
+   ```
+
+   **⚠️ IMPORTANT :**
+   - **Ne configurez PAS** les variables SMTP_HOST, SMTP_USER, SMTP_PASS si vous utilisez l'API SendGrid
+   - L'API SendGrid utilise HTTP REST, donc pas de problème de connexion SMTP bloquée
+
+### Configuration SendGrid via SMTP (Alternative, peut être bloquée)
+
+Si vous préférez utiliser SMTP SendGrid au lieu de l'API :
 
 ## 🚨 Résolution du problème "Connection timeout" sur Render
 
@@ -99,12 +108,19 @@ Le code a été configuré avec des timeouts de 30 secondes pour Render. Si le p
 
 ## ✅ Vérification
 
-Après configuration, redéployez et vérifiez les logs. Vous devriez voir :
+Après configuration, redéployez et vérifiez les logs. 
 
+**Si vous utilisez SendGrid API REST**, vous devriez voir :
+```
+[emailService] SendGrid API configurée (mode API REST)
+[emailService] ✅ SendGrid API configurée (pas de vérification nécessaire)
+```
+
+**Si vous utilisez SMTP**, vous devriez voir :
 ```
 [emailService] SMTP configuré: Gmail
 [emailService] ✅ Configuration SMTP vérifiée avec succès
 ```
 
-Si vous voyez toujours un timeout, **passez à SendGrid**.
+Si vous voyez toujours un timeout avec SMTP, **passez à SendGrid API REST**.
 

@@ -1,7 +1,7 @@
 import Joi from "joi";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { sendEmail } from "../services/emailService.js";
+import { sendEmail, generateOtpEmailHtml } from "../services/emailService.js";
 import crypto from "crypto";
 import {
   generateAccessToken,
@@ -97,31 +97,43 @@ export const register = async (req, res, next) => {
     let otpInfo = null;
     try {
       if (email) {
-        const ttlMin = parseInt(process.env.OTP_TTL_MINUTES || "5", 10);
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const secret = process.env.OTP_SECRET || "";
-        const hash = crypto.createHmac("sha256", secret).update(code).digest("hex");
+    const ttlMin = parseInt(process.env.OTP_TTL_MINUTES || "5", 10);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const secret = process.env.OTP_SECRET || "";
+    const hash = crypto.createHmac("sha256", secret).update(code).digest("hex");
 
-        user.accountOtpHash = hash;
-        user.accountOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
-        // Reset OTP failure/lock on fresh code
-        user.accountOtpFailedAttempts = 0;
-        user.accountOtpLockedUntil = null;
+    // Calculer la date d'expiration
+    const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    
+    user.accountOtpHash = hash;
+    user.accountOtpExpiresAt = expiresAt;
+    // Reset OTP failure/lock on fresh code
+    user.accountOtpFailedAttempts = 0;
+    user.accountOtpLockedUntil = null;
+    user.accountOtpChannel = "email";
+    
+    // Sauvegarder AVANT d'envoyer l'email
+    await user.save();
+    
+    // Log de debug
+    console.log(`[register][auto-otp] OTP généré:`);
+    console.log(`  expiresAt: ${expiresAt.toISOString()}`);
+    console.log(`  expiresAt timestamp: ${expiresAt.getTime()}`);
+    console.log(`  now timestamp: ${Date.now()}`);
+    console.log(`  TTL: ${ttlMin} minutes`);
 
-        const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
-        try {
-          await sendEmail(email, "Votre code Tokana", msg);
-          user.accountOtpChannel = "email";
-          const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
-          otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: user.accountOtpExpiresAt?.toISOString?.() };
-          await user.save();
-          console.log(`[register][auto-otp] OTP envoyé à ${email}`);
-        } catch (emailError) {
-          console.error(`[register][auto-otp] Échec envoi email à ${email}:`, emailError.message);
-          // Save user anyway but without OTP info
-          await user.save();
-          // Don't throw - registration succeeds even if OTP fails
-        }
+    const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
+    const html = generateOtpEmailHtml(code, ttlMin, 'account');
+    try {
+      await sendEmail(email, "Votre code Tokana", msg, html, { category: 'account-verification' });
+      const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
+      otpInfo = { channel: 'email', to: maskEmail(email), expiresAt: expiresAt.toISOString() };
+      console.log(`[register][auto-otp] ✅ OTP envoyé à ${email}`);
+    } catch (emailError) {
+      console.error(`[register][auto-otp] ❌ Échec envoi email à ${email}:`, emailError.message);
+      // L'utilisateur est déjà sauvegardé avec l'OTP, donc il pourra le vérifier même si l'email échoue
+      // Don't throw - registration succeeds even if OTP fails
+    }
       }
     } catch (e) {
       console.error('[register][auto-otp] Erreur génération OTP:', e?.message || e);
@@ -323,34 +335,47 @@ export const requestAccountOtp = async (req, res, next) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const secret = process.env.OTP_SECRET || "";
     const hash = crypto.createHmac("sha256", secret).update(code).digest("hex");
-
+    
+    // Calculer la date d'expiration AVANT de sauvegarder
+    const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    
     user.accountOtpHash = hash;
-    user.accountOtpExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    user.accountOtpExpiresAt = expiresAt;
     user.accountOtpChannel = "email";
+    user.accountOtpLastRequestedAt = new Date(now);
+    user.accountOtpRequestCount = count + 1;
+    
+    // Sauvegarder AVANT d'envoyer l'email pour s'assurer que la date est bien enregistrée
+    await user.save();
+    
+    // Log de debug
+    console.log(`[requestAccountOtp] OTP généré:`);
+    console.log(`  expiresAt: ${expiresAt.toISOString()}`);
+    console.log(`  expiresAt timestamp: ${expiresAt.getTime()}`);
+    console.log(`  now timestamp: ${Date.now()}`);
+    console.log(`  TTL: ${ttlMin} minutes`);
 
     const msg = `Tokana code: ${code}. Valide ${ttlMin} min.`;
+    const html = generateOtpEmailHtml(code, ttlMin, 'account');
     if (!user.email)
       return res.status(400).json({ msg: "Email manquant" });    
     try {
-      await sendEmail(user.email, "Votre code Tokana", msg);
-      console.log(`[requestAccountOtp] OTP envoyé à ${user.email}`);
+      await sendEmail(user.email, "Votre code Tokana", msg, html, { category: 'account-verification' });
+      console.log(`[requestAccountOtp] ✅ OTP envoyé à ${user.email}`);
     } catch (emailError) {
-      console.error(`[requestAccountOtp] Échec envoi email à ${user.email}:`, emailError.message);
+      console.error(`[requestAccountOtp] ❌ Échec envoi email à ${user.email}:`, emailError.message);
       return res.status(500).json({ 
         msg: "Échec envoi email. Vérifiez la configuration SMTP du serveur.",
         error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
       });
     }
 
-    user.accountOtpLastRequestedAt = new Date(now);
-    user.accountOtpRequestCount = count + 1;
-    await user.save();
-
     const maskEmail = (e) => (e ? e.replace(/(^.).*(@.*$)/, (_, a, b) => `${a}***${b}`) : null);
     return res.json({
       msg: "OTP envoyé",
       to: maskEmail(user.email),
       channel: "email",
+      expiresAt: expiresAt.toISOString(), // Ajouter la date d'expiration pour le frontend
     });
   } catch (err) {
     next(err);
@@ -374,15 +399,38 @@ export const verifyAccountOtp = async (req, res, next) => {
     if (!user.accountOtpHash || !user.accountOtpExpiresAt) {
       return res.status(400).json({ msg: "Aucun OTP actif" });
     }
+    
     // Check lockout window
-    if (user.accountOtpLockedUntil && new Date(user.accountOtpLockedUntil).getTime() > Date.now()) {
-      const retryAfter = Math.ceil((new Date(user.accountOtpLockedUntil).getTime() - Date.now()) / 1000);
+    const lockedUntil = user.accountOtpLockedUntil ? new Date(user.accountOtpLockedUntil) : null;
+    if (lockedUntil && lockedUntil.getTime() > Date.now()) {
+      const retryAfter = Math.ceil((lockedUntil.getTime() - Date.now()) / 1000);
       res.set("Retry-After", String(retryAfter));
       return res.status(429).json({ msg: "Trop de tentatives, réessayez plus tard", retryAfter });
     }
-    if (new Date(user.accountOtpExpiresAt).getTime() < Date.now()) {
-      return res.status(400).json({ msg: "OTP expiré" });
+    
+    // Vérifier l'expiration - s'assurer que la date est correctement convertie
+    // Sequelize peut retourner une string ou un Date object selon la configuration
+    const expiresAt = user.accountOtpExpiresAt instanceof Date 
+      ? user.accountOtpExpiresAt 
+      : new Date(user.accountOtpExpiresAt);
+    const now = Date.now();
+    const expiresAtTime = expiresAt.getTime();
+    
+    // Log de debug pour diagnostiquer le problème
+    console.log(`[verifyAccountOtp] Vérification expiration:`);
+    console.log(`  expiresAt (raw): ${user.accountOtpExpiresAt}`);
+    console.log(`  expiresAt (parsed): ${expiresAt.toISOString()}`);
+    console.log(`  expiresAt (timestamp): ${expiresAtTime}`);
+    console.log(`  now (timestamp): ${now}`);
+    console.log(`  diff: ${now - expiresAtTime}ms (${(now - expiresAtTime) / 1000}s)`);
+    
+    // Vérifier avec une marge de 5 secondes pour éviter les problèmes de timing réseau
+    if (expiresAtTime <= now) {
+      console.log(`[verifyAccountOtp] ❌ OTP expiré: expiresAt=${expiresAt.toISOString()}, now=${new Date(now).toISOString()}, diff=${(now - expiresAtTime) / 1000}s`);
+      return res.status(400).json({ msg: "Code expiré, renvoyez un code" });
     }
+    
+    console.log(`[verifyAccountOtp] ✅ OTP valide: expire dans ${(expiresAtTime - now) / 1000}s`);
 
     const secret = process.env.OTP_SECRET || "";
     const hash = crypto.createHmac("sha256", secret).update(value.code).digest("hex");

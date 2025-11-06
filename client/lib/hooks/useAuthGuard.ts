@@ -6,13 +6,14 @@ import { getApiClient } from "@/lib/api/client";
 export type UseAuthGuardOptions = {
   requireAuth?: boolean; // default true
   allowedRoles?: ("client" | "livreur" | "admin")[]; // optional
-  requireVerifiedPhone?: boolean; // when true, redirect unverified users to /(auth)/verify
+  requireVerifiedEmail?: boolean; // when true, redirect unverified users to /(auth)/verify
+  requireVerifiedPhone?: boolean; // when true, redirect unverified users to /(auth)/verify (deprecated, use requireVerifiedEmail)
 };
 
 export function useAuthGuard(
   options: UseAuthGuardOptions = { requireAuth: true }
 ) {
-  const { requireAuth = true, allowedRoles, requireVerifiedPhone = false } = options;
+  const { requireAuth = true, allowedRoles, requireVerifiedEmail = false, requireVerifiedPhone = false } = options;
   const router = useRouter();
   const api = useMemo(getApiClient, []);
   const [checking, setChecking] = useState(true);
@@ -28,7 +29,7 @@ export function useAuthGuard(
           router.replace("/(auth)/login" as any);
           return;
         }
-        if (token && (Array.isArray(allowedRoles) && allowedRoles.length > 0 || requireVerifiedPhone)) {
+        if (token && (Array.isArray(allowedRoles) && allowedRoles.length > 0 || requireVerifiedEmail || requireVerifiedPhone)) {
           try {
             const profile = await api.me.getApiMe();
             if (!mounted) return;
@@ -37,6 +38,12 @@ export function useAuthGuard(
               router.replace("/" as any);
               return;
             }
+            // Vérifier l'email si requireVerifiedEmail est activé
+            if (requireVerifiedEmail && !profile.emailVerifiedAt) {
+              router.replace("/(auth)/verify" as any);
+              return;
+            }
+            // Vérifier le téléphone si requireVerifiedPhone est activé (pour compatibilité)
             if (requireVerifiedPhone && profile.role === 'client' && !profile.phoneVerifiedAt) {
               router.replace("/(auth)/verify" as any);
               return;
@@ -60,6 +67,8 @@ export function useAuthGuard(
     api,
     router,
     requireAuth,
+    requireVerifiedEmail,
+    requireVerifiedPhone,
     Array.isArray(allowedRoles) ? allowedRoles.join("|") : "",
   ]);
 

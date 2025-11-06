@@ -6,7 +6,7 @@ import { Tabs } from "expo-router";
 import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
 
 export default function ClientLayout() {
-  const { checking } = useAuthGuard({ requireAuth: true, requireVerifiedPhone: true });
+  const { checking } = useAuthGuard({ requireAuth: true, requireVerifiedEmail: true });
 
   if (checking) {
     return (

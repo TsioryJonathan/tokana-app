@@ -221,23 +221,37 @@ export function useProfile() {
         showToast('Aucun fichier sélectionné', 'info');
         return;
       }
+      
+      // Afficher l'aperçu immédiatement
       setAvatarUrl(asset.uri);
+      showToast('Téléchargement de la photo...', 'info');
+      
       // Upload avatar to server
       try {
         const form = new FormData();
         // @ts-ignore - React Native FormData file
-        form.append('avatar', { uri: asset.uri, name: asset.name || 'avatar.jpg', type: asset.mimeType || 'image/jpeg' });
+        form.append('avatar', { 
+          uri: asset.uri, 
+          name: asset.name || 'avatar.jpg', 
+          type: asset.mimeType || 'image/jpeg' 
+        });
         const uploaded = await (api as any).me.postApiMeAvatar(form);
         if (uploaded?.avatarUrl) {
           setAvatarUrl(uploaded.avatarUrl);
+          showToast('Photo de profil mise à jour', 'success');
+        } else {
+          showToast('Photo téléchargée mais URL non reçue', 'warning');
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('upload avatar failed', e);
-        // Non bloquant: on garde l'aperçu local
+        const errorMsg = e?.body?.msg || e?.message || 'Erreur de téléchargement';
+        showToast(`Échec: ${errorMsg}`, 'error');
+        // Garder l'aperçu local même si l'upload échoue
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('pick avatar failed', e);
-      showToast("Impossible d'ouvrir le sélecteur", 'error');
+      const errorMsg = e?.message || "Impossible d'ouvrir le sélecteur";
+      showToast(errorMsg, 'error');
     }
   };
 

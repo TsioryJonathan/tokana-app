@@ -35,7 +35,17 @@ router.get('/me', protect, async (req, res, next) => {
   try {
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ msg: 'Utilisateur non trouvé' });
-    res.json({ id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone });
+    res.json({ 
+      id: user.id, 
+      email: user.email, 
+      role: user.role, 
+      name: user.name, 
+      phone: user.phone,
+      phoneVerifiedAt: user.phoneVerifiedAt,
+      emailVerifiedAt: user.emailVerifiedAt,
+      accountOtpExpiresAt: user.accountOtpExpiresAt ? user.accountOtpExpiresAt.toISOString() : null,
+      accountOtpChannel: user.accountOtpChannel,
+    });
   } catch (err) {
     next(err);
   }

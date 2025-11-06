@@ -13,12 +13,14 @@ import {
 // safe area handled by (client)/_layout
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
 import { useProfile } from "@/hooks/useProfile";
 import PrimaryButton from "@/components/ui/PrimaryButton";
 
 export default function Profile() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     loading,
     editing,
@@ -56,27 +58,46 @@ export default function Profile() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header illustration with gradient */}
-      <View style={{ height: 260 }}>
+      {/* Header illustration with gradient - positioned absolutely */}
+      <View style={{ height: 260, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }}>
         <HeaderBackground source={require("@/assets/images/profile-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, marginTop: -120 }}>
+      {/* Bouton retour */}
+      <View style={{ position: 'absolute', top: insets.top + 10, left: 16, zIndex: 30 }}>
+        <TouchableOpacity
+          onPress={() => router.replace('/(client)/home')}
+          activeOpacity={0.7}
+          className="flex-row items-center gap-2 bg-white/90 rounded-full px-4 py-2 shadow-md"
+          style={{ elevation: 5 }}
+        >
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          <Text className="text-slate-900 font-quicksand-semibold">Retour</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView 
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, paddingTop: 140 }}
+        style={{ zIndex: 10 }}
+      >
         {/* Avatar with centered camera overlay */}
-        <View className="items-center">
+        <View className="items-center mb-4">
           <TouchableOpacity
             onPress={pickAvatar}
             activeOpacity={0.9}
             accessibilityRole="button"
             accessibilityLabel="Ajouter ou changer la photo de profil"
-            className="w-32 h-32 rounded-full overflow-hidden bg-white/90 items-center justify-center border border-slate-200 shadow-md z-10"
+            className="w-32 h-32 rounded-full overflow-hidden bg-white items-center justify-center border-4 border-white shadow-lg"
+            style={{ elevation: 10, zIndex: 20 }}
           >
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={{ width: '100%', height: '100%' }} />
-            ) : null}
+            ) : (
+              <View className="w-full h-full bg-slate-100" />
+            )}
             <View className="absolute inset-0 items-center justify-center">
-              <View className="w-16 h-16 rounded-full bg-white/80 items-center justify-center">
-                <Ionicons name="camera-outline" size={32} color="#94A3B8" />
+              <View className="w-16 h-16 rounded-full bg-white/90 items-center justify-center shadow-sm">
+                <Ionicons name="camera-outline" size={32} color="#64748B" />
               </View>
             </View>
           </TouchableOpacity>

@@ -8,6 +8,7 @@ import React, {
 import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
 import { useToast } from "@/components/ui/Toast";
 import { getApiClient } from "@/lib/api/client";
+import { getAccessToken } from "@/lib/auth/session";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import VerifyPage from "@/components/Auth/VerifyPage";
@@ -167,15 +168,34 @@ export default function Verify() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => {}
       );
+      
+      // Attendre un peu pour que le serveur mette à jour l'état
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Fetch role to route appropriately
       let role: string | undefined;
       try {
         const me = await (api as any).me.getApiMe();
         role = me?.role;
-      } catch {}
-      if (role === "admin") router.replace("/(admin)");
-      else if (role === "livreur") router.replace("/(courier)");
-      else router.replace("/(client)/home");
+        console.log('[verify] User role:', role, 'emailVerifiedAt:', me?.emailVerifiedAt);
+      } catch (err) {
+        console.error('[verify] Error fetching user:', err);
+        // Si on ne peut pas récupérer le rôle, essayer quand même de rediriger selon le token
+        const token = await getAccessToken();
+        if (token) {
+          // Essayer de rediriger vers la page client par défaut
+          router.replace("/(client)/home");
+          return;
+        }
+      }
+      
+      if (role === "admin") {
+        router.replace("/(admin)");
+      } else if (role === "livreur") {
+        router.replace("/(courier)");
+      } else {
+        router.replace("/(client)/home");
+      }
     } catch (err: any) {
       const msg: string = err?.body?.msg || err?.message || "OTP invalide";
       showToast(msg, "error");
