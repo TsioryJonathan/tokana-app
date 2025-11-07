@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo, useState } from "react";
-import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
-import LoginPage from "@/components/Auth/LoginPage";
-import { getApiClient } from "@/lib/api/client";
+import AuthScreenWrapper from "../../components/Auth/AuthScreenWrapper";
+import LoginPage from "../../components/Auth/LoginPage";
+import { getApiClient } from "../../lib/api/client";
 import { useRouter } from "expo-router";
-import { setSession } from "@/lib/auth/session";
-import { useToast } from "@/components/ui/Toast";
+import { setSession } from "../../lib/auth/session";
+import { useToast } from "../../components/ui/Toast";
 import * as Haptics from "expo-haptics";
 
 const Login = () => {

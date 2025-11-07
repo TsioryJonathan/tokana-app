@@ -1,15 +1,15 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { HeaderBackground } from "../../../components/CreateOrder/RecapBackground";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { useToast } from "@/components/ui/Toast";
-import { normalizeLocalPhone } from "@/utils/phone";
-import { toNumberSafe, formatAr } from "@/utils/price.helper";
-import { PricingQuoteRequest } from "@/lib/api/models/PricingQuoteRequest";
-import { COLORS } from "@/theme/colors";
-import Row from "@/components/CreateOrder/Row";
+import { getApiClient } from "../../../lib/api/client";
+import { useToast } from "../../../components/ui/Toast";
+import { normalizeLocalPhone } from "../../../utils/phone";
+import { toNumberSafe, formatAr } from "../../../utils/price.helper";
+import { PricingQuoteRequest } from "../../../lib/api/models/PricingQuoteRequest";
+import { COLORS } from "../../../theme/colors";
+import Row from "../../../components/CreateOrder/Row";
 
 type Draft = {
   sender: { name: string; phone: string; address: string };
@@ -208,7 +208,7 @@ export default function OrderRecapPage() {
   return (
     <View className="flex-1 bg-slate-50">
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-      <HeaderBackground source={require("@/assets/images/recap-bg.png")} height={300} opacity={0.7} />
+      <HeaderBackground source={require("../../../assets/images/recap-bg.png")} height={300} opacity={0.7} />
 
       <View className="pt-4 pb-2 border-b border-slate-50 overflow-hidden">
         <View className="pb-5">

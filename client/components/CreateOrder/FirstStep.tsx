@@ -1,8 +1,8 @@
 import { View, Text, Platform, TextInput, TouchableOpacity, Image } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
 import { Package, Scale, Maximize, FileText, Box, AlertTriangle } from "lucide-react-native";
-import { ParcelState } from "@/types/createorder.type";
-import { assets } from "@/assets/images/assets";
+import { ParcelState } from "../../types/createorder.type";
+import { assets } from "../../assets/images/assets";
 
 const FirstStep = ({
   parcel,

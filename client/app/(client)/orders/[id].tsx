@@ -4,18 +4,19 @@ import { useIsFocused } from "@react-navigation/native";
 
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
-import { useToast } from "@/components/ui/Toast";
-import { PricingQuoteRequest } from "@/lib/api/models/PricingQuoteRequest";
+// import { getApiClient } from "../../../../lib/api/client";
+import { useAutoRefresh } from "../../../lib/hooks/useAutoRefresh";
+import { useToast } from "../../../components/ui/Toast";
+import { PricingQuoteRequest } from "../../../lib/api/models/PricingQuoteRequest";
+import {getApiClient } from "../../../lib/api/client";
 import {
   mapBackendOrderToUI,
   type UIOrder as Order,
   type OrderStatus,
   mapBackendStatus,
   statusLabel,
-} from "@/lib/mappers/order";
-import Row from "@/components/CreateOrder/Row";
+} from "../../../lib/mappers/order";
+import Row from "../../../components/CreateOrder/Row";
 
 function formatAr(amount: number) {
   return `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Ar`;
@@ -137,6 +138,10 @@ export default function OrderDetails() {
     })();
     return () => { cancelled = true; };
   }, [rawOrder, api]);
+  const handleBack = () => {
+    // Rediriger vers la liste des commandes pour garantir la navigation
+    router.replace('/(client)/orders' as any);
+  };
 
   if (loading) {
     return (
@@ -212,10 +217,7 @@ export default function OrderDetails() {
     );
   }
 
-  const handleBack = () => {
-    // Rediriger vers la liste des commandes pour garantir la navigation
-    router.replace('/(client)/orders' as any);
-  };
+  
 
   return (
     <View className="flex-1 bg-slate-50">

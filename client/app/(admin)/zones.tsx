@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getApiClient } from '@/lib/api/client';
-import { useToast } from '@/components/ui/Toast';
-import type { Zone } from '@/lib/api/models/Zone';
+import { getApiClient } from '../../lib/api/client';
+import { useToast } from '../../components/ui/Toast';
+import type { Zone } from '../../lib/api/models/Zone';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Plus, ChevronDown, ChevronUp, Save, Trash2, Loader } from 'lucide-react-native';
 

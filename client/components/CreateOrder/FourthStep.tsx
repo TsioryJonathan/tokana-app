@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
 import { Plane, Rocket } from "lucide-react-native";
-import { ServiceState } from "@/types/createorder.type";
-import { assets } from "@/assets/images/assets";
+import { ServiceState } from "../../types/createorder.type";
+import { assets } from "../../assets/images/assets";
 import { ImageSourcePropType } from "react-native";
 
 const FourthStep = ({

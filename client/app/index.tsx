@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, Image, ImageSourcePropType } from "react-native";
 import { useRouter } from "expo-router";
-import { assets } from "@/assets/images/assets";
-import PrimaryButton from "@/components/ui/PrimaryButton";
-import GhostButton from "@/components/ui/GhostButton";
+import { assets } from "../assets/images/assets";
+import PrimaryButton from "../components/ui/PrimaryButton";
+import GhostButton from "../components/ui/GhostButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {

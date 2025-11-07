@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
-import RegisterPage from "@/components/Auth/RegisterPage";
-import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
-import { getApiClient } from "@/lib/api/client";
+import RegisterPage from "../../components/Auth/RegisterPage";
+import AuthScreenWrapper from "../../components/Auth/AuthScreenWrapper";
+import { getApiClient } from "../../lib/api/client";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { setSession } from "@/lib/auth/session";
-import { useToast } from "@/components/ui/Toast";
+import { setSession } from "../../lib/auth/session";
+import { useToast } from "../../components/ui/Toast";
 
 const Register = () => {
   const [fullName, setFullName] = useState<string>("");

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getApiClient } from '@/lib/api/client';
-import type { User } from '@/lib/api/models/User';
+import { getApiClient } from '../../../lib/api/client';
+import type { User } from '../../../lib/api/models/User';
 
 export type CourierSuggestion = Pick<User, 'id' | 'name' | 'phone'>;
 

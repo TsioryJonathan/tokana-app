@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { Alert } from "react-native";
 import PrimaryButton from "../ui/PrimaryButton";
-import { TokanaApiClient } from "@/lib/api";
+import { TokanaApiClient } from "../../lib/api";
 import {
   clearSession,
   getAccessToken,
   getRefreshToken,
-} from "@/lib/auth/session";
-import { getApiClient } from "@/lib/api/client";
+} from "../../lib/auth/session";
+import { getApiClient } from "../../lib/api/client";
 
 type Props = {
   title?: string;

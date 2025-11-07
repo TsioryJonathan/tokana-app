@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
-import { useToast } from "@/components/ui/Toast";
+import { getApiClient } from "../../../lib/api/client";
+import { useAutoRefresh } from "../../../lib/hooks/useAutoRefresh";
+import { useToast } from "../../../components/ui/Toast";
 import {
   mapBackendOrderToUI,
   mapBackendStatus,
@@ -18,8 +18,8 @@ import {
   statusBadge,
   type UIOrder,
   type OrderStatus,
-} from "@/lib/mappers/order";
-import Row from "@/components/CreateOrder/Row";
+} from "../../../lib/mappers/order";
+import Row from "../../../components/CreateOrder/Row";
 
 // Composant d'info badge
 function InfoBadge({ 

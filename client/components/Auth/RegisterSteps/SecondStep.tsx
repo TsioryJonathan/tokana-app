@@ -1,8 +1,8 @@
 import { View, Text } from "react-native";
 import React, { useEffect } from "react";
-import CustomInput from "@/components/ui/CustomInput";
+import CustomInput from "../../ui/CustomInput";
 import { Mail, Phone } from "lucide-react-native";
-import { useToast } from "@/components/ui/Toast";
+import { useToast } from "../../ui/Toast";
 
 type SecondStepProps = {
   email: string;

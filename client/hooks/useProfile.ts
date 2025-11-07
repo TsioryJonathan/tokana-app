@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Alert } from 'react-native';
-import { getApiClient, getApiBase } from '@/lib/api/client';
-import { getAccessToken } from '@/lib/auth/session';
-import { useToast } from '@/components/ui/Toast';
+import { getApiClient, getApiBase } from '../lib/api/client';
+import { getAccessToken } from '../lib/auth/session';
+import { useToast } from '../components/ui/Toast';
 
 export type MobileMoney = 'MVOLA' | 'AIRTEL' | 'ORANGE';
 

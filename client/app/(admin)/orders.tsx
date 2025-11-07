@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAutoRefresh } from '@/lib/hooks/useAutoRefresh';
-import { type OrderStatus } from '@/lib/mappers/order';
+import { useAutoRefresh } from '../../lib/hooks/useAutoRefresh';
+import { type OrderStatus } from '../../lib/mappers/order';
 import { useRouter } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
 import { useAdminOrders } from './hooks/useAdminOrders';

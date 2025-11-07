@@ -3,7 +3,7 @@ import React from "react";
 import { Platform, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
-import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
+import { useAuthGuard } from "../../lib/hooks/useAuthGuard";
 
 export default function ClientLayout() {
   const { checking } = useAuthGuard({ requireAuth: true, requireVerifiedEmail: true });

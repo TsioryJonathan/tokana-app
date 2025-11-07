@@ -5,13 +5,13 @@ import React, {
   useRef,
   useState as useStateAlias,
 } from "react";
-import AuthScreenWrapper from "@/components/Auth/AuthScreenWrapper";
-import { useToast } from "@/components/ui/Toast";
-import { getApiClient } from "@/lib/api/client";
-import { getAccessToken } from "@/lib/auth/session";
+import AuthScreenWrapper from "../../components/Auth/AuthScreenWrapper";
+import { useToast } from "../../components/ui/Toast";
+import { getApiClient } from "../../lib/api/client";
+import { getAccessToken } from "../../lib/auth/session";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import VerifyPage from "@/components/Auth/VerifyPage";
+import VerifyPage from "../../components/Auth/VerifyPage";
 
 import { TextInput } from "react-native";
 

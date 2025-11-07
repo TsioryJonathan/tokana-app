@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Zone } from '@/lib/api/models/Zone';
-import { getApiClient } from '@/lib/api/client';
+import type { Zone } from '../../../lib/api/models/Zone';
+import { getApiClient } from '../../../lib/api/client';
 
 export type GeometryStatus = 'unknown' | 'ok' | 'missing';
 

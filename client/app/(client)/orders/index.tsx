@@ -17,10 +17,10 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { useToast } from "@/components/ui/Toast";
-import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { getApiClient } from "../../../lib/api/client";
+import { useToast } from "../../../components/ui/Toast";
+import { useAutoRefresh } from "../../../lib/hooks/useAutoRefresh";
+import { HeaderBackground } from "../../../components/CreateOrder/RecapBackground";
 import { ArrowLeft, ChevronDown, ArrowDown } from "lucide-react-native";
 import {
   mapBackendOrderToUI,
@@ -28,7 +28,7 @@ import {
   type OrderStatus,
   statusLabel,
   statusBadge,
-} from "@/lib/mappers/order";
+} from "../../../lib/mappers/order";
 
 // Types and mappers centralized in app/lib/mappers/order
 
@@ -313,7 +313,7 @@ export default function OrdersList() {
   const renderHeader = (
     <View className="-ml-5">
       {/* Decorative header background matching mock */}
-      <HeaderBackground source={require("@/assets/images/orders-bg.png")} height={300} opacity={0.7} gradientHeight={200} />
+      <HeaderBackground source={require("../../../assets/images/orders-bg.png")} height={300} opacity={0.7} gradientHeight={200} />
 
       {/* Top controls over body content */}
       <View className="pl-8 pt-3 pb-1">

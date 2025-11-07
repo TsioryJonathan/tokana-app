@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getApiClient } from '@/lib/api/client';
+import { getApiClient } from '../../lib/api/client';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Mail, Phone, Shield, LogOut } from 'lucide-react-native';
-import { clearSession, getRefreshToken } from '@/lib/auth/session';
+import { clearSession, getRefreshToken } from '../../lib/auth/session';
 
 export default function AdminProfile() {
   const api = useMemo(getApiClient, []);

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { User, Lock, Sparkles } from "lucide-react-native";
-import { assets } from "@/assets/images/assets";
+import { assets } from "../../assets/images/assets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type LoginFormProps = {

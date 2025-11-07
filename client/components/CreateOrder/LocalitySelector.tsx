@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
-import { useLocalities, type LocalityItem } from '@/lib/hooks/useLocalities';
+import { useLocalities, type LocalityItem } from '../../lib/hooks/useLocalities';
 
 export function LocalitySelector({
   selected,

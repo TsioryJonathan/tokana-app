@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import type { SenderState, RecipientState, ParcelState, ServiceState, PaymentState } from '@/types/createorder.type';
-import type { LocalityItem } from '@/lib/hooks/useLocalities';
+import type { SenderState, RecipientState, ParcelState, ServiceState, PaymentState } from '../../types/createorder.type';
+import type { LocalityItem } from '../../lib/hooks/useLocalities';
 
 export default function OrderReviewModal({
   visible,

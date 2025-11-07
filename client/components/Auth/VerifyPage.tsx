@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, ImageSourcePropType, Platform, KeyboardAvoidingView, ScrollView, TextInput } from "react-native";
 import { Lock, Mail } from "lucide-react-native";
-import { assets } from "@/assets/images/assets";
-import CustomInput from "@/components/ui/CustomInput";
+import { assets } from "../../assets/images/assets";
+import CustomInput from "../ui/CustomInput";
 
 type VerifyPageProps = {
   code: string;

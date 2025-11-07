@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { Order } from '@/lib/api/models/Order';
-import { mapBackendStatus, statusLabel, type OrderStatus } from '@/lib/mappers/order';
+import type { Order } from '../../../lib/api/models/Order';
+import { mapBackendStatus, statusLabel, type OrderStatus } from '../../../lib/mappers/order';
 import { useCourierSearch } from '../hooks/useCourierSearch';
 import { Package, MapPin, Weight, User, Search, ArrowRight, Eye } from 'lucide-react-native';
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import LogoutButton from "@/components/Auth/LogoutButton";
+import LogoutButton from "../../components/Auth/LogoutButton";
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Truck, Package, TrendingUp, Award, Clock, CheckCircle } from "lucide-react-native";
-import { getApiClient } from "@/lib/api/client";
-import { useToast } from "@/components/ui/Toast";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
-import { mapBackendOrderToUI } from "@/lib/mappers/order";
+import { getApiClient } from "../../lib/api/client";
+import { useToast } from "../../components/ui/Toast";
+import { HeaderBackground } from "../../components/CreateOrder/RecapBackground";
+import { mapBackendOrderToUI } from "../../lib/mappers/order";
 
 export default function Profile() {
   const router = useRouter();
@@ -106,7 +106,7 @@ export default function Profile() {
       {/* Header avec illustration */}
       <View className="relative" style={{ paddingTop: insets.top }}>
         <HeaderBackground 
-          source={require("@/assets/images/tracking-bg.png")} 
+          source={require("../../assets/images/tracking-bg.png")} 
           height={220} 
           opacity={0.7} 
         />

@@ -3,7 +3,7 @@ import {
   ParcelState,
   ServiceState,
   ServiceType,
-} from "@/types/createorder.type";
+} from "../types/createorder.type";
 
 const SURCHARGE = {
   fragile: 500,

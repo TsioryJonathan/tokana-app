@@ -1,7 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useMapboxGeocoding } from '@/lib/hooks/useMapboxGeocoding';
-import type { MapboxFeature } from '@/lib/mapbox/geocoding';
+import { useMapboxGeocoding } from '../lib/hooks/useMapboxGeocoding';
+import type { MapboxFeature } from '../lib/mapbox/geocoding';
 
 export type AddressAutocompleteProps = {
   label?: string;

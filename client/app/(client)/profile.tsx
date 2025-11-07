@@ -1,6 +1,6 @@
 // app/(client)/profile.tsx
 import React from "react";
-import LogoutButton from "@/components/Auth/LogoutButton"
+import LogoutButton from "../../components/Auth/LogoutButton"
 import {
   View,
   Text,
@@ -9,14 +9,14 @@ import {
   Image,
   TextInput,
 } from "react-native";
-// import LogoutButton from "@/components/Auth/LogoutButton";
+// import LogoutButton from "../../components/Auth/LogoutButton";
 // safe area handled by (client)/_layout
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
-import { useProfile } from "@/hooks/useProfile";
-import PrimaryButton from "@/components/ui/PrimaryButton";
+import { HeaderBackground } from "../../components/CreateOrder/RecapBackground";
+import { useProfile } from "../../hooks/useProfile";
+import PrimaryButton from "../../components/ui/PrimaryButton";
 
 export default function Profile() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function Profile() {
     <View className="flex-1 bg-white">
       {/* Header illustration with gradient - positioned absolutely */}
       <View style={{ height: 260, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }}>
-        <HeaderBackground source={require("@/assets/images/profile-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
+        <HeaderBackground source={require("../../assets/images/profile-bg.png")} height={260} opacity={0.75} gradientHeight={140} />
       </View>
 
       {/* Bouton retour */}

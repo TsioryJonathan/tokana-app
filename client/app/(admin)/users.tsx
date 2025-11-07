@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getApiClient } from '@/lib/api/client';
-import { useToast } from '@/components/ui/Toast';
-import { ApiError, User } from '@/lib/api';
+import { getApiClient } from '../../lib/api/client';
+import { useToast } from '../../components/ui/Toast';
+import { ApiError, User } from '../../lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, UserPlus, Search, ChevronLeft, ChevronRight, Mail, Phone, Shield } from 'lucide-react-native';
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { geocodeSearch, type MapboxFeature } from '@/lib/mapbox/geocoding';
+import { geocodeSearch, type MapboxFeature } from '../mapbox/geocoding';
 
 export type UseMapboxGeocodingOptions = {
   limit?: number;

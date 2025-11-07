@@ -1,10 +1,10 @@
 import Constants from "expo-constants";
-import { TokanaApiClient } from "@/lib/api";
-import { FetchHttpRequest } from "@/lib/api/core/FetchHttpRequest";
-import type { OpenAPIConfig } from "@/lib/api/core/OpenAPI";
-import type { ApiRequestOptions } from "@/lib/api/core/ApiRequestOptions";
-import type { CancelablePromise } from "@/lib/api/core/CancelablePromise";
-import { clearSession, getAccessToken, getRefreshToken, setSession } from "@/lib/auth/session";
+import { TokanaApiClient } from "./";
+import { FetchHttpRequest } from "./core/FetchHttpRequest";
+import type { OpenAPIConfig } from "./core/OpenAPI";
+import type { ApiRequestOptions } from "./core/ApiRequestOptions";
+import type { CancelablePromise } from "./core/CancelablePromise";
+import { clearSession, getAccessToken, getRefreshToken, setSession } from "../auth/session";
 
 let cached: TokanaApiClient | null = null;
 let currentBase: string | null = null;

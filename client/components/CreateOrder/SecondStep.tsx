@@ -1,9 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import { User, Phone, MapPin, ChevronRight, Globe } from "lucide-react-native";
-import { SenderState } from "@/types/createorder.type";
-import AddressAutocomplete from "@/components/AddressAutocomplete";
-import { assets } from "@/assets/images/assets";
+import { SenderState } from "../../types/createorder.type";
+import AddressAutocomplete from "../AddressAutocomplete";
+import { assets } from "../../assets/images/assets";
 
 const SecondStep = ({
   sender,

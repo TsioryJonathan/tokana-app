@@ -1,19 +1,9 @@
-const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 
 const config = getDefaultConfig(projectRoot);
-
-// Configuration de l'alias @ pour résoudre correctement les imports
-// Cette configuration doit être appliquée AVANT withNativeWind
-config.resolver = {
-  ...config.resolver,
-  alias: {
-    "@": projectRoot,
-  },
-};
 
 // Optimisations pour réduire la taille du bundle
 config.transformer = {
@@ -44,15 +34,7 @@ config.transformer = {
   },
 };
 
-// Appliquer NativeWind et s'assurer que l'alias est préservé
+// Appliquer NativeWind
 const finalConfig = withNativeWind(config, { input: "./app/globals.css" });
-
-// Réappliquer l'alias après NativeWind pour s'assurer qu'il n'est pas écrasé
-if (finalConfig.resolver) {
-  finalConfig.resolver.alias = {
-    ...finalConfig.resolver.alias,
-    "@": projectRoot,
-  };
-}
 
 module.exports = finalConfig;

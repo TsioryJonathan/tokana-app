@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import React, { useEffect, useState } from "react";
-import CustomInput from "@/components/ui/CustomInput";
+import CustomInput from "../../ui/CustomInput";
 import { Lock, Mail } from "lucide-react-native";
 
 type ThirdStepProps = {

@@ -48,7 +48,7 @@ export const HeaderBackground = ({ source, height = 300, opacity = 0.70, gradien
 
 // Backward compatibility export with the previous name
 export const RecapBackground = () => (
-  <HeaderBackground source={require('@/assets/images/recap-bg.png')} height={300} opacity={0.70} />
+  <HeaderBackground source={require('../../assets/images/recap-bg.png')} height={300} opacity={0.70} />
 );
 
 export default HeaderBackground;

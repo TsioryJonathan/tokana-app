@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getApiClient } from '@/lib/api/client';
-import type { ZonePublicResponse } from '@/lib/api/models/ZonePublicResponse';
+import { getApiClient } from '../api/client';
+import type { ZonePublicResponse } from '../api/models/ZonePublicResponse';
 
 export type LocalityItem = {
   id: string; // synthetic ID: `${zoneKey}:${axisKey}:${name}` or DB id if available

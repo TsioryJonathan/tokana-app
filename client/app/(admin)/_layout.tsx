@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Text, Platform, StatusBar, ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
+import { useAuthGuard } from "../../lib/hooks/useAuthGuard";
 import AdminNavbar from "./components/AdminNavbar";
 import { LinearGradient } from "expo-linear-gradient";
 

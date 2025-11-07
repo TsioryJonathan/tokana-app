@@ -2,13 +2,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { statusLabel, mapBackendStatus } from "@/lib/mappers/order";
-import Row from "@/components/CreateOrder/Row";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
-import { formatAr } from "@/utils/price.helper";
-import { useToast } from "@/components/ui/Toast";
-import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
+import {getApiClient } from "../../../lib/api/client";
+import { statusLabel, mapBackendStatus } from "../../../lib/mappers/order";
+import Row from "../../../components/CreateOrder/Row";
+import { HeaderBackground } from "../../../components/CreateOrder/RecapBackground";
+import { formatAr } from "../../../utils/price.helper";
+import { useToast } from "../../../components/ui/Toast";
+import { useAutoRefresh } from "../../../lib/hooks/useAutoRefresh";
 import { useIsFocused } from "@react-navigation/native";
 export default function TrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -105,7 +105,7 @@ export default function TrackingScreen() {
       }
       contentContainerStyle={{ paddingBottom: 24 }}
     >
-      <HeaderBackground source={require("@/assets/images/tracking-bg.png")} height={350} opacity={0.70} />
+      <HeaderBackground source={require("../../../assets/images/tracking-bg.png")} height={350} opacity={0.70} />
 
       {/* Top illustrative map header */}
       {/* <View className="w-full h-[220px] bg-slate-200 relative overflow-hidden">

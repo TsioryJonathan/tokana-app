@@ -1,8 +1,8 @@
 import { View, Text, Image, ImageSourcePropType, TextInput } from "react-native";
 import React, { Dispatch, SetStateAction } from "react";
 import { ChevronRight, DollarSign, FileText } from "lucide-react-native";
-import { PaymentState } from "@/types/createorder.type";
-import { assets } from "@/assets/images/assets";
+import { PaymentState } from "../../types/createorder.type";
+import { assets } from "../../assets/images/assets";
 
 interface SenderInfo {
   name?: string;

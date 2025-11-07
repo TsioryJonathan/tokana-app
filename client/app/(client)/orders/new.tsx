@@ -2,25 +2,25 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getApiClient } from "@/lib/api/client";
-import { PricingQuoteRequest } from "@/lib/api/models/PricingQuoteRequest";
-import { useToast } from "@/components/ui/Toast";
-import FirstStep from "@/components/CreateOrder/FirstStep";
-import SecondStep from "@/components/CreateOrder/SecondStep";
-import ThirdStep from "@/components/CreateOrder/ThirdStep";
-import FourthStep from "@/components/CreateOrder/FourthStep";
-import FifthStep from "@/components/CreateOrder/FifthStep";
+import { getApiClient } from "../../../lib/api/client";
+import { PricingQuoteRequest } from "../../../lib/api/models/PricingQuoteRequest";
+import { useToast } from "../../../components/ui/Toast";
+import FirstStep from "../../../components/CreateOrder/FirstStep";
+import SecondStep from "../../../components/CreateOrder/SecondStep";
+import ThirdStep from "../../../components/CreateOrder/ThirdStep";
+import FourthStep from "../../../components/CreateOrder/FourthStep";
+import FifthStep from "../../../components/CreateOrder/FifthStep";
 import {
   ParcelState,
   PaymentState,
   RecipientState,
   SenderState,
   ServiceState,
-} from "@/types/createorder.type";
-import { formatAr, toNumberSafe } from "@/utils/price.helper";
-import type { LocalityItem } from "@/lib/hooks/useLocalities";
-import { normalizeLocalPhone } from "@/utils/phone";
-import { useProfile } from "@/hooks/useProfile";
+} from "../../../types/createorder.type";
+import { formatAr, toNumberSafe } from "../../../utils/price.helper";
+import type { LocalityItem } from "../../../lib/hooks/useLocalities";
+import { normalizeLocalPhone } from "../../../utils/phone";
+import { useProfile } from "../../../hooks/useProfile";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {

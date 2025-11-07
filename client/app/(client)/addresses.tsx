@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
-import { getApiClient } from '@/lib/api/client';
+import { getApiClient } from '../../lib/api/client';
 import { Ionicons } from '@expo/vector-icons';
-import { useToast } from '@/components/ui/Toast';
-import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { useToast } from '../../components/ui/Toast';
+import AddressAutocomplete from '../../components/AddressAutocomplete';
 
 type Addr = { id: string; label?: string | null; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null };
 

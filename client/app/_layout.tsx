@@ -2,11 +2,11 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import "./globals.css";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ToastProvider } from "@/components/ui/Toast";
+import { ToastProvider } from "../components/ui/Toast";
 import React, { useEffect, useMemo, useState } from "react";
-import { getAccessToken } from "@/lib/auth/session";
-import { getApiClient } from "@/lib/api/client";
-import CustomSplashScreen from "@/components/CustomSplashScreen";
+import { getAccessToken } from "../lib/auth/session";
+import { getApiClient } from "../lib/api/client";
+import CustomSplashScreen from "../components/CustomSplashScreen";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

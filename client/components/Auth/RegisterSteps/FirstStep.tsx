@@ -1,9 +1,9 @@
 import { View, Text, KeyboardAvoidingView } from "react-native";
 import React, { useEffect } from "react";
-import CustomInput from "@/components/ui/CustomInput";
+import CustomInput from "../../ui/CustomInput";
 import { User } from "lucide-react-native";
-import { useToast } from "@/components/ui/Toast";
-import Label from "@/components/ui/Label";
+import { useToast } from "../../ui/Toast";
+import Label from "../../ui/Label";
 type FirstStepProps = {
   fullName: string;
   setFullName: React.Dispatch<React.SetStateAction<string>>;

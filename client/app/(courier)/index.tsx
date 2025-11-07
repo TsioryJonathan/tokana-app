@@ -14,18 +14,18 @@ import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Truck, Package, Clock, CheckCircle } from "lucide-react-native";
-import { getApiClient } from "@/lib/api/client";
-import { useAutoRefresh } from "@/lib/hooks/useAutoRefresh";
-import { useToast } from "@/components/ui/Toast";
-import { HeaderBackground } from "@/components/CreateOrder/RecapBackground";
+import { getApiClient } from "../../lib/api/client";
+import { useAutoRefresh } from "../../lib/hooks/useAutoRefresh";
+import { useToast } from "../../components/ui/Toast";
+import { HeaderBackground } from "../../components/CreateOrder/RecapBackground";
 import {
   mapBackendOrderToUI,
   statusBadge,
   statusLabel,
   type UIOrder,
   type OrderStatus,
-} from "@/lib/mappers/order";
-import { assets } from "@/assets/images/assets";
+} from "../../lib/mappers/order";
+import { assets } from "../../assets/images/assets";
 
 const ACTIVE_COLOR = "#059669";
 
@@ -117,7 +117,7 @@ export default function CourierTasks() {
       {/* Header avec illustration */}
       <View className="relative" style={{ paddingTop: insets.top + 40, marginBottom: -8 }}>
         <HeaderBackground 
-          source={require("@/assets/images/tracking-bg.png")} 
+          source={require("../../assets/images/tracking-bg.png")} 
           height={200} 
           opacity={0.7} 
         />

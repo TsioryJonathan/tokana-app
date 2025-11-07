@@ -8,8 +8,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, Tabs } from "expo-router";
-import { useAuthGuard } from "@/lib/hooks/useAuthGuard";
-import Navbar from "@/components/ui/Navbar";
+import { useAuthGuard } from "../../lib/hooks/useAuthGuard";
+import Navbar from "../../components/ui/Navbar";
 import { Home, Truck, User } from "lucide-react-native";
 
 export default function CourierLayout() {

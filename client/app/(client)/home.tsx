@@ -18,8 +18,8 @@ import {
   Plus
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getUser } from "@/lib/auth/session";
-import { assets } from "@/assets/images/assets";
+import { getUser } from "../../lib/auth/session";
+import { assets } from "../../assets/images/assets";
 
 type User = {
   name?: string;

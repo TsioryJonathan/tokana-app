@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getApiClient } from '@/lib/api/client';
-import type { AdminStatsResponse } from '@/lib/api/models/AdminStatsResponse';
+import { getApiClient } from '../../../lib/api/client';
+import type { AdminStatsResponse } from '../../../lib/api/models/AdminStatsResponse';
 
 export type Period = 'today' | '7d';
 

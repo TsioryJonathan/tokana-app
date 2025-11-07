@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { getAccessToken, clearSession } from "@/lib/auth/session";
-import { getApiClient } from "@/lib/api/client";
+import { getAccessToken, clearSession } from "../auth/session";
+import { getApiClient } from "../api/client";
 
 export type UseAuthGuardOptions = {
   requireAuth?: boolean; // default true
