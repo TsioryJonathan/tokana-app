@@ -53,6 +53,10 @@ export default function AdminLayout() {
           <Tabs.Screen name="zones" options={{ title: "Zones" }} />
           <Tabs.Screen name="profile" options={{ title: "Profil" }} />
           <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+          <Tabs.Screen name="settlements-evening" options={{ href: null }} />
+          <Tabs.Screen name="dispatches" options={{ href: null }} />
+          <Tabs.Screen name="reports" options={{ href: null }} />
+          <Tabs.Screen name="gps" options={{ href: null }} />
         </Tabs>
         <AdminNavbar />
       </View>
