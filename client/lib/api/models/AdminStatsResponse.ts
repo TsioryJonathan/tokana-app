@@ -19,6 +19,8 @@ export type AdminStatsResponse = {
         deliveredAll?: number;
         inProgressAll?: number;
         lateAll?: number;
+        totalClients?: number;
+        totalLivreurs?: number;
     };
     /**
      * Order counts per day for the last 7 days (inclusive of today), index 0 = oldest

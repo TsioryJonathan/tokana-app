@@ -204,7 +204,7 @@ export default function CourierTasks() {
                   Aucune course assignée
                 </Text>
                 <Text className="text-slate-500 text-center font-quicksand-medium">
-                  Vous n'avez pas encore de commandes assignées.{'\n'}
+                  Vous n&apos;avez pas encore de commandes assignées.{"\n"}
                   Les nouvelles commandes apparaîtront ici.
                 </Text>
               </View>

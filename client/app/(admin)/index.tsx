@@ -5,6 +5,7 @@ import { AvailabilityCards } from './components/AvailabilityCards';
 import { KpiSection } from './components/KpiSection';
 import { GlobalStats } from './components/GlobalStats';
 import { OrdersChart } from './components/OrdersChart';
+import { useRouter } from 'expo-router';
 import { useBusinessAvailability } from './hooks/useBusinessAvailability';
 import { useAdminStats } from './hooks/useAdminStats';
 import { useAutoRefresh } from './hooks/useAutoRefresh';
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AdminDashboard() {
   const { isStandardOrderWindow, isExpressWindow, now } = useBusinessAvailability();
+  const router = useRouter();
   const { zones, geomStatus, loading, error: loadError } = useZonesGeom();
   const { period, setPeriod, stats, loading: statsLoading, error: statsError, refresh } = useAdminStats('today');
   const { enabled: autoRefresh, setEnabled: setAutoRefresh } = useAutoRefresh(() => refresh(), { storageKey: 'admin_kpis_autorefresh', intervalMs: 60000, defaultEnabled: true });
@@ -110,13 +112,13 @@ export default function AdminDashboard() {
                     className="py-3 items-center"
                   >
                     <Text className="font-quicksand-semibold text-white">
-                      Aujourd'hui
+                      Aujourd&apos;hui
                     </Text>
                   </LinearGradient>
                 ) : (
                   <View className="py-3 items-center bg-gray-50">
                     <Text className="font-quicksand-semibold text-gray-600">
-                      Aujourd'hui
+                      Aujourd&apos;hui
                     </Text>
                   </View>
                 )}
@@ -166,6 +168,8 @@ export default function AdminDashboard() {
                     deliveredAll: stats.global?.deliveredAll ?? 0,
                     inProgressAll: stats.global?.inProgressAll ?? 0,
                     lateAll: stats.global?.lateAll ?? 0,
+                    totalClients: stats.global?.totalClients ?? 0,
+                    totalLivreurs: stats.global?.totalLivreurs ?? 0,
                   }}
                 />
               )}
@@ -244,6 +248,72 @@ export default function AdminDashboard() {
               </View>
             </View>
           )}
+
+          <View className="mb-6">
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/settlements-evening' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Règlement du soir</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Voir le détail des encaissements livreur → admin par jour.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+                <RefreshCw size={20} color="#059669" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/dispatches' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Dispatches J+1</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Préparer et suivre les règlements Admin → Clients.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+                <RefreshCw size={20} color="#059669" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/reports' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Rapports & Exports</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Rapports clients et historique des règlements.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+                <TrendingUp size={20} color="#059669" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/gps' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Suivi GPS</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Voir les positions et le statut de tracking des livreurs.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+                <MapPin size={20} color="#059669" />
+              </View>
+            </TouchableOpacity>
+          </View>
 
           {/* Statut géométrie des zones */}
           <View className="mb-6">

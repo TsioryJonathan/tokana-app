@@ -29,6 +29,8 @@ const createSchema = Joi.object({
   weight: Joi.number().positive().precision(2).required(),
   parcels: Joi.number().integer().min(1).default(1),
   cashToCollect: Joi.number().integer().min(0).allow(null),
+  isPrepaid: Joi.boolean().optional(),
+  deliveryFeePrepaid: Joi.boolean().optional(),
   recipientPhone: Joi.string().pattern(mgPhone).optional(),
 
   recipientEmail: Joi.string().email().optional(),
@@ -43,6 +45,8 @@ const createSchema = Joi.object({
   pickupLocalityId: Joi.string().optional(),
   dropoffLocalityId: Joi.string().optional(),
   needReturn: Joi.boolean().optional(),
+  // When admin creates an order, it may specify the client (expéditeur)
+  createdByClientId: Joi.number().integer().min(1).optional(),
   // For standard only
   slotStart: Joi.date().iso().allow(null),
   slotEnd: Joi.date().iso().allow(null),
@@ -197,6 +201,9 @@ export const createOrder = async (req, res, next) => {
       lng,
       dropoffLat,
       dropoffLng,
+      createdByClientId,
+      isPrepaid,
+      deliveryFeePrepaid,
     } = value;
 
     // Derive zoneLevel from dropoffLocalityId if provided (source of truth)
@@ -251,6 +258,16 @@ export const createOrder = async (req, res, next) => {
     }
     const { total } = await computePrice({ zoneLevel, type, weight, parcels });
 
+    // Determine createdBy: default to current user, but admin may override with a client
+    let createdBy = req.user?.id ?? null;
+    if (req.user?.role === 'admin' && typeof createdByClientId === 'number') {
+      const client = await User.findByPk(createdByClientId);
+      if (!client || client.role !== 'client') {
+        return res.status(400).json({ msg: 'Client invalide pour createdByClientId' });
+      }
+      createdBy = client.id;
+    }
+
     const created = await Order.create({
       type,
       zoneLevel,
@@ -269,8 +286,10 @@ export const createOrder = async (req, res, next) => {
       weight,
       parcels,
       cashToCollect: cashToCollect ?? null,
+      isPrepaid: !!isPrepaid,
+      deliveryFeePrepaid: !!deliveryFeePrepaid,
       priceTotal: total,
-      createdBy: req.user?.id ?? null,
+      createdBy,
       recipientEmail: recipientEmail ?? null,
       recipientPhone: recipientPhone ?? null,
       slotStart: type === "standard" ? slotStart : null,

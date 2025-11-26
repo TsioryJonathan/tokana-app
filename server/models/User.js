@@ -80,6 +80,23 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  gpsTrackingEnabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  gpsLastLat: {
+    type: DataTypes.DOUBLE,
+    allowNull: true,
+  },
+  gpsLastLng: {
+    type: DataTypes.DOUBLE,
+    allowNull: true,
+  },
+  gpsLastSeenAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   validate: {
     eitherEmailOrPhone() {

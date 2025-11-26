@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Package, CheckCircle2, Clock, AlertTriangle } from 'lucide-react-native';
+import { Package, CheckCircle2, Clock, AlertTriangle, Users, UserCheck } from 'lucide-react-native';
 import { AnimatedMetric } from './AnimatedMetric';
 
 export type GlobalStatsData = {
@@ -9,6 +9,8 @@ export type GlobalStatsData = {
   deliveredAll: number;
   inProgressAll: number;
   lateAll: number;
+  totalClients: number;
+  totalLivreurs: number;
 };
 
 const globalStatsConfig = [
@@ -36,10 +38,22 @@ const globalStatsConfig = [
     icon: AlertTriangle,
     gradient: ['#EF4444', '#DC2626'],
   },
-];
+  {
+    key: 'totalClients' as keyof GlobalStatsData,
+    label: 'Clients',
+    icon: Users,
+    gradient: ['#0EA5E9', '#0284C7'],
+  },
+  {
+    key: 'totalLivreurs' as keyof GlobalStatsData,
+    label: 'Livreurs',
+    icon: UserCheck,
+    gradient: ['#A855F7', '#7C3AED'],
+  },
+ ] as const;
 
 export function GlobalStats({ data }: { data: GlobalStatsData }) {
-  const g = data || { totalAll: 0, deliveredAll: 0, inProgressAll: 0, lateAll: 0 };
+  const g = data || { totalAll: 0, deliveredAll: 0, inProgressAll: 0, lateAll: 0, totalClients: 0, totalLivreurs: 0 };
   
   return (
     <View className="mb-6">

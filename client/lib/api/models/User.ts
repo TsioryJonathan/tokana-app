@@ -13,6 +13,10 @@ export type User = {
     emailVerifiedAt?: string | null;
     name?: string | null;
     role?: User.role;
+    /**
+     * Public URL of the user's profile avatar
+     */
+    avatarUrl?: string | null;
 };
 export namespace User {
     export enum role {

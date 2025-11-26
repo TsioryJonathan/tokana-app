@@ -8,7 +8,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { useAdminOrders } from './hooks/useAdminOrders';
 import { AdminOrderItem } from './components/AdminOrderItem';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Package, Filter, RefreshCw, Calendar, UserCheck, UserX } from 'lucide-react-native';
+import { Package, Filter, RefreshCw, Calendar, UserCheck, UserX, Plus } from 'lucide-react-native';
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -24,6 +24,8 @@ export default function AdminOrdersPage() {
     setServiceTab,
     dateTab,
     setDateTab,
+    statusTab,
+    setStatusTab,
     assignInputs,
     setAssignInput,
     assignBusy,
@@ -79,13 +81,23 @@ export default function AdminOrdersPage() {
               Gestion et assignation des commandes
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={onRefresh}
-            className="bg-white/20 rounded-full p-2.5"
-            activeOpacity={0.7}
-          >
-            <RefreshCw size={20} color="#fff" />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={() => router.push('/(admin)/orders/new' as any)}
+              className="bg-white rounded-full px-3 py-2 flex-row items-center gap-1"
+              activeOpacity={0.7}
+            >
+              <Plus size={16} color="#059669" />
+              <Text className="text-emerald-700 text-xs font-quicksand-semibold">Nouvelle</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onRefresh}
+              className="bg-white/20 rounded-full p-2.5"
+              activeOpacity={0.7}
+            >
+              <RefreshCw size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
         {lastUpdatedISO && (
           <Text className="text-white/70 text-xs font-quicksand">
@@ -127,6 +139,39 @@ export default function AdminOrdersPage() {
                           <Text className="text-gray-700 text-xs font-quicksand-bold">{count}</Text>
                         </View>
                       </View>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Filtre Statut */}
+        <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 mb-3">
+          <View className="flex-row gap-2">
+            {(['all', 'active', 'delivered', 'cancelled'] as const).map((tab) => {
+              const isActive = statusTab === tab;
+              const labels: Record<typeof tab, string> = {
+                all: 'Tous',
+                active: 'En cours',
+                delivered: 'Livrées',
+                cancelled: 'Annulées',
+              } as const;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  onPress={() => setStatusTab(tab)}
+                  className="flex-1 rounded-xl overflow-hidden"
+                  activeOpacity={0.7}
+                >
+                  {isActive ? (
+                    <LinearGradient colors={['#059669', '#047857'] as const} className="py-2.5 items-center">
+                      <Text className="text-white font-quicksand-semibold text-xs">{labels[tab]}</Text>
+                    </LinearGradient>
+                  ) : (
+                    <View className="py-2.5 items-center bg-gray-50">
+                      <Text className="text-gray-600 font-quicksand-semibold text-xs">{labels[tab]}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -226,7 +271,7 @@ export default function AdminOrdersPage() {
         {/* Reset filters */}
         <TouchableOpacity
           className="self-end px-4 py-2 bg-gray-100 rounded-full flex-row items-center gap-2"
-          onPress={() => { setServiceTab('express'); setDateTab('today'); setFilterTab('unassigned'); }}
+          onPress={() => { setServiceTab('express'); setDateTab('today'); setFilterTab('unassigned'); setStatusTab('all'); }}
           activeOpacity={0.7}
         >
           <Filter size={14} color="#64748B" />

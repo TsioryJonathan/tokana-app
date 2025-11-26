@@ -22,6 +22,22 @@ export const validateCreateLivreur = validate(Joi.object({
   name: Joi.string().min(1).required(),
 }));
 
+export const validateCreateClient = validate(Joi.object({
+  email: Joi.string().email().optional(),
+  phone: Joi.string().pattern(mgPhone).required()
+    .messages({ 'string.pattern.base': 'Téléphone MG invalide (ex: +261201234567 ou 0201234567)' }),
+  password: Joi.string().min(6).required(),
+  name: Joi.string().min(1).required(),
+}));
+
+export const validateUpdateUser = validate(Joi.object({
+  email: Joi.string().email().optional(),
+  phone: Joi.string().pattern(mgPhone).optional()
+    .messages({ 'string.pattern.base': 'Téléphone MG invalide (ex: +261201234567 ou 0201234567)' }),
+  password: Joi.string().min(6).optional(),
+  name: Joi.string().min(1).optional(),
+}));
+
 export const validateListUsersQuery = (req, res, next) => {
   const schema = Joi.object({
     role: Joi.string().valid('client', 'livreur', 'admin').optional(),

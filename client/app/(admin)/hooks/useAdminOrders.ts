@@ -3,11 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiClient } from '../../../lib/api/client';
 import { useToast } from '../../../components/ui/Toast';
 import type { Order } from '../../../lib/api/models/Order';
-import type { OrderStatus } from '../../../lib/mappers/order';
+import { type OrderStatus, mapBackendStatus } from '../../../lib/mappers/order';
 
 export type OrdersFilterTab = 'assigned' | 'unassigned';
 export type ServiceFilterTab = 'all' | 'standard' | 'express';
 export type DateFilterTab = 'all' | 'today' | 'week';
+export type StatusFilterTab = 'all' | 'active' | 'delivered' | 'cancelled';
 
 export function useAdminOrders() {
   const api = useMemo(getApiClient, []);
@@ -23,19 +24,24 @@ export function useAdminOrders() {
   const [filterTab, setFilterTab] = useState<OrdersFilterTab>('assigned');
   const [serviceTab, setServiceTab] = useState<ServiceFilterTab>('express');
   const [dateTab, setDateTab] = useState<DateFilterTab>('all');
+  const [statusTab, setStatusTab] = useState<StatusFilterTab>('all');
 
   // Load saved filters on mount
   useEffect(() => {
     (async () => {
       try {
-        const [f, s, d] = await Promise.all([
+        const [f, s, d, st] = await Promise.all([
           AsyncStorage.getItem('adminOrders.filterTab'),
           AsyncStorage.getItem('adminOrders.serviceTab'),
           AsyncStorage.getItem('adminOrders.dateTab'),
+          AsyncStorage.getItem('adminOrders.statusTab'),
         ]);
         if (f === 'assigned' || f === 'unassigned') setFilterTab(f);
         if (s === 'all' || s === 'standard' || s === 'express') setServiceTab(s as ServiceFilterTab);
         if (d === 'all' || d === 'today' || d === 'week') setDateTab(d as DateFilterTab);
+        if (st === 'all' || st === 'active' || st === 'delivered' || st === 'cancelled') {
+          setStatusTab(st as StatusFilterTab);
+        }
       } catch {}
     })();
   }, []);
@@ -50,6 +56,9 @@ export function useAdminOrders() {
   useEffect(() => {
     AsyncStorage.setItem('adminOrders.dateTab', dateTab).catch(() => {});
   }, [dateTab]);
+  useEffect(() => {
+    AsyncStorage.setItem('adminOrders.statusTab', statusTab).catch(() => {});
+  }, [statusTab]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -170,10 +179,23 @@ export function useAdminOrders() {
       const isExpress = serviceTab === 'express';
       return byAssign.filter(o => String(o.type) === (isExpress ? 'express' : 'standard'));
     })();
-    // 3) Date filter (based on createdAt when available)
+    // 3) Status filter (UI-level statuses)
+    const byStatus = (() => {
+      if (statusTab === 'all') return byService;
+      return byService.filter((o) => {
+        const ui = mapBackendStatus(String(o.status ?? 'en_cours_de_traitement')) as OrderStatus;
+        if (statusTab === 'active') {
+          return ui === 'CREATED' || ui === 'PICKED_UP' || ui === 'IN_TRANSIT';
+        }
+        if (statusTab === 'delivered') return ui === 'DELIVERED';
+        if (statusTab === 'cancelled') return ui === 'CANCELLED';
+        return true;
+      });
+    })();
+    // 4) Date filter (based on createdAt when available)
     if (dateTab === 'all') {
       // Sort: Express first, then by createdAt desc
-      return [...byService].sort((a, b) => {
+      return [...byStatus].sort((a, b) => {
         const ax = String(a.type) === 'express' ? 0 : 1;
         const bx = String(b.type) === 'express' ? 0 : 1;
         if (ax !== bx) return ax - bx;
@@ -203,7 +225,7 @@ export function useAdminOrders() {
       const t = new Date(String(iso)).getTime();
       return Number.isFinite(t) && t >= start.getTime() && t < end.getTime();
     };
-    const ranged = byService.filter(o => inRange((o as any).createdAt));
+    const ranged = byStatus.filter(o => inRange((o as any).createdAt));
     return ranged.sort((a, b) => {
       const ax = String(a.type) === 'express' ? 0 : 1;
       const bx = String(b.type) === 'express' ? 0 : 1;
@@ -214,7 +236,7 @@ export function useAdminOrders() {
       const vb = Number.isFinite(tb) ? tb : -Infinity;
       return vb - va;
     });
-  }, [orders, filterTab, serviceTab, dateTab]);
+  }, [orders, filterTab, serviceTab, statusTab, dateTab]);
 
   // Badge counts for tabs (contextual with other active filters)
   const counts = useMemo(() => {
@@ -295,6 +317,8 @@ export function useAdminOrders() {
     setDateTab,
     serviceTab,
     setServiceTab,
+    statusTab,
+    setStatusTab,
     counts,
     // assign inputs/busy
     assignInputs,
