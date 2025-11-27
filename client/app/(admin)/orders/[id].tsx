@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { mapBackendStatus, statusLabel } from '../../../lib/mappers/order';
-import { PricingQuoteRequest } from '../../../lib/api/models/PricingQuoteRequest';
+import { PricingQuoteRequest } from '../../../lib/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getApiClient } from '../../../lib/api/client';
 import type { Order } from '../../../lib/api/models/Order';
