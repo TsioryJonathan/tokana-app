@@ -18,6 +18,10 @@ tags:
   - name: Slots
   - name: Delivery OTP
   - name: Admin Stats
+  - name: Admin Settlements
+  - name: Admin Dispatches
+  - name: Admin Reports
+  - name: Admin GPS
 components:
   securitySchemes:
     bearerAuth:
@@ -51,10 +55,173 @@ components:
             deliveredAll: { type: integer }
             inProgressAll: { type: integer }
             lateAll: { type: integer }
+            totalClients: { type: integer }
+            totalLivreurs: { type: integer }
         seriesOrders7d:
           type: array
           description: "Order counts per day for the last 7 days (inclusive of today), index 0 = oldest"
           items: { type: integer }
+    AdminEveningSettlementsItem:
+      type: object
+      properties:
+        id: { type: integer }
+        createdBy: { type: integer, nullable: true }
+        assignedTo: { type: integer, nullable: true }
+        status: { type: string }
+        cashToCollect: { type: integer, nullable: true }
+        priceTotal: { type: integer }
+        isPrepaid: { type: boolean }
+        deliveryFeePrepaid: { type: boolean }
+        courierCollected: { type: integer }
+        clientNet: { type: integer }
+        adminNet: { type: integer }
+        deliveryFee: { type: integer }
+        caseType: { type: integer, description: "Simplified case classification (1-5) based on prepaid flags" }
+    CourierSettlementAdmin:
+      type: object
+      properties:
+        courierId: { type: integer }
+        date: { type: string, format: date }
+        status: { type: string, enum: [DECLARED, CONFIRMED] }
+        cashAmount: { type: integer, nullable: true }
+        mobileMoneyAmount: { type: integer, nullable: true }
+        declaredAt: { type: string, format: date-time, nullable: true }
+        confirmedAt: { type: string, format: date-time, nullable: true }
+    AdminEveningSettlementsResponse:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        courierId: { type: integer, nullable: true }
+        totals:
+          type: object
+          properties:
+            totalOrders: { type: integer }
+            totalCourierCollected: { type: integer }
+            totalClientNet: { type: integer }
+            totalAdminNet: { type: integer }
+            totalDeliveryFees: { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AdminEveningSettlementsItem' }
+        settlement:
+          allOf:
+            - $ref: '#/components/schemas/CourierSettlementAdmin'
+          nullable: true
+    AdminClientPendingDispatchItem:
+      type: object
+      properties:
+        clientId: { type: integer }
+        clientName: { type: string, nullable: true }
+        clientPhone: { type: string, nullable: true }
+        clientEmail: { type: string, nullable: true }
+        netClient: { type: integer }
+        orders:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              status: { type: string }
+              cashToCollect: { type: integer, nullable: true }
+              priceTotal: { type: integer }
+              isPrepaid: { type: boolean }
+              deliveryFeePrepaid: { type: boolean }
+              clientNet: { type: integer }
+    AdminDispatch:
+      type: object
+      properties:
+        id: { type: integer }
+        clientId: { type: integer }
+        courierId: { type: integer }
+        status: { type: string, enum: [WAITING_COURIER, IN_PROGRESS, COMPLETED] }
+        netAmount: { type: integer }
+        cashAmount: { type: integer }
+        mobileMoneyAmount: { type: integer }
+    AdminClientReportItem:
+      type: object
+      properties:
+        id: { type: integer }
+        createdAt: { type: string, format: date-time }
+        status: { type: string }
+        assignedTo: { type: integer, nullable: true }
+        cashToCollect: { type: integer, nullable: true }
+        priceTotal: { type: integer }
+        isPrepaid: { type: boolean }
+        deliveryFeePrepaid: { type: boolean }
+        courierCollected: { type: integer }
+        clientNet: { type: integer }
+        adminNet: { type: integer }
+        deliveryFee: { type: integer }
+        caseType: { type: integer }
+    AdminClientReport:
+      type: object
+      properties:
+        client:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string, nullable: true }
+            phone: { type: string, nullable: true }
+            email: { type: string, nullable: true }
+        period:
+          type: object
+          properties:
+            dateFrom: { type: string, format: date-time, nullable: true }
+            dateTo: { type: string, format: date-time, nullable: true }
+        totals:
+          type: object
+          properties:
+            totalOrders: { type: integer }
+            totalCourierCollected: { type: integer }
+            totalClientNet: { type: integer }
+            totalAdminNet: { type: integer }
+            totalDeliveryFees: { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AdminClientReportItem' }
+    AdminHistoryReport:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            dateFrom: { type: string, format: date-time, nullable: true }
+            dateTo: { type: string, format: date-time, nullable: true }
+        settlements:
+          type: array
+          items:
+            type: object
+            properties:
+              courierId: { type: integer }
+              date: { type: string, format: date }
+              status: { type: string, enum: [DECLARED, CONFIRMED] }
+              cashAmount: { type: integer, nullable: true }
+              mobileMoneyAmount: { type: integer, nullable: true }
+              declaredAt: { type: string, format: date-time, nullable: true }
+              confirmedAt: { type: string, format: date-time, nullable: true }
+        dispatches:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              clientId: { type: integer }
+              courierId: { type: integer }
+              status: { type: string, enum: [WAITING_COURIER, IN_PROGRESS, COMPLETED] }
+              netAmount: { type: integer }
+              cashAmount: { type: integer }
+              mobileMoneyAmount: { type: integer }
+              createdAt: { type: string, format: date-time }
+    AdminCourierLocation:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        gpsTrackingEnabled: { type: boolean }
+        gpsLastLat: { type: number, nullable: true }
+        gpsLastLng: { type: number, nullable: true }
+        gpsLastSeenAt: { type: string, format: date-time, nullable: true }
     User:
       type: object
       properties:
@@ -256,6 +423,335 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/reports/client:
+    get:
+      summary: Get detailed client report for a period
+      description: |
+        Returns all orders for a given client over a date range, with financial
+        breakdown per order and aggregated totals.
+      tags: [Admin Reports]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: clientId
+          required: true
+          schema: { type: integer }
+          description: "Client (expéditeur) ID"
+        - in: query
+          name: dateFrom
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter orders createdAt >= dateFrom"
+        - in: query
+          name: dateTo
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter orders createdAt <= dateTo"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminClientReport' }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/gps/couriers:
+    get:
+      summary: List couriers and their last known GPS locations
+      description: |
+        Returns all delivery users (livreurs) with their last known latitude/longitude
+        and the timestamp of the last update.
+      tags: [Admin GPS]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: onlyActive
+          required: false
+          schema: { type: boolean }
+          description: "If true, only return couriers with gpsTrackingEnabled = true"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminCourierLocation' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/gps/couriers/{id}/tracking:
+    patch:
+      summary: Enable or disable GPS tracking for a courier
+      tags: [Admin GPS]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+              required: [enabled]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  gpsTrackingEnabled: { type: boolean }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/reports/history:
+    get:
+      summary: Get historical settlements and dispatches
+      description: |
+        Returns a lightweight history view combining courier evening settlements
+        and client dispatches over an optional date range.
+      tags: [Admin Reports]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: dateFrom
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter by created/settlement date >= dateFrom"
+        - in: query
+          name: dateTo
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter by created/settlement date <= dateTo"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminHistoryReport' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/dispatches/pending-clients:
+    get:
+      summary: List clients with pending net amounts to dispatch (J+1)
+      description: |
+        Returns all clients with delivered (expedie) orders that have not yet been
+        associated to a client dispatch. This is the entry point for building
+        J+1 dispatches per client.
+      tags: [Admin Dispatches]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: dateFrom
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter orders updatedAt >= dateFrom"
+        - in: query
+          name: dateTo
+          required: false
+          schema: { type: string, format: date-time }
+          description: "Filter orders updatedAt <= dateTo"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminClientPendingDispatchItem' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/dispatches:
+    get:
+      summary: List client dispatches
+      tags: [Admin Dispatches]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string, enum: [WAITING_COURIER, IN_PROGRESS, COMPLETED] }
+        - in: query
+          name: clientId
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: courierId
+          required: false
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminDispatch' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      summary: Create a new client dispatch
+      description: |
+        Creates a new dispatch for a client and a courier, and associates the
+        selected orders to this dispatch. Cash + mobileMoney must equal the
+        computed net client amount from the selected orders.
+      tags: [Admin Dispatches]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId: { type: integer }
+                courierId: { type: integer }
+                orderIds:
+                  type: array
+                  items: { type: integer }
+                cashAmount: { type: integer }
+                mobileMoneyAmount: { type: integer }
+              required: [clientId, courierId, orderIds, cashAmount, mobileMoneyAmount]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AdminDispatch'
+                  - type: object
+                    properties:
+                      orderIds:
+                        type: array
+                        items: { type: integer }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/settlements/evening/confirm:
+    post:
+      summary: Confirm evening settlement for a courier on a given date
+      description: |
+        Marks the evening settlement of a courier as CONFIRMED for a given date.
+        The client is expected to send the cash/mobile money breakdown. If a record
+        already exists for this courier/date, it will be updated.
+      tags: [Admin Settlements]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date: { type: string, format: date }
+                courierId: { type: integer }
+                cashAmount: { type: integer, nullable: true }
+                mobileMoneyAmount: { type: integer, nullable: true }
+              required: [date, courierId]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourierSettlementAdmin' }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
               examples:
                 unauthorized:
                   value:
@@ -269,6 +765,41 @@ paths:
                 forbidden:
                   value:
                     msg: "Forbidden"
+  /api/admin/settlements/evening:
+    get:
+      summary: Get evening settlements for a courier on a given date
+      description: |
+        Returns all delivered (expedie) orders for a given courier and date,
+        along with aggregated totals and a per-order financial breakdown.
+      tags: [Admin Settlements]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: date
+          required: false
+          schema: { type: string, format: date }
+          description: "Date of the evening settlement (server local date). Defaults to today if omitted."
+        - in: query
+          name: courierId
+          required: false
+          schema: { type: integer }
+          description: "Filter by courier (assignedTo). If omitted, includes all couriers."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminEveningSettlementsResponse' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   # Public Zones
   /api/zones:
     get:
@@ -1618,6 +2149,148 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/users/client:
+    post:
+      summary: Create client user
+      tags: [Admin Users]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                phone: { type: string, description: "MG format: +26120xxxxxxx or 020xxxxxxx" }
+                password: { type: string, minLength: 6 }
+                name: { type: string }
+              required: [phone, password, name]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  email: { type: string, nullable: true }
+                  phone: { type: string }
+                  name: { type: string }
+                  role: { type: string, enum: [client, livreur, admin] }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Conflict (email/phone already exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /api/admin/users/{id}:
+    put:
+      summary: Update an existing user (client or livreur)
+      tags: [Admin Users]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                phone: { type: string, description: "MG format: +26120xxxxxxx or 020xxxxxxx" }
+                password: { type: string, minLength: 6 }
+                name: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  email: { type: string, nullable: true }
+                  phone: { type: string }
+                  name: { type: string }
+                  role: { type: string, enum: [client, livreur, admin] }
+        '400':
+          description: Validation error or bad ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Conflict (email/phone already exists)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      summary: Delete a user
+      tags: [Admin Users]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: No Content (deleted)
+        '400':
+          description: Validation error or bad ID
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
               examples:
                 conflict:
                   value:

@@ -47,6 +47,128 @@ export const createLivreur = async (req, res, next) => {
   }
 };
 
+export const updateUser = async (req, res, next) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().optional(),
+      phone: Joi.string().pattern(mgPhone).optional(),
+      password: Joi.string().min(6).optional(),
+      name: Joi.string().optional(),
+    });
+
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
+
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ msg: 'ID utilisateur invalide' });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ msg: 'Utilisateur introuvable' });
+    }
+
+    const { email, phone, password, name } = value;
+
+    if (email && email !== user.email) {
+      const existing = await User.findOne({ where: { email } });
+      if (existing && existing.id !== user.id) {
+        return res.status(409).json({ msg: 'Email déjà utilisé' });
+      }
+      user.email = email;
+    }
+
+    if (phone && phone !== user.phone) {
+      const normalizedPhone = normalizeMgPhone(phone);
+      const existingPhone = await User.findOne({ where: { phone: normalizedPhone } });
+      if (existingPhone && existingPhone.id !== user.id) {
+        return res.status(409).json({ msg: 'Téléphone déjà utilisé' });
+      }
+      user.phone = normalizedPhone;
+    }
+
+    if (typeof name === 'string') {
+      user.name = name;
+    }
+
+    if (password) {
+      user.password = password;
+    }
+
+    await user.save();
+
+    return res.json({
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ msg: 'ID utilisateur invalide' });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ msg: 'Utilisateur introuvable' });
+    }
+
+    await user.destroy();
+
+    return res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createClient = async (req, res, next) => {
+  try {
+    const schema = Joi.object({
+      email: Joi.string().email().optional(),
+      phone: Joi.string().pattern(mgPhone).required(),
+      password: Joi.string().min(6).required(),
+      name: Joi.string().required(),
+    });
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).json({ msg: error.details.map(e => e.message).join(', ') });
+
+    const { email, phone, password, name } = value;
+    const normalizedPhone = phone ? normalizeMgPhone(phone) : null;
+
+    if (email) {
+      const existing = await User.findOne({ where: { email } });
+      if (existing) return res.status(409).json({ msg: 'Email déjà utilisé' });
+    }
+    if (normalizedPhone) {
+      const existingPhone = await User.findOne({ where: { phone: normalizedPhone } });
+      if (existingPhone) return res.status(409).json({ msg: 'Téléphone déjà utilisé' });
+    }
+
+    const payload = { phone: normalizedPhone, name, password, role: 'client' };
+    if (email) Object.assign(payload, { email });
+    const user = await User.create(payload);
+
+    return res.status(201).json({
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const listUsers = async (req, res, next) => {
   try {
     const { role, q } = req.query;

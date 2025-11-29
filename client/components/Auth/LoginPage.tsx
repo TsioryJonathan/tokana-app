@@ -161,7 +161,7 @@ export default function LoginPage({
               className="w-full py-5 rounded-3xl items-center border-2 border-[#FFD700] bg-white/80 backdrop-blur-sm shadow-lg shadow-gray-200/50"
             >
               <Text className="text-[#FFD700] font-quicksand-bold text-xl uppercase tracking-wide">
-                S'inscrire
+                S&apos;inscrire
               </Text>
             </TouchableOpacity>
           </View>

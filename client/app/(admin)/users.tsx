@@ -37,8 +37,10 @@ export default function AdminUsersPage() {
   const [pages, setPages] = useState(1);
   const [loadingList, setLoadingList] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingRole, setEditingRole] = useState<'client' | 'livreur' | null>(null);
 
-  const createLivreur = async () => {
+  const createFromForm = async () => {
     if (loading) return;
     setLoading(true);
     setCreated(null);
@@ -48,22 +50,66 @@ export default function AdminUsersPage() {
         showToast('Téléphone invalide. Ex: +261201234567 ou 0201234567', 'error');
         return;
       }
-      const res = await api.adminUsers.postApiAdminUsers({ name, phone: cleaned, email, password });
-      setCreated(res);
-      showToast('Livreur créé', 'success');
+      const payload = { name, phone: cleaned, email, password };
+      const isClient = roleTab === 'client';
+      let res;
+      if (editingId != null) {
+        const updatePayload = { ...payload } as any;
+        if (!password) {
+          delete updatePayload.password;
+        }
+        res = await api.adminUsers.putApiAdminUsers(editingId, updatePayload);
+        setCreated(res);
+        showToast(isClient ? 'Client mis à jour' : 'Livreur mis à jour', 'success');
+      } else {
+        res = isClient
+          ? await api.adminUsers.postApiAdminUsersClient(payload)
+          : await api.adminUsers.postApiAdminUsers(payload);
+        setCreated(res);
+        showToast(isClient ? 'Client créé' : 'Livreur créé', 'success');
+      }
       setName('');
       setPhone('');
       setEmail('');
       setPassword('');
-      setRoleTab('livreur');
+      const targetRole = isClient ? 'client' : 'livreur';
+      setRoleTab(targetRole);
       setPage(1);
-      await fetchUsers({ role: 'livreur', q: '', page: 1, limit });
+      await fetchUsers({ role: targetRole, q: '', page: 1, limit });
+      setEditingId(null);
+      setEditingRole(null);
     } catch (e: any) {
       console.warn('create livreur error', e);
-      const msg: string = e?.body?.msg || e?.message || 'Création livreur échouée';
+      const msg: string = e?.body?.msg || e?.message || 'Action sur l’utilisateur échouée';
       showToast(msg, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onEditUser = (u: User) => {
+    if (!u.id) return;
+    if (u.role !== 'client' && u.role !== 'livreur') return;
+    setEditingId(u.id);
+    setEditingRole(u.role);
+    setRoleTab(u.role);
+    setName(u.name ?? '');
+    setPhone(u.phone ?? '');
+    setEmail(u.email ?? '');
+    setPassword('');
+    setCreated(null);
+  };
+
+  const deleteUser = async (u: User) => {
+    if (!u.id) return;
+    try {
+      await api.adminUsers.deleteApiAdminUsers(u.id);
+      showToast('Utilisateur supprimé', 'success');
+      await fetchUsers({ role: roleTab, q, page, limit });
+    } catch (e: any) {
+      console.error('[AdminUsers] deleteApiAdminUsers error:', e);
+      const msg: string = e?.body?.msg || e?.message || 'Suppression échouée';
+      showToast(msg, 'error');
     }
   };
 
@@ -130,13 +176,21 @@ export default function AdminUsersPage() {
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <View className="px-6 pt-6">
-          {/* Créer un livreur */}
+          {/* Créer un utilisateur (client ou livreur selon l'onglet) */}
           <View className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
             <View className="flex-row items-center gap-2 mb-4">
               <View className="bg-emerald-100 rounded-lg p-2">
                 <UserPlus size={20} color="#059669" strokeWidth={2.5} />
               </View>
-              <Text className="text-gray-900 font-quicksand-bold text-lg">Créer un livreur</Text>
+              <Text className="text-gray-900 font-quicksand-bold text-lg">
+                {editingId
+                  ? roleTab === 'client'
+                    ? 'Modifier un client'
+                    : 'Modifier un livreur'
+                  : roleTab === 'client'
+                    ? 'Créer un client'
+                    : 'Créer un livreur'}
+              </Text>
             </View>
             <View>
               <TextInput
@@ -174,13 +228,21 @@ export default function AdminUsersPage() {
               />
               <TouchableOpacity
                 className={`rounded-xl overflow-hidden ${loading || !canCreate ? 'opacity-50' : ''}`}
-                onPress={createLivreur}
+                onPress={createFromForm}
                 disabled={loading || !canCreate}
                 activeOpacity={0.7}
               >
                 <LinearGradient colors={['#059669', '#047857']} className="py-4">
                   <Text className="text-white text-center font-quicksand-bold">
-                    {loading ? 'Création…' : 'Créer le livreur'}
+                    {loading
+                      ? 'En cours…'
+                      : editingId
+                        ? roleTab === 'client'
+                          ? 'Mettre à jour le client'
+                          : 'Mettre à jour le livreur'
+                        : roleTab === 'client'
+                          ? 'Créer le client'
+                          : 'Créer le livreur'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -297,6 +359,26 @@ export default function AdminUsersPage() {
                               </Text>
                             </View>
                           </View>
+                        </View>
+                        <View className="flex-row justify-end mt-3 gap-3">
+                          {u.role !== 'admin' && (
+                            <>
+                              <TouchableOpacity
+                                onPress={() => onEditUser(u)}
+                                className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200"
+                                activeOpacity={0.7}
+                              >
+                                <Text className="text-emerald-700 font-quicksand-semibold text-xs">Modifier</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => deleteUser(u)}
+                                className="px-3 py-1 rounded-full bg-red-50 border border-red-200"
+                                activeOpacity={0.7}
+                              >
+                                <Text className="text-red-600 font-quicksand-semibold text-xs">Supprimer</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
                         </View>
                       </View>
                     ))}

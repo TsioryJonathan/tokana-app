@@ -1,5 +1,6 @@
 import { Op, fn, col } from 'sequelize';
 import Order from '../../models/Order.js';
+import User from '../../models/User.js';
 
 const handleErr = (res, err) => {
   const status = err?.status || 500;
@@ -23,7 +24,7 @@ export const getAdminStats = async (req, res) => {
 
     const wherePeriod = { createdAt: { [Op.between]: [start, end] } };
 
-    const [ordersToday, deliveredToday, inProgress, late, heavyCount, otpPending, revenueTodayRow, totalAll, deliveredAll, inProgressAll, lateAll] = await Promise.all([
+    const [ordersToday, deliveredToday, inProgress, late, heavyCount, otpPending, revenueTodayRow, totalAll, deliveredAll, inProgressAll, lateAll, totalClients, totalLivreurs] = await Promise.all([
       Order.count({ where: wherePeriod }),
       Order.count({ where: { status: 'expedie', updatedAt: { [Op.between]: [start, end] } } }),
       Order.count({ where: { ...wherePeriod, status: { [Op.ne]: 'expedie' } } }),
@@ -40,6 +41,8 @@ export const getAdminStats = async (req, res) => {
       Order.count({ where: { status: 'expedie' } }),
       Order.count({ where: { status: { [Op.ne]: 'expedie' } } }),
       Order.count({ where: { status: { [Op.ne]: 'expedie' }, slotEnd: { [Op.lt]: now } } }),
+      User.count({ where: { role: 'client' } }),
+      User.count({ where: { role: 'livreur' } }),
     ]);
 
     const revenueToday = Number(revenueTodayRow?.sum || 0);
@@ -78,6 +81,8 @@ export const getAdminStats = async (req, res) => {
         deliveredAll,
         inProgressAll,
         lateAll,
+        totalClients,
+        totalLivreurs,
       },
       seriesOrders7d,
     });

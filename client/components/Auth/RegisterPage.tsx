@@ -207,7 +207,7 @@ export default function RegisterPage({
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text className="text-white font-quicksand-bold text-lg tracking-wide uppercase">
-                    S'inscrire
+                    S&apos;inscrire
                   </Text>
                 )}
               </LinearGradient>

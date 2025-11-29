@@ -89,13 +89,13 @@ export function KpiSection({
                   className="px-4 py-2"
                 >
                   <Text className="font-quicksand-semibold text-sm text-white">
-                    Aujourd'hui
+                    Aujourd&apos;hui
                   </Text>
                 </LinearGradient>
               ) : (
                 <View className="px-4 py-2 bg-transparent">
                   <Text className="font-quicksand-semibold text-sm text-gray-600">
-                    Aujourd'hui
+                    Aujourd&apos;hui
                   </Text>
                 </View>
               )}

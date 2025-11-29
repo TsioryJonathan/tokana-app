@@ -28,7 +28,6 @@ export class AdminStatsService {
             },
             errors: {
                 401: `Unauthorized`,
-                403: `Forbidden (admin only)`,
             },
         });
     }

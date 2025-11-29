@@ -74,6 +74,16 @@ const Order = sequelize.define('Order', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  isPrepaid: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
+  deliveryFeePrepaid: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
   priceTotal: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -141,6 +151,10 @@ const Order = sequelize.define('Order', {
     allowNull: true,
     defaultValue: false,
   },
+  clientDispatchId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   status: {
     type: DataTypes.ENUM(
       'en_cours_de_traitement',
@@ -158,6 +172,7 @@ const Order = sequelize.define('Order', {
     { fields: ['status'] },
     { fields: ['createdBy'] },
     { fields: ['assignedTo'] },
+    { fields: ['clientDispatchId'] },
     { fields: ['dropoffLat', 'dropoffLng'] },
   ],
 });
