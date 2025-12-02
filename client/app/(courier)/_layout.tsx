@@ -53,6 +53,9 @@ export default function CourierLayout() {
           <Tabs.Screen name="index" options={{ title: "Accueil" }} />
           <Tabs.Screen name="profile" options={{ title: "Profile" }} />
           <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+          <Tabs.Screen name="evening-settlement" options={{ href: null }} />
+          <Tabs.Screen name="dispatches" options={{ href: null }} />
+          <Tabs.Screen name="history" options={{ href: null }} />
         </Tabs>
         <Navbar
           items={[

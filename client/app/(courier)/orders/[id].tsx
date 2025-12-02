@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -110,6 +112,11 @@ export default function CourierOrderDetail() {
   >([]);
   const [loadingRemarks, setLoadingRemarks] = useState(false);
   const [newRemark, setNewRemark] = useState("");
+  const [showPostponeModal, setShowPostponeModal] = useState(false);
+  const [postponeReason, setPostponeReason] = useState("");
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState("");
+  const [transferReason, setTransferReason] = useState("");
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -238,6 +245,62 @@ export default function CourierOrderDetail() {
       showToast("Remarque ajoutée", "success");
     } catch (err: any) {
       showToast(err?.message || "Erreur remarque", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const postponeOrderAction = async () => {
+    if (!id || postponeReason.trim().length < 5) {
+      showToast("Raison trop courte (min 5 caractères)", "error");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.request.request({
+        method: 'POST',
+        url: `/api/courier/orders/${id}/postpone`,
+        body: { reason: postponeReason.trim() },
+        mediaType: 'application/json',
+      } as any);
+      showToast("Commande reportée", "success");
+      setShowPostponeModal(false);
+      setPostponeReason("");
+      await reload();
+    } catch (err: any) {
+      const msg: string = err?.body?.msg || err?.message || "Erreur report";
+      showToast(msg, "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const transferOrderAction = async () => {
+    if (!id || !transferTargetId.trim()) {
+      showToast("ID livreur requis", "error");
+      return;
+    }
+    const targetId = parseInt(transferTargetId.trim(), 10);
+    if (!Number.isFinite(targetId)) {
+      showToast("ID livreur invalide", "error");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.request.request({
+        method: 'POST',
+        url: `/api/courier/orders/${id}/transfer`,
+        body: { targetCourierId: targetId, reason: transferReason.trim() || undefined },
+        mediaType: 'application/json',
+      } as any);
+      showToast("Commande transférée", "success");
+      setShowTransferModal(false);
+      setTransferTargetId("");
+      setTransferReason("");
+      await reload();
+    } catch (err: any) {
+      const msg: string = err?.body?.msg || err?.message || "Erreur transfert";
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -374,6 +437,45 @@ export default function CourierOrderDetail() {
               />
             </View>
           </View>
+
+          {/* Actions avancées */}
+          {order.status !== 'DELIVERED' && (
+            <View className="mt-6 pt-6 border-t border-slate-100">
+              <Text className="text-sm text-slate-600 font-quicksand-medium mb-3">
+                Actions avancées
+              </Text>
+              <View className="gap-3">
+                <TouchableOpacity
+                  onPress={() => setShowPostponeModal(true)}
+                  disabled={submitting}
+                  className="flex-row items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-3"
+                  activeOpacity={0.7}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="time-outline" size={20} color="#F59E0B" />
+                    <Text className="ml-2 text-amber-700 font-quicksand-semibold text-sm">
+                      Reporter la livraison
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowTransferModal(true)}
+                  disabled={submitting}
+                  className="flex-row items-center justify-between bg-purple-50 border border-purple-200 rounded-xl p-3"
+                  activeOpacity={0.7}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="swap-horizontal-outline" size={20} color="#A855F7" />
+                    <Text className="ml-2 text-purple-700 font-quicksand-semibold text-sm">
+                      Transférer à un autre livreur
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#A855F7" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Informations expéditeur */}
@@ -512,6 +614,126 @@ export default function CourierOrderDetail() {
           )}
         </View>
       </ScrollView>
+
+      {/* Modal Reporter */}
+      <Modal
+        visible={showPostponeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPostponeModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <Text className="text-lg font-quicksand-bold text-slate-900 mb-4">
+              Reporter la livraison
+            </Text>
+            <Text className="text-sm text-slate-600 font-quicksand mb-3">
+              Indiquez la raison du report (min 5 caractères)
+            </Text>
+            <TextInput
+              value={postponeReason}
+              onChangeText={setPostponeReason}
+              placeholder="Ex: Client absent, adresse incorrecte..."
+              placeholderTextColor="#94A3B8"
+              className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 mb-4"
+              multiline
+              numberOfLines={3}
+            />
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => {
+                  setShowPostponeModal(false);
+                  setPostponeReason("");
+                }}
+                className="flex-1 bg-slate-100 rounded-xl py-3 items-center"
+                activeOpacity={0.7}
+              >
+                <Text className="text-slate-700 font-quicksand-semibold">Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={postponeOrderAction}
+                disabled={submitting || postponeReason.trim().length < 5}
+                className={`flex-1 rounded-xl py-3 items-center ${
+                  submitting || postponeReason.trim().length < 5 ? 'bg-slate-300' : 'bg-amber-600'
+                }`}
+                activeOpacity={0.7}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-white font-quicksand-semibold">Confirmer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Transférer */}
+      <Modal
+        visible={showTransferModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTransferModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <Text className="text-lg font-quicksand-bold text-slate-900 mb-4">
+              Transférer la commande
+            </Text>
+            <Text className="text-sm text-slate-600 font-quicksand mb-3">
+              ID du livreur cible
+            </Text>
+            <TextInput
+              value={transferTargetId}
+              onChangeText={setTransferTargetId}
+              placeholder="Ex: 5"
+              placeholderTextColor="#94A3B8"
+              className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 mb-3"
+              keyboardType="number-pad"
+            />
+            <Text className="text-sm text-slate-600 font-quicksand mb-3">
+              Raison (optionnel)
+            </Text>
+            <TextInput
+              value={transferReason}
+              onChangeText={setTransferReason}
+              placeholder="Ex: Zone trop éloignée..."
+              placeholderTextColor="#94A3B8"
+              className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 mb-4"
+              multiline
+              numberOfLines={2}
+            />
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => {
+                  setShowTransferModal(false);
+                  setTransferTargetId("");
+                  setTransferReason("");
+                }}
+                className="flex-1 bg-slate-100 rounded-xl py-3 items-center"
+                activeOpacity={0.7}
+              >
+                <Text className="text-slate-700 font-quicksand-semibold">Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={transferOrderAction}
+                disabled={submitting || !transferTargetId.trim()}
+                className={`flex-1 rounded-xl py-3 items-center ${
+                  submitting || !transferTargetId.trim() ? 'bg-slate-300' : 'bg-purple-600'
+                }`}
+                activeOpacity={0.7}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-white font-quicksand-semibold">Confirmer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

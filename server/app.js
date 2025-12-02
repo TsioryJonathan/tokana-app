@@ -19,6 +19,9 @@ import reportsAdminRoutes from "./routes/admin/reportsAdminRoutes.js";
 import gpsAdminRoutes from "./routes/admin/gpsAdminRoutes.js";
 import addressesRoutes from "./routes/addressesRoutes.js";
 import meRoutes from "./routes/meRoutes.js";
+import courierSettlementsRoutes from "./routes/courierSettlementsRoutes.js";
+import courierDispatchesRoutes from "./routes/courierDispatchesRoutes.js";
+import courierOrderActionsRoutes from "./routes/courierOrderActionsRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { protect } from "./middleware/authMiddleware.js";
 import User from "./models/User.js";
@@ -178,6 +181,8 @@ app.use("/api/admin/reports", reportsAdminRoutes);
 app.use("/api/admin/gps", gpsAdminRoutes);
 app.use("/api/addresses", addressesRoutes);
 app.use("/api/me", meRoutes);
+app.use("/api/courier/settlements", courierSettlementsRoutes);
+app.use("/api/courier/dispatches", courierDispatchesRoutes);
 
 // Serve user uploads (avatars, etc.)
 try {

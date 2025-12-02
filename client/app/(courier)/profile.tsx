@@ -187,6 +187,73 @@ export default function Profile() {
           </View>
         </View>
 
+        {/* Actions rapides */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
+          <Text className="text-base font-quicksand-bold text-slate-900 mb-3">
+            Actions
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(courier)/evening-settlement' as any)}
+            className="flex-row items-center justify-between py-3 border-b border-slate-100"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <View className="bg-emerald-50 rounded-lg p-2 mr-3">
+                <Ionicons name="wallet-outline" size={20} color="#059669" />
+              </View>
+              <View>
+                <Text className="text-sm font-quicksand-semibold text-slate-900">
+                  Règlement du soir
+                </Text>
+                <Text className="text-xs text-slate-500 font-quicksand-medium">
+                  Bilan quotidien & versement
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(courier)/dispatches' as any)}
+            className="flex-row items-center justify-between py-3 border-b border-slate-100"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <View className="bg-sky-50 rounded-lg p-2 mr-3">
+                <Ionicons name="people-outline" size={20} color="#0EA5E9" />
+              </View>
+              <View>
+                <Text className="text-sm font-quicksand-semibold text-slate-900">
+                  Versements clients J+1
+                </Text>
+                <Text className="text-xs text-slate-500 font-quicksand-medium">
+                  Règlements à effectuer
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(courier)/history' as any)}
+            className="flex-row items-center justify-between py-3"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <View className="bg-purple-50 rounded-lg p-2 mr-3">
+                <Ionicons name="time-outline" size={20} color="#A855F7" />
+              </View>
+              <View>
+                <Text className="text-sm font-quicksand-semibold text-slate-900">
+                  Historique
+                </Text>
+                <Text className="text-xs text-slate-500 font-quicksand-medium">
+                  Toutes mes livraisons
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+
         {/* Informations de contact */}
         <View className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
           <Text className="text-base font-quicksand-bold text-slate-900 mb-3">
