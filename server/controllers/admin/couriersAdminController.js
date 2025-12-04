@@ -1,4 +1,5 @@
-import { User, Order } from '../../models/index.js';
+import User from '../../models/User.js';
+import Order from '../../models/Order.js';
 import { Op } from 'sequelize';
 
 function handleErr(res, err) {
