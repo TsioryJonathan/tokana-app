@@ -177,7 +177,7 @@ export default function Verify() {
       try {
         const me = await (api as any).me.getApiMe();
         role = me?.role;
-        
+        console.log('[verify] User role:', role, 'emailVerifiedAt:', me?.emailVerifiedAt);
       } catch (err) {
         console.error('[verify] Error fetching user:', err);
         // Si on ne peut pas récupérer le rôle, essayer quand même de rediriger selon le token

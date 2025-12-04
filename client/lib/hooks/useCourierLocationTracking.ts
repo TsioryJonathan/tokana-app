@@ -41,7 +41,7 @@ export function useCourierLocationTracking() {
           mediaType: 'application/json',
         } as any);
       } catch (e: any) {
-        
+        console.warn('[GPS] failed to send position', e);
         const msg: string = e?.body?.msg || e?.message || 'Envoi de position échoué';
         setLastError(msg);
       } finally {

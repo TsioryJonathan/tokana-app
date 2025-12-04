@@ -45,7 +45,7 @@ export default function Profile() {
       setEmail(me.email || "");
       setRole(me.role || null);
     } catch (e) {
-      
+      console.warn("/api/me failed", e);
       showToast("Impossible de charger le profil", "error");
     }
   }, [api, showToast]);
@@ -73,7 +73,7 @@ export default function Profile() {
         activeOrders: active.length,
       });
     } catch (e) {
-      
+      console.warn("Failed to load stats", e);
     }
   }, [api]);
 

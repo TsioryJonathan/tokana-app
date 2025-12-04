@@ -22,7 +22,11 @@ function removeConsoleLogs(dir) {
         const originalLength = content.length;
         
         // Supprimer console.log, console.info, console.debug, console.warn
-        content = content.replace(/console\.(log|info|debug|warn)\([^)]*\);?\n?/g, '');
+        // Regex améliorée pour gérer les console.log multi-lignes
+        content = content.replace(/console\.(log|info|debug|warn)\s*\([^)]*\)\s*;?\s*\n?/g, '');
+        
+        // Nettoyer les lignes vides multiples laissées par la suppression
+        content = content.replace(/\n{3,}/g, '\n\n');
         
         if (content.length !== originalLength) {
           fs.writeFileSync(filePath, content);

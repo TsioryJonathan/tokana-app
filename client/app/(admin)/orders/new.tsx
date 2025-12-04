@@ -86,7 +86,7 @@ export default function AdminNewOrderPage() {
       const res = await api.adminUsers.getApiAdminUsers('client', clientSearch.trim(), 1, 10);
       setClientResults(res.items ?? []);
     } catch (e: any) {
-      
+      console.warn('[AdminNewOrder] searchClients error', e);
       const msg: string = e?.body?.msg || e?.message || 'Recherche client échouée';
       showToast(msg, 'error');
     } finally {
@@ -156,7 +156,7 @@ export default function AdminNewOrderPage() {
       showToast('Commande créée', 'success');
       router.replace({ pathname: '/(admin)/orders' as any, params: { highlight: String(created.id) } });
     } catch (e: any) {
-      
+      console.warn('[AdminNewOrder] submit error', e?.status, e?.body || e?.message || e);
       const msg: string = e?.body?.msg || e?.message || 'Création échouée';
       showToast(msg, 'error');
     } finally {

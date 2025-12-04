@@ -69,7 +69,7 @@ const Login = () => {
       const msg: string =
         err?.body?.msg || err?.message || "Erreur de connexion";
       setErrorMessage(msg);
-      
+      console.warn("login error", err?.body || err?.message || err);
       showToast(msg, "error");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
         () => {}

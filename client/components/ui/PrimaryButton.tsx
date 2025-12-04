@@ -23,10 +23,10 @@ function PrimaryButton({
   const isDisabled = disabled || loading;
   const handlePress = () => {
     if (isDisabled) {
-      ");
+      console.log("PrimaryButton: Press ignored (disabled or loading)");
       return;
     }
-    
+    console.log("PrimaryButton: onPress called");
     onPress();
   };
   

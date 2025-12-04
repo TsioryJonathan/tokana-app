@@ -58,7 +58,7 @@ export function useLocalities() {
         if (out.length === 0) {
           // Fallback: minimal defaults to enable MVP UX if DB is not seeded yet
           // eslint-disable-next-line no-console
-          
+          console.warn('[useLocalities] /api/zones empty; using DEFAULT_LOCALITIES fallback');
           setItems(DEFAULT_LOCALITIES);
         } else {
           setItems(out);

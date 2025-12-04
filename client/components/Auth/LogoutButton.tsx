@@ -43,7 +43,7 @@ export default function LogoutButton({
           await api.auth.postApiAuthLogout({ refreshToken: rt });
         } catch (e) {
           // ignore network/api errors for logout flow, proceed to clear local session
-          
+          console.warn("logout api error", e);
         }
       }
     } finally {
@@ -54,7 +54,7 @@ export default function LogoutButton({
   };
 
   const handlePress = () => {
-    
+    console.log("LogoutButton: handlePress called, confirm:", confirm);
     if (!confirm) {
       void doLogout();
       return;
@@ -65,7 +65,7 @@ export default function LogoutButton({
         text: "Se déconnecter",
         style: "destructive",
         onPress: () => {
-          
+          console.log("LogoutButton: User confirmed logout");
           void doLogout();
         },
       },

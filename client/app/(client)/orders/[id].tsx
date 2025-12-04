@@ -58,7 +58,7 @@ export default function OrderDetails() {
       setLoading(true);
       try {
         const data = await api.orders.getApiOrders1(Number(id));
-        
+        console.log(data);
 
         const ui = mapBackendOrderToUI(data);
         if (mounted) {
@@ -79,7 +79,7 @@ export default function OrderDetails() {
           .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
         if (mounted) setHistory(mapped);
       } catch (e: any) {
-        
+        console.warn("order detail error", e);
         const msg = e?.body?.msg || e?.message || "Commande introuvable";
         if (mounted) setError(msg);
         showToast("Erreur de chargement de la commande", "error");

@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
       setEditingId(null);
       setEditingRole(null);
     } catch (e: any) {
-      
+      console.warn('create livreur error', e);
       const msg: string = e?.body?.msg || e?.message || 'Action sur l’utilisateur échouée';
       showToast(msg, 'error');
     } finally {

@@ -26,7 +26,7 @@ export default function AdminProfile() {
         if (!mounted) return;
         setMe(m);
       } catch (e) {
-        
+        console.warn('load admin profile failed', e);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -144,7 +144,7 @@ export default function AdminProfile() {
                           try {
                             await api.auth.postApiAuthLogout({ refreshToken: rt });
                           } catch (e) {
-                            
+                            console.warn('logout api error', e);
                           }
                         }
                       } finally {

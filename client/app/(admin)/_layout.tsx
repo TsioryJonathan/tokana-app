@@ -53,11 +53,11 @@ export default function AdminLayout() {
           <Tabs.Screen name="zones" options={{ title: "Zones" }} />
           <Tabs.Screen name="profile" options={{ title: "Profil" }} />
           <Tabs.Screen name="orders/[id]" options={{ href: null }} />
+          <Tabs.Screen name="orders/new" options={{ href: null }} />
           <Tabs.Screen name="settlements-evening" options={{ href: null }} />
           <Tabs.Screen name="dispatches" options={{ href: null }} />
           <Tabs.Screen name="reports" options={{ href: null }} />
           <Tabs.Screen name="gps" options={{ href: null }} />
-          {/* Nouvelles routes CRUD */}
           <Tabs.Screen name="clients/index" options={{ href: null }} />
           <Tabs.Screen name="clients/[id]" options={{ href: null }} />
           <Tabs.Screen name="clients/new" options={{ href: null }} />

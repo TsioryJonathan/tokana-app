@@ -30,7 +30,7 @@ export default function AdminZonesPage() {
       const z = await api.adminZones.getApiAdminZones();
       setZones(z);
     } catch (e) {
-      
+      console.warn('load zones error', e);
       showToast('Chargement zones échoué', 'error');
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ export default function AdminZonesPage() {
       setNewZoneLabel('');
       await loadZones();
     } catch (e) {
-      
+      console.warn('create zone error', e);
       showToast('Création zone échouée', 'error');
     } finally {
       setCreatingZone(false);
@@ -62,7 +62,7 @@ export default function AdminZonesPage() {
       showToast('Zone mise à jour', 'success');
       await loadZones();
     } catch (e) {
-      
+      console.warn('update zone error', e);
       showToast('MàJ zone échouée', 'error');
     }
   };
@@ -74,7 +74,7 @@ export default function AdminZonesPage() {
       showToast('Zone supprimée', 'success');
       await loadZones();
     } catch (e) {
-      
+      console.warn('delete zone error', e);
       showToast('Suppression zone échouée', 'error');
     } finally {
       setDeletingZoneId(null);
@@ -109,7 +109,7 @@ export default function AdminZonesPage() {
       setGeometryTextByZoneId((m) => ({ ...m, [z.id!]: text }));
       showToast('Géométrie chargée', 'success');
     } catch (e) {
-      
+      console.warn('load geometry error', e);
       showToast('Chargement géométrie échoué', 'error');
     } finally {
       setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: false }));
@@ -140,7 +140,7 @@ export default function AdminZonesPage() {
       await api.adminZones.putApiAdminZonesKeyGeometry(z.key as any, { geometry: parsed });
       showToast('Géométrie enregistrée', 'success');
     } catch (e) {
-      
+      console.warn('save geometry error', e);
       showToast('Enregistrement géométrie échoué', 'error');
     } finally {
       setGeometryBusyByZoneId((m) => ({ ...m, [z.id!]: false }));
