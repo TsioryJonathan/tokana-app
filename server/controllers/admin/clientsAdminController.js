@@ -1,5 +1,5 @@
-const { User } = require('../../models');
-const { Op } = require('sequelize');
+import { User } from '../../models/index.js';
+import { Op } from 'sequelize';
 
 function handleErr(res, err) {
   console.error(err);
@@ -10,7 +10,7 @@ function handleErr(res, err) {
  * GET /api/admin/clients
  * Liste tous les clients avec filtres et recherche
  */
-exports.listClients = async (req, res) => {
+export const listClients = async (req, res) => {
   try {
     const { search, zone, page = 1, limit = 50 } = req.query;
     
@@ -59,7 +59,7 @@ exports.listClients = async (req, res) => {
  * GET /api/admin/clients/:id
  * Détails d'un client spécifique
  */
-exports.getClient = async (req, res) => {
+export const getClient = async (req, res) => {
   try {
     const clientId = parseInt(req.params.id, 10);
     if (!Number.isFinite(clientId)) {
@@ -88,7 +88,7 @@ exports.getClient = async (req, res) => {
  * POST /api/admin/clients
  * Créer un nouveau client
  */
-exports.createClient = async (req, res) => {
+export const createClient = async (req, res) => {
   try {
     const { name, email, phone, password, zone, address, notes } = req.body;
     
@@ -140,7 +140,7 @@ exports.createClient = async (req, res) => {
  * PATCH /api/admin/clients/:id
  * Modifier un client existant
  */
-exports.updateClient = async (req, res) => {
+export const updateClient = async (req, res) => {
   try {
     const clientId = parseInt(req.params.id, 10);
     if (!Number.isFinite(clientId)) {
@@ -201,7 +201,7 @@ exports.updateClient = async (req, res) => {
  * DELETE /api/admin/clients/:id
  * Supprimer un client
  */
-exports.deleteClient = async (req, res) => {
+export const deleteClient = async (req, res) => {
   try {
     const clientId = parseInt(req.params.id, 10);
     if (!Number.isFinite(clientId)) {

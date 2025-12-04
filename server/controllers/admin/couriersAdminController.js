@@ -1,5 +1,5 @@
-const { User, Order } = require('../../models');
-const { Op } = require('sequelize');
+import { User, Order } from '../../models/index.js';
+import { Op } from 'sequelize';
 
 function handleErr(res, err) {
   console.error(err);
@@ -10,7 +10,7 @@ function handleErr(res, err) {
  * GET /api/admin/couriers
  * Liste tous les livreurs avec filtres et recherche
  */
-exports.listCouriers = async (req, res) => {
+export const listCouriers = async (req, res) => {
   try {
     const { search, gpsEnabled, page = 1, limit = 50 } = req.query;
     
@@ -60,7 +60,7 @@ exports.listCouriers = async (req, res) => {
  * GET /api/admin/couriers/:id
  * Détails d'un livreur spécifique avec ses performances
  */
-exports.getCourier = async (req, res) => {
+export const getCourier = async (req, res) => {
   try {
     const courierId = parseInt(req.params.id, 10);
     if (!Number.isFinite(courierId)) {
@@ -114,7 +114,7 @@ exports.getCourier = async (req, res) => {
  * POST /api/admin/couriers
  * Créer un nouveau livreur
  */
-exports.createCourier = async (req, res) => {
+export const createCourier = async (req, res) => {
   try {
     const { name, email, phone, password, gpsEnabled } = req.body;
     
@@ -162,7 +162,7 @@ exports.createCourier = async (req, res) => {
  * PATCH /api/admin/couriers/:id
  * Modifier un livreur existant
  */
-exports.updateCourier = async (req, res) => {
+export const updateCourier = async (req, res) => {
   try {
     const courierId = parseInt(req.params.id, 10);
     if (!Number.isFinite(courierId)) {
@@ -219,7 +219,7 @@ exports.updateCourier = async (req, res) => {
  * DELETE /api/admin/couriers/:id
  * Supprimer un livreur
  */
-exports.deleteCourier = async (req, res) => {
+export const deleteCourier = async (req, res) => {
   try {
     const courierId = parseInt(req.params.id, 10);
     if (!Number.isFinite(courierId)) {
@@ -260,7 +260,7 @@ exports.deleteCourier = async (req, res) => {
  * PATCH /api/admin/couriers/:id/gps
  * Activer/désactiver le GPS d'un livreur
  */
-exports.toggleCourierGps = async (req, res) => {
+export const toggleCourierGps = async (req, res) => {
   try {
     const courierId = parseInt(req.params.id, 10);
     if (!Number.isFinite(courierId)) {

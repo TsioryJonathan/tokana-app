@@ -1,14 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const { protect, authorize } = require('../../middleware/authMiddleware');
-const {
+import express from 'express';
+import { protect, authorize } from '../../middleware/authMiddleware.js';
+import {
   listCouriers,
   getCourier,
   createCourier,
   updateCourier,
   deleteCourier,
   toggleCourierGps,
-} = require('../../controllers/admin/couriersAdminController');
+} from '../../controllers/admin/couriersAdminController.js';
+
+const router = express.Router();
 
 // Toutes les routes nécessitent auth admin
 router.use(protect);
@@ -21,4 +22,4 @@ router.patch('/:id', updateCourier);
 router.delete('/:id', deleteCourier);
 router.patch('/:id/gps', toggleCourierGps);
 
-module.exports = router;
+export default router;
