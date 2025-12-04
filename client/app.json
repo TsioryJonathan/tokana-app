@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
-    "scheme": "tokanaapp",
+    "scheme": "tokana",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -19,7 +19,7 @@
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.tokanaapp",
+      "package": "com.tokana.tokana",
       "enableProguardInReleaseBuilds": true,
       "enableShrinkResourcesInReleaseBuilds": true,
       "jsEngine": "hermes"
@@ -47,9 +47,12 @@
         }
       ]
     ],
+    "assetBundlePatterns": [
+      "assets/fonts/*"
+    ],
     "extra": {
-      "API_BASE_DEV": "http://192.168.0.60:5000",
-      "API_BASE_PROD": "http://192.168.0.60:5000",
+      "API_BASE_DEV": "https://tokana-app.onrender.com",
+      "API_BASE_PROD": "https://tokana-app.onrender.com",
       "router": {},
       "eas": {
         "projectId": "cb6e54a5-9dc1-47df-8fca-79e873803134"

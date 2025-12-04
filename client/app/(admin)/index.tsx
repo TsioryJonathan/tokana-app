@@ -249,16 +249,56 @@ export default function AdminDashboard() {
             </View>
           )}
 
+          {/* Section Gestion */}
           <View className="mb-6">
+            <Text className="text-gray-900 font-quicksand-bold text-lg mb-3">Gestion</Text>
+            
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/(admin)/settlements-evening' as any)}
+              onPress={() => router.push('/(admin)/clients/index' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-blue-100 p-4 flex-row items-center justify-between mb-3"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Clients</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Gérer les clients, zones et adresses.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center">
+                <Text className="text-2xl">👥</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/couriers/index' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-purple-100 p-4 flex-row items-center justify-between mb-3"
+            >
+              <View className="flex-1 mr-3">
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Livreurs</Text>
+                <Text className="text-gray-500 text-xs font-quicksand mt-1">
+                  Gérer les livreurs et leur GPS.
+                </Text>
+              </View>
+              <View className="w-10 h-10 rounded-full bg-purple-50 items-center justify-center">
+                <Text className="text-2xl">🚴</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Section Règlements */}
+          <View className="mb-6">
+            <Text className="text-gray-900 font-quicksand-bold text-lg mb-3">Règlements</Text>
+            
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(admin)/settlements' as any)}
               className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
             >
               <View className="flex-1 mr-3">
                 <Text className="text-gray-900 font-quicksand-bold text-lg">Règlement du soir</Text>
                 <Text className="text-gray-500 text-xs font-quicksand mt-1">
-                  Voir le détail des encaissements livreur → admin par jour.
+                  Valider les encaissements livreur → admin.
                 </Text>
               </View>
               <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
@@ -268,17 +308,17 @@ export default function AdminDashboard() {
 
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/(admin)/dispatches' as any)}
-              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
+              onPress={() => router.push('/(admin)/dispatches-admin' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-purple-100 p-4 flex-row items-center justify-between mb-3"
             >
               <View className="flex-1 mr-3">
                 <Text className="text-gray-900 font-quicksand-bold text-lg">Dispatches J+1</Text>
                 <Text className="text-gray-500 text-xs font-quicksand mt-1">
-                  Préparer et suivre les règlements Admin → Clients.
+                  Suivre les versements Admin → Clients.
                 </Text>
               </View>
-              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
-                <RefreshCw size={20} color="#059669" />
+              <View className="w-10 h-10 rounded-full bg-purple-50 items-center justify-center">
+                <Text className="text-2xl">💰</Text>
               </View>
             </TouchableOpacity>
 
@@ -300,17 +340,17 @@ export default function AdminDashboard() {
 
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/(admin)/gps' as any)}
-              className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between"
+              onPress={() => router.push('/(admin)/gps-tracking' as any)}
+              className="bg-white rounded-2xl shadow-sm border border-blue-100 p-4 flex-row items-center justify-between"
             >
               <View className="flex-1 mr-3">
                 <Text className="text-gray-900 font-quicksand-bold text-lg">Suivi GPS</Text>
                 <Text className="text-gray-500 text-xs font-quicksand mt-1">
-                  Voir les positions et le statut de tracking des livreurs.
+                  Carte en temps réel des livreurs actifs.
                 </Text>
               </View>
-              <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
-                <MapPin size={20} color="#059669" />
+              <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center">
+                <MapPin size={20} color="#2563EB" />
               </View>
             </TouchableOpacity>
           </View>

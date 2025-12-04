@@ -28,7 +28,7 @@ export default function TrackingScreen() {
       const h = await api.orders.getApiOrdersHistory(Number(id));
       setHistory(Array.isArray(h) ? h : []);
     } catch (err: any) {
-      console.warn("tracking load error", err);
+      
       showToast("Erreur de chargement du suivi", "error");
     } finally {
       setLoading(false);

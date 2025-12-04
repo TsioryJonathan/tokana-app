@@ -31,7 +31,7 @@ export default function AdminOrderDetail() {
       setAssignVal(o.assignedTo != null ? String(o.assignedTo) : '');
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[AdminOrderDetail] load error', e?.body || e?.message || e);
+      
       showToast('Chargement de la commande échoué', 'error');
     } finally {
       setLoading(false);
@@ -108,7 +108,7 @@ export default function AdminOrderDetail() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[AdminOrderDetail] assign error', e?.body || e?.message || e);
+      
       showToast(e?.body?.msg || 'Assignation échouée', 'error');
     } finally {
       setAssignBusy(false);
@@ -162,7 +162,7 @@ export default function AdminOrderDetail() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[AdminOrderDetail] unassign error', e?.body || e?.message || e);
+      
       showToast(e?.body?.msg || 'Désassignation échouée', 'error');
     } finally {
       setAssignBusy(false);
@@ -177,7 +177,7 @@ export default function AdminOrderDetail() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[AdminOrderDetail] status error', e?.body || e?.message || e);
+      
       showToast(e?.body?.msg || 'Mise à jour du statut échouée', 'error');
     } finally {
       setStatusBusy(false);

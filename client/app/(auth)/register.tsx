@@ -54,7 +54,7 @@ const Register = () => {
       if (/téléphone|phone/i.test(msg)) newErrs.phone = msg;
       if (/mot de passe|password/i.test(msg)) newErrs.password = msg;
       if (Object.keys(newErrs).length === 0) newErrs.email = msg; // fallback
-      console.warn("register error", err?.body || err?.message || err);
+      
       showToast(msg, "error");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
         () => {}

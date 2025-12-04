@@ -68,7 +68,7 @@ export function useAdminOrders() {
       setLastUpdatedISO(new Date().toISOString());
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[useAdminOrders] load error', e?.body || e?.message || e);
+      
       showToast('Chargement des commandes échoué', 'error');
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ export function useAdminOrders() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[useAdminOrders] assign error', e?.body || e?.message || e);
+      
       const msg: string = e?.body?.msg || e?.message || 'Assignation échouée';
       showToast(msg, 'error');
     } finally {
@@ -133,7 +133,7 @@ export function useAdminOrders() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[useAdminOrders] unassign error', e?.body || e?.message || e);
+      
       const msg: string = e?.body?.msg || e?.message || 'Désassignation échouée';
       showToast(msg, 'error');
     } finally {
@@ -156,7 +156,7 @@ export function useAdminOrders() {
       await load();
     } catch (e: any) {
       // eslint-disable-next-line no-console
-      console.warn('[useAdminOrders] status update error', e?.body || e?.message || e);
+      
       const msg: string = e?.body?.msg || e?.message || 'Mise à jour du statut échouée';
       showToast(msg, 'error');
     } finally {

@@ -57,6 +57,16 @@ export default function AdminLayout() {
           <Tabs.Screen name="dispatches" options={{ href: null }} />
           <Tabs.Screen name="reports" options={{ href: null }} />
           <Tabs.Screen name="gps" options={{ href: null }} />
+          {/* Nouvelles routes CRUD */}
+          <Tabs.Screen name="clients/index" options={{ href: null }} />
+          <Tabs.Screen name="clients/[id]" options={{ href: null }} />
+          <Tabs.Screen name="clients/new" options={{ href: null }} />
+          <Tabs.Screen name="couriers/index" options={{ href: null }} />
+          <Tabs.Screen name="couriers/[id]" options={{ href: null }} />
+          <Tabs.Screen name="couriers/new" options={{ href: null }} />
+          <Tabs.Screen name="settlements" options={{ href: null }} />
+          <Tabs.Screen name="dispatches-admin" options={{ href: null }} />
+          <Tabs.Screen name="gps-tracking" options={{ href: null }} />
         </Tabs>
         <AdminNavbar />
       </View>

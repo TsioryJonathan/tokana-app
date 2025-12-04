@@ -82,7 +82,7 @@ export default function CourierTasks() {
       setItems((data || []).map(mapBackendOrderToUI));
       setLastUpdated(new Date());
     } catch (e) {
-      console.warn("[courier] list error", e);
+      
       showToast("Erreur de chargement", "error");
     } finally {
       setLoading(false);

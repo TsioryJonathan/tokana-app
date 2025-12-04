@@ -22,6 +22,8 @@ import meRoutes from "./routes/meRoutes.js";
 import courierSettlementsRoutes from "./routes/courierSettlementsRoutes.js";
 import courierDispatchesRoutes from "./routes/courierDispatchesRoutes.js";
 import courierOrderActionsRoutes from "./routes/courierOrderActionsRoutes.js";
+import clientsAdminRoutes from "./routes/admin/clientsAdminRoutes.js";
+import couriersAdminRoutes from "./routes/admin/couriersAdminRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { protect } from "./middleware/authMiddleware.js";
 import User from "./models/User.js";
@@ -183,6 +185,9 @@ app.use("/api/addresses", addressesRoutes);
 app.use("/api/me", meRoutes);
 app.use("/api/courier/settlements", courierSettlementsRoutes);
 app.use("/api/courier/dispatches", courierDispatchesRoutes);
+app.use("/api/courier/orders", courierOrderActionsRoutes);
+app.use("/api/admin/clients", clientsAdminRoutes);
+app.use("/api/admin/couriers", couriersAdminRoutes);
 
 // Serve user uploads (avatars, etc.)
 try {

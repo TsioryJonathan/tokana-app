@@ -262,7 +262,7 @@ export default function OrdersList() {
       setItems(enriched);
       setLastUpdatedISO(new Date().toISOString());
     } catch (e) {
-      console.warn("orders list load error", e);
+      
       showToast("Erreur de chargement des commandes", "error");
       setItems([]);
     } finally {

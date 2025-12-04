@@ -137,7 +137,7 @@ export default function CourierOrderDetail() {
         .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
       setHistory(mapped);
     } catch (e) {
-      console.warn("[courier order] load error", e);
+      
       showToast("Erreur de chargement", "error");
     } finally {
       setLoading(false);

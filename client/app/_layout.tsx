@@ -3,6 +3,7 @@ import "./globals.css";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider } from "../components/ui/Toast";
+import Toast from "react-native-toast-message";
 import React, { useEffect, useMemo, useState } from "react";
 import { getAccessToken } from "../lib/auth/session";
 import { getApiClient } from "../lib/api/client";
@@ -45,7 +46,7 @@ export default function RootLayout() {
           router.replace("/");
         }
       } catch (error) {
-        console.warn(error);
+        
       }
     };
 
@@ -101,6 +102,7 @@ export default function RootLayout() {
           <Stack.Screen name="(admin)" options={{ headerShown: false }} />
           <Stack.Screen name="(courier)" options={{ headerShown: false }} />
         </Stack>
+        <Toast />
       </ToastProvider>
     </SafeAreaProvider>
   );
