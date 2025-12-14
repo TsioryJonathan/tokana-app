@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, requireRole } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware.js';
 import { getAccountStatus, getOrdersSummary } from '../controllers/clientController.js';
 
 const router = express.Router();

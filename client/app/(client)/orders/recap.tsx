@@ -12,9 +12,9 @@ import { COLORS } from "../../../theme/colors";
 import Row from "../../../components/CreateOrder/Row";
 
 type Draft = {
-  sender: { name: string; phone: string; address: string };
+  sender: { name: string; phone: string; address: string; adresseExacte?: string; remarks?: string };
   recipient: { name: string; phone: string; address: string; email?: string };
-  parcel: { category: string; weightKg: string; fragile: boolean; bulky: boolean; parcelsCount: string };
+  parcel: { category: string; weightKg: string; fragile: boolean; bulky: boolean; parcelsCount: string; customDimensions?: string };
   service: { service: "STANDARD" | "EXPRESS"; distanceKmBracket: "<5" | "5-10" | "10-20"; needReturn: boolean };
   payment: { codAmountAr: string; notes?: string };
   pickupLatLng?: { lat: number; lng: number } | null;
@@ -128,15 +128,18 @@ export default function OrderRecapPage() {
         pickupAddress: draft.sender.address.trim(),
         pickupName: draft.sender.name.trim() || undefined,
         pickupPhone: normalizeLocalPhone(draft.sender.phone) || undefined,
+        pickupAddressDetail: draft.sender.adresseExacte?.trim() || undefined,
         dropoffAddress: (draft.recipient.address || '').trim() || (draft.selectedDropoffLocality?.name ?? ''),
         dropoffName: draft.recipient.name.trim() || undefined,
         category: draft.parcel.category,
+        customDimensions: draft.parcel.customDimensions?.trim() || undefined,
         fragile: !!draft.parcel.fragile,
         bulky: !!draft.parcel.bulky,
         weight: toNumberSafe(draft.parcel.weightKg),
         parcels: parcelsCount,
         cashToCollect: Math.max(0, toNumberSafe(draft.payment.codAmountAr) || 0),
         notes: (draft.payment.notes || '').trim() || undefined,
+        senderRemarks: draft.sender.remarks?.trim() || undefined,
         recipientPhone: normalizeLocalPhone(draft.recipient.phone) || undefined,
         recipientEmail: draft.recipient.email?.trim() || undefined,
         needReturn: !!draft.service.needReturn,
