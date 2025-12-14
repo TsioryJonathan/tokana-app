@@ -110,11 +110,12 @@ const FirstStep = ({
             </View>
             <View className="flex-1 ml-3">
               <Text className="font-quicksand text-gray-500 text-sm mb-1">Taille</Text>
-              <View className="flex-row gap-2">
+              <View className="flex-row flex-wrap gap-2">
                 {[
                   ["SMALL", "Petit"],
                   ["MEDIUM", "Moyen"],
                   ["LARGE", "Grand"],
+                  ["CUSTOM", "Valeur précise"],
                 ].map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
@@ -136,6 +137,24 @@ const FirstStep = ({
             </View>
           </View>
         </View>
+
+        {/* Champ dimensions personnalisées (si Valeur précise sélectionnée) */}
+        {parcel.category === 'CUSTOM' && (
+          <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+            <View className="flex-row items-center px-5 py-4">
+              <View className="bg-[#FFD700]/10 p-2 rounded-full">
+                <Box size={20} color="#FFD700" strokeWidth={2.5} />
+              </View>
+              <TextInput
+                value={parcel.customDimensions || ''}
+                onChangeText={(t) => setParcel({ ...parcel, customDimensions: t })}
+                placeholder="Dimensions (LxlxH en cm, ex: 30x20x15)"
+                placeholderTextColor="#9CA3AF"
+                className="flex-1 ml-3 font-quicksand text-gray-900 text-base"
+              />
+            </View>
+          </View>
+        )}
 
         {Number(parcel.weightKg) > 5 && (
           <View className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200 flex-row items-start">

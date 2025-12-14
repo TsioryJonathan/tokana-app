@@ -1,5 +1,5 @@
 // app/(client)/profile.tsx
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import LogoutButton from "../../components/Auth/LogoutButton"
 import {
   View,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 // import LogoutButton from "../../components/Auth/LogoutButton";
 // safe area handled by (client)/_layout
@@ -17,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderBackground } from "../../components/CreateOrder/RecapBackground";
 import { useProfile } from "../../hooks/useProfile";
 import PrimaryButton from "../../components/ui/PrimaryButton";
+import { getApiClient } from "../../lib/api/client";
+import { Wallet, CheckCircle, Clock, CreditCard } from "lucide-react-native";
 
 export default function Profile() {
   const router = useRouter();
@@ -47,6 +50,44 @@ export default function Profile() {
 
   // Ref to focus the address input when tapping "Adresses enregistrées"
   const addressInputRef = React.useRef<TextInput | null>(null);
+
+  // État pour le suivi des comptes (montants à remettre)
+  const api = useMemo(getApiClient, []);
+  const [accountStatus, setAccountStatus] = useState<{
+    amountToReceive: number;
+    amountReceived: number;
+    paymentMethod: string | null;
+    lastPaymentDate: string | null;
+    status: 'pending' | 'paid' | 'partial';
+  } | null>(null);
+  const [loadingAccountStatus, setLoadingAccountStatus] = useState(true);
+
+  useEffect(() => {
+    const fetchAccountStatus = async () => {
+      try {
+        // Appel API pour récupérer le statut des comptes du client
+        const response = await api.request.request({
+          method: 'GET',
+          url: '/api/client/account-status',
+        } as any);
+        if (response) {
+          setAccountStatus(response as any);
+        }
+      } catch (e) {
+        // En cas d'erreur, on affiche des valeurs par défaut
+        setAccountStatus({
+          amountToReceive: 0,
+          amountReceived: 0,
+          paymentMethod: null,
+          lastPaymentDate: null,
+          status: 'pending',
+        });
+      } finally {
+        setLoadingAccountStatus(false);
+      }
+    };
+    fetchAccountStatus();
+  }, [api]);
 
   if (loading) {
     return (
@@ -106,8 +147,96 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
 
+        {/* SECTION: Statut de suivi des comptes */}
+        <View className="mt-4 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-4 shadow-sm border border-emerald-200">
+          <View className="flex-row items-center mb-3">
+            <Wallet size={20} color="#059669" strokeWidth={2} />
+            <Text className="ml-2 text-base font-quicksand-bold text-emerald-800">
+              Statut de suivi des comptes
+            </Text>
+          </View>
+
+          {loadingAccountStatus ? (
+            <View className="items-center py-4">
+              <ActivityIndicator size="small" color="#059669" />
+            </View>
+          ) : accountStatus ? (
+            <View>
+              {/* Montant à recevoir */}
+              <View className="bg-white rounded-xl p-3 mb-2 border border-emerald-100">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <View className="bg-emerald-100 p-2 rounded-full mr-2">
+                      <Wallet size={16} color="#059669" />
+                    </View>
+                    <Text className="text-sm text-gray-700">Montant à recevoir</Text>
+                  </View>
+                  <Text className="text-lg font-quicksand-bold text-emerald-600">
+                    {accountStatus.amountToReceive.toLocaleString()} Ar
+                  </Text>
+                </View>
+              </View>
+
+              {/* Argent remis */}
+              <View className="bg-white rounded-xl p-3 mb-2 border border-blue-100">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <View className={`p-2 rounded-full mr-2 ${accountStatus.status === 'paid' ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                      {accountStatus.status === 'paid' ? (
+                        <CheckCircle size={16} color="#059669" />
+                      ) : (
+                        <Clock size={16} color="#D97706" />
+                      )}
+                    </View>
+                    <Text className="text-sm text-gray-700">Argent remis</Text>
+                  </View>
+                  <Text className={`text-lg font-quicksand-bold ${accountStatus.status === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {accountStatus.amountReceived.toLocaleString()} Ar
+                  </Text>
+                </View>
+                {accountStatus.status === 'paid' && accountStatus.paymentMethod && (
+                  <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100">
+                    <CreditCard size={14} color="#64748B" />
+                    <Text className="ml-1 text-xs text-gray-500">
+                      Via {accountStatus.paymentMethod}
+                      {accountStatus.lastPaymentDate && ` • ${new Date(accountStatus.lastPaymentDate).toLocaleDateString('fr-FR')}`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Statut global */}
+              <View className={`rounded-xl p-2 ${
+                accountStatus.status === 'paid' 
+                  ? 'bg-emerald-50 border border-emerald-200' 
+                  : accountStatus.status === 'partial'
+                    ? 'bg-amber-50 border border-amber-200'
+                    : 'bg-gray-50 border border-gray-200'
+              }`}>
+                <Text className={`text-center text-xs font-quicksand-semibold ${
+                  accountStatus.status === 'paid' 
+                    ? 'text-emerald-700' 
+                    : accountStatus.status === 'partial'
+                      ? 'text-amber-700'
+                      : 'text-gray-600'
+                }`}>
+                  {accountStatus.status === 'paid' 
+                    ? '✓ Compte réglé' 
+                    : accountStatus.status === 'partial'
+                      ? '⏳ Règlement partiel'
+                      : '○ En attente de règlement'}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Text className="text-sm text-gray-500 text-center py-2">
+              Aucune information disponible
+            </Text>
+          )}
+        </View>
+
         {/* White card with rows or editable inputs */}
-        <View className="mt-6 bg-white rounded-2xl p-3 shadow-sm border border-slate-100">
+        <View className="mt-4 bg-white rounded-2xl p-3 shadow-sm border border-slate-100">
           {editing ? (
             <View>
               <LabeledInput label="Nom" value={name} onChangeText={setName} placeholder="Ton nom" />

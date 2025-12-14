@@ -11,10 +11,15 @@ export function normalizeMgPhone(input) {
   if (/^\+261\d{9}$/.test(s)) {
     return s;
   }
-  // Local formats 0XXXXXXXXX for MG mobile 3x or landline 20
-  const m = s.match(/^0(3\d|20)(\d{7})$/);
+  // Local formats 0XXXXXXXXX for MG mobile 3x (including 30) or landline 20
+  const m = s.match(/^0(30|3\d|20)(\d{7})$/);
   if (m) {
     return `+261${m[1]}${m[2]}`; // drop leading 0
+  }
+  // Format without leading 0: 30XXXXXXX, 3XXXXXXXX, 20XXXXXXX
+  const m2 = s.match(/^(30|3\d|20)(\d{7})$/);
+  if (m2) {
+    return `+261${m2[1]}${m2[2]}`; // add +261 prefix
   }
   // If nothing matches, return original trimmed (will fail validation later)
   return s;
@@ -23,5 +28,6 @@ export function normalizeMgPhone(input) {
 export function isValidMgPhone(input) {
   if (!input) return false;
   const s = normalizeMgPhone(input);
-  return /^\+261(3\d|20)\d{7}$/.test(s);
+  // Accept 030, 032, 033, 034, 038, 020
+  return /^\+261(30|3\d|20)\d{7}$/.test(s);
 }

@@ -37,60 +37,90 @@ const FourthStep = ({
 
       {/* Service Selection Cards */}
       <View className="flex-1 bg-white px-6 pt-6">
+        {/* Badge recommandation Standard */}
+        <View className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+          <Text className="text-sm font-quicksand-semibold text-emerald-700 text-center">
+            💡 Le service Standard est recommandé pour les envois non urgents
+          </Text>
+        </View>
+
         <View className="flex-row gap-4">
-          {/* Standard Service */}
+          {/* Standard Service - Logo plus visible */}
           <TouchableOpacity
             onPress={() => setService({ ...service, service: "STANDARD" })}
             activeOpacity={0.8}
-            className={`flex-1 rounded-3xl p-6 items-center border-2 shadow-lg ${
+            className={`flex-1 rounded-3xl p-6 items-center border-3 shadow-xl ${
               service.service === "STANDARD"
-                ? "bg-yellow-50 border-[#FFD700]"
+                ? "bg-emerald-50 border-emerald-500"
                 : "bg-white border-gray-200"
             }`}
           >
-            <View className="mb-3">
-              <Plane size={40} color="#0F172A" strokeWidth={1.5} />
+            {/* Badge populaire */}
+            <View className="absolute -top-2 right-2 bg-emerald-500 px-2 py-0.5 rounded-full">
+              <Text className="text-[10px] font-quicksand-bold text-white">POPULAIRE</Text>
             </View>
-            <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
+            <View className={`mb-3 p-3 rounded-full ${
+              service.service === "STANDARD" ? "bg-emerald-100" : "bg-gray-100"
+            }`}>
+              <Plane size={44} color={service.service === "STANDARD" ? "#059669" : "#64748B"} strokeWidth={2} />
+            </View>
+            <Text className={`text-xl font-quicksand-bold mb-1 ${
+              service.service === "STANDARD" ? "text-emerald-700" : "text-gray-900"
+            }`}>
               Standard
             </Text>
             <Text className="text-sm text-gray-500 text-center mb-3">
-              Livraison le lendemain
+              Livraison J+1
             </Text>
-            <View>
-              <Text className="text-xs text-gray-500">Prix estimé</Text>
-              <Text className="text-lg font-quicksand-bold text-red-600">
+            <View className="items-center">
+              <Text className="text-xs text-gray-500">À partir de</Text>
+              <Text className={`text-xl font-quicksand-bold ${
+                service.service === "STANDARD" ? "text-emerald-600" : "text-gray-700"
+              }`}>
                 10,000 Ar
               </Text>
             </View>
           </TouchableOpacity>
 
-          {/* Fast Service */}
+          {/* Express Service */}
           <TouchableOpacity
             onPress={() => setService({ ...service, service: "EXPRESS" })}
             activeOpacity={0.8}
             className={`flex-1 rounded-3xl p-6 items-center border-2 shadow-lg ${
               service.service === "EXPRESS"
-                ? "bg-yellow-50 border-[#FFD700]"
+                ? "bg-amber-50 border-amber-500"
                 : "bg-white border-gray-200"
             }`}
           >
-            <View className="mb-3">
-              <Rocket size={40} color="#0F172A" strokeWidth={1.5} />
+            <View className={`mb-3 p-3 rounded-full ${
+              service.service === "EXPRESS" ? "bg-amber-100" : "bg-gray-100"
+            }`}>
+              <Rocket size={44} color={service.service === "EXPRESS" ? "#D97706" : "#64748B"} strokeWidth={2} />
             </View>
-            <Text className="text-lg font-quicksand-bold text-gray-900 mb-1">
+            <Text className={`text-xl font-quicksand-bold mb-1 ${
+              service.service === "EXPRESS" ? "text-amber-700" : "text-gray-900"
+            }`}>
               Express
             </Text>
             <Text className="text-sm text-gray-500 text-center mb-3">
-              Livraison le jour même
+              Livraison J+0
             </Text>
-            <View>
-              <Text className="text-xs text-gray-500">Prix estimé</Text>
-              <Text className="text-lg font-quicksand-bold text-red-600">
+            <View className="items-center">
+              <Text className="text-xs text-gray-500">À partir de</Text>
+              <Text className={`text-xl font-quicksand-bold ${
+                service.service === "EXPRESS" ? "text-amber-600" : "text-gray-700"
+              }`}>
                 20,000 Ar
               </Text>
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* Info BM (Bénéfice Marge) */}
+        <View className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-200">
+          <Text className="text-xs font-quicksand text-blue-700">
+            ℹ️ Le prix final peut varier selon la zone de livraison et le poids du colis (BM).
+          </Text>
         </View>
       </View>
     </View>

@@ -14,7 +14,8 @@ import User from "../models/User.js";
 import crypto from "crypto";
 import { inferZoneLevel } from "../utils/geo.js";
 
-const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+// Accepte: +261XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX (sans 0), 030, 033, 034, 038, 032, 020
+const mgPhone = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
 const createSchema = Joi.object({
   type: Joi.string().valid("standard", "express").required(),
   zoneLevel: Joi.string().valid("ville", "peripherie", "super-peripherie").optional(),
@@ -35,7 +36,9 @@ const createSchema = Joi.object({
 
   recipientEmail: Joi.string().email().optional(),
   // Optional enrichments
-  category: Joi.string().valid("ENVELOPE", "SMALL", "MEDIUM", "LARGE").optional(),
+  category: Joi.string().valid("ENVELOPE", "SMALL", "MEDIUM", "LARGE", "CUSTOM").optional(),
+  customDimensions: Joi.string().max(100).allow('', null).optional(),
+  senderRemarks: Joi.string().max(1000).allow('', null).optional(),
   fragile: Joi.boolean().optional(),
   bulky: Joi.boolean().optional(),
   pickupName: Joi.string().min(2).max(120).optional(),
@@ -66,7 +69,9 @@ const statusSchema = Joi.object({
       "en_route_vers_recuperation",
       "en_chemin",
       "en_chemin_pour_livraison",
-      "expedie"
+      "expedie",
+      "annule",
+      "compte_regle"
     )
     .required(),
 });
@@ -92,11 +97,13 @@ const remarkSchema = Joi.object({
 });
 
 const ALLOWED_TRANSITIONS = {
-  en_cours_de_traitement: ["en_route_vers_recuperation"],
-  en_route_vers_recuperation: ["en_chemin", "en_chemin_pour_livraison"],
-  en_chemin: ["en_chemin_pour_livraison"],
-  en_chemin_pour_livraison: ["expedie"],
-  expedie: [],
+  en_cours_de_traitement: ["en_route_vers_recuperation", "annule"],
+  en_route_vers_recuperation: ["en_chemin", "en_chemin_pour_livraison", "annule"],
+  en_chemin: ["en_chemin_pour_livraison", "annule"],
+  en_chemin_pour_livraison: ["expedie", "annule"],
+  expedie: ["compte_regle"],
+  annule: [],
+  compte_regle: [],
 };
 
 export const listOrderRemarks = async (req, res, next) => {
@@ -401,16 +408,16 @@ export const requestDeliveryOtp = async (req, res, next) => {
       }
     }
 
-    // Validate MG phone if SMS
-    const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+    // Validate MG phone if SMS (accepte 030 et numéros sans 0 initial)
+    const mgPhoneLocal = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
     const msg = `Tokana OTP: ${code}. Valide ${ttlMin} min.`;
     const html = generateOtpEmailHtml(code, ttlMin, 'delivery');
     if (channel === "sms") {
       if (!destPhone)
         return res.status(400).json({ msg: "Numéro destinataire manquant" });
-      if (!mgPhone.test(destPhone))
+      if (!mgPhoneLocal.test(destPhone))
         return res.status(400).json({
-          msg: "Téléphone MG invalide (ex: +261201234567 ou 0201234567)",
+          msg: "Téléphone MG invalide (ex: +261201234567, 0301234567 ou 301234567)",
         });
       await sendSms(destPhone, msg);
     } else {
@@ -620,7 +627,8 @@ export const updateOrderStatus = async (req, res, next) => {
     // Non-blocking customer notification (best-effort)
     (async () => {
       try {
-        const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+        // Accepte 030 et numéros sans 0 initial
+        const mgPhoneNotif = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
         const statusLabels = {
           en_cours_de_traitement: "Votre commande est en cours de traitement.",
           en_route_vers_recuperation:
@@ -633,7 +641,7 @@ export const updateOrderStatus = async (req, res, next) => {
         const base = `TOKANA – Suivi commande #${order.id}: `;
         const message = base + (statusLabels[to] || `Statut: ${to}`);
         // Prefer SMS if recipientPhone looks valid; else email
-        if (order.recipientPhone && mgPhone.test(order.recipientPhone)) {
+        if (order.recipientPhone && mgPhoneNotif.test(order.recipientPhone)) {
           await sendSms(order.recipientPhone, message);
         } else if (order.recipientEmail) {
           await sendEmail(

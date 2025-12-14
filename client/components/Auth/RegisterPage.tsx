@@ -53,7 +53,8 @@ export default function RegisterPage({
     const emailTrim = email.trim();
     const phoneTrim = phone.trim();
     const emailValid = emailTrim.length >= 3 && emailTrim.includes("@");
-    const phoneValid = /^(\+261|0)(3[0-9]|20)\d{7}$/.test(phoneTrim);
+    // Accepte: +261XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX (sans 0), 030, 033, 034, 038, 032, 020
+    const phoneValid = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/.test(phoneTrim);
     const hasAtLeastOneContact = emailValid || phoneValid;
     return (
       fullName.trim().length >= 3 &&

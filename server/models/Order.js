@@ -57,7 +57,15 @@ const Order = sequelize.define('Order', {
     defaultValue: 1,
   },
   category: {
-    type: DataTypes.ENUM('ENVELOPE', 'SMALL', 'MEDIUM', 'LARGE'),
+    type: DataTypes.ENUM('ENVELOPE', 'SMALL', 'MEDIUM', 'LARGE', 'CUSTOM'),
+    allowNull: true,
+  },
+  customDimensions: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  senderRemarks: {
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   fragile: {
@@ -161,7 +169,9 @@ const Order = sequelize.define('Order', {
       'en_route_vers_recuperation',
       'en_chemin',
       'en_chemin_pour_livraison',
-      'expedie'
+      'expedie',
+      'annule',
+      'compte_regle'
     ),
     allowNull: false,
     defaultValue: 'en_cours_de_traitement',

@@ -6,7 +6,8 @@ export type OrderStatus =
   | 'PICKED_UP'
   | 'IN_TRANSIT'
   | 'DELIVERED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'SETTLED';
 
 export type ServiceType = 'STANDARD' | 'EXPRESS';
 
@@ -36,6 +37,9 @@ export function mapBackendStatus(s: string): OrderStatus {
       return 'DELIVERED';
     case 'annule':
       return 'CANCELLED';
+    case 'compte_regle':
+    case 'settled':
+      return 'SETTLED';
     default:
       return 'CREATED';
   }
@@ -61,6 +65,7 @@ export const statusLabel: Record<OrderStatus, string> = {
   IN_TRANSIT: 'En cours',
   DELIVERED: 'Livrée',
   CANCELLED: 'Annulée',
+  SETTLED: 'Compte réglé',
 };
 
 export const statusBadge: Record<OrderStatus, string> = {
@@ -69,6 +74,7 @@ export const statusBadge: Record<OrderStatus, string> = {
   IN_TRANSIT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   DELIVERED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
+  SETTLED: 'bg-green-50 text-green-700 border-green-200',
 };
 
 export function stepIndex(status: OrderStatus) {
@@ -81,6 +87,8 @@ export function stepIndex(status: OrderStatus) {
       return 2;
     case 'DELIVERED':
       return 3;
+    case 'SETTLED':
+      return 4;
     default:
       return -1; // CANCELLED
   }

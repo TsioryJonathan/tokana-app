@@ -41,6 +41,7 @@ const chipStyle: Record<keyof typeof statusLabel | "ALL" | "ACTIVE", string> = {
   IN_TRANSIT: "bg-indigo-50 text-indigo-700 border-indigo-200",
   DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   CANCELLED: "bg-rose-50 text-rose-700 border-rose-200",
+  SETTLED: "bg-green-50 text-green-700 border-green-200",
 };
 const ACTIVE_COLOR = "#059669";
 
@@ -235,6 +236,7 @@ export default function OrdersList() {
   const [filter, setFilter] = useState<
     keyof typeof statusLabel | "ALL" | "ACTIVE"
   >(initialFilter);
+  const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "WEEK" | "MONTH">("ALL");
   const [expressEta, setExpressEta] = useState<{ min: number; max: number } | null>(null);
   const [lastUpdatedISO, setLastUpdatedISO] = useState<string | null>(null);
   const isFocused = useIsFocused();
@@ -302,13 +304,47 @@ export default function OrdersList() {
   // no page effect
 
   const filtered = useMemo(() => {
-    if (filter === "ALL") return items;
-    if (filter === "ACTIVE")
-      return items.filter((o: Order) => isActiveStatus(o.status));
-    if (filter === "DELIVERED")
-      return items.filter((o: Order) => o.status === "DELIVERED");
-    return items.filter((o: Order) => o.status === "CANCELLED");
-  }, [items, filter]);
+    let result = items;
+    
+    // Filtre par statut
+    if (filter === "ALL") {
+      result = items;
+    } else if (filter === "ACTIVE") {
+      result = items.filter((o: Order) => isActiveStatus(o.status));
+    } else if (filter === "DELIVERED") {
+      result = items.filter((o: Order) => o.status === "DELIVERED");
+    } else if (filter === "SETTLED") {
+      result = items.filter((o: Order) => o.status === "SETTLED");
+    } else if (filter === "CANCELLED") {
+      result = items.filter((o: Order) => o.status === "CANCELLED");
+    }
+    
+    // Filtre par date
+    if (dateFilter !== "ALL") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      result = result.filter((o: Order) => {
+        const orderDate = new Date(o.createdAt);
+        const orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+        
+        if (dateFilter === "TODAY") {
+          return orderDay.getTime() === today.getTime();
+        } else if (dateFilter === "WEEK") {
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return orderDay >= weekAgo;
+        } else if (dateFilter === "MONTH") {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return orderDay >= monthAgo;
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [items, filter, dateFilter]);
 
   const renderHeader = (
     <View className="-ml-5">
@@ -330,21 +366,45 @@ export default function OrdersList() {
             </TouchableOpacity>
             <Text className="text-[16px] font-quicksand-bold text-slate-900">{todayDisplay}</Text>
           </View>
-          <View className="flex-row items-center">
-            <Text className="text-[12px] text-slate-700 mr-1">Statut</Text>
-            <TouchableOpacity
-              onPress={() => {
-                const order: Array<keyof typeof statusLabel | 'ALL' | 'ACTIVE'> = ['ALL','ACTIVE','DELIVERED','CANCELLED'];
-                const idx = order.indexOf(filter);
-                const next = order[(idx + 1) % order.length];
-                setFilter(next);
-              }}
-              activeOpacity={0.85}
-              className="px-3 py-1.5 rounded-full bg-white border border-slate-200 flex-row items-center"
-            >
-              <Text className="text-[12px] font-quicksand-semibold text-emerald-700">{filter === 'ALL' ? 'Tous' : filter === 'ACTIVE' ? 'En cours' : filter === 'DELIVERED' ? 'Livrées' : 'Annulées'}</Text>
-              <ChevronDown size={14} color="#059669" style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
+          <View className="flex-col items-end gap-2">
+            {/* Filtre par statut */}
+            <View className="flex-row items-center">
+              <Text className="text-[12px] text-slate-700 mr-1">Statut</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const order: Array<keyof typeof statusLabel | 'ALL' | 'ACTIVE'> = ['ALL','ACTIVE','DELIVERED','SETTLED','CANCELLED'];
+                  const idx = order.indexOf(filter);
+                  const next = order[(idx + 1) % order.length];
+                  setFilter(next);
+                }}
+                activeOpacity={0.85}
+                className="px-3 py-1.5 rounded-full bg-white border border-slate-200 flex-row items-center"
+              >
+                <Text className="text-[12px] font-quicksand-semibold text-emerald-700">
+                  {filter === 'ALL' ? 'Tous' : filter === 'ACTIVE' ? 'En cours' : filter === 'DELIVERED' ? 'Livrées' : filter === 'SETTLED' ? 'Réglées' : 'Annulées'}
+                </Text>
+                <ChevronDown size={14} color="#059669" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
+            </View>
+            {/* Filtre par date */}
+            <View className="flex-row items-center">
+              <Text className="text-[12px] text-slate-700 mr-1">Période</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const order: Array<"ALL" | "TODAY" | "WEEK" | "MONTH"> = ['ALL','TODAY','WEEK','MONTH'];
+                  const idx = order.indexOf(dateFilter);
+                  const next = order[(idx + 1) % order.length];
+                  setDateFilter(next);
+                }}
+                activeOpacity={0.85}
+                className="px-3 py-1.5 rounded-full bg-white border border-slate-200 flex-row items-center"
+              >
+                <Text className="text-[12px] font-quicksand-semibold text-emerald-700">
+                  {dateFilter === 'ALL' ? 'Tout' : dateFilter === 'TODAY' ? 'Aujourd\'hui' : dateFilter === 'WEEK' ? '7 jours' : '30 jours'}
+                </Text>
+                <ChevronDown size={14} color="#059669" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 

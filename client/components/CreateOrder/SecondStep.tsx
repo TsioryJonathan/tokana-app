@@ -22,6 +22,7 @@ const SecondStep = ({
 }) => {
   const [showSaved, setShowSaved] = useState(false);
   const [mapboxInputValue, setMapboxInputValue] = useState(sender.address || '');
+  const [senderMode, setSenderMode] = useState<'existing' | 'new'>('new');
   
   return (
     <View className="flex-1">
@@ -46,6 +47,42 @@ const SecondStep = ({
 
       {/* Form Section */}
       <View className="flex-1 bg-white px-6 pt-6">
+        {/* Sélecteur mode expéditeur */}
+        {savedAddresses.length > 0 && (
+          <View className="flex-row gap-3 mb-4">
+            <TouchableOpacity
+              onPress={() => setSenderMode('existing')}
+              activeOpacity={0.8}
+              className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
+                senderMode === 'existing' 
+                  ? 'bg-[#FFD700]/10 border-[#FFD700]' 
+                  : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text className={`text-center font-quicksand-semibold ${
+                senderMode === 'existing' ? 'text-[#FFD700]' : 'text-gray-600'
+              }`}>
+                Expéditeur existant
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSenderMode('new')}
+              activeOpacity={0.8}
+              className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
+                senderMode === 'new' 
+                  ? 'bg-[#FFD700]/10 border-[#FFD700]' 
+                  : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text className={`text-center font-quicksand-semibold ${
+                senderMode === 'new' ? 'text-[#FFD700]' : 'text-gray-600'
+              }`}>
+                Nouvel expéditeur
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Name Input */}
         <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
           <View className="flex-row items-center px-5 py-4">
@@ -178,6 +215,25 @@ const SecondStep = ({
             {coordsText}
           </Text>
         )}
+
+        {/* Champ Remarque (optionnel) */}
+        <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100 mt-2">
+          <View className="px-5 py-4">
+            <Text className="text-sm font-quicksand-semibold text-gray-700 mb-2">
+              Remarque (optionnel)
+            </Text>
+            <TextInput
+              value={sender.remarks || ''}
+              onChangeText={(t) => setSender({ ...sender, remarks: t })}
+              placeholder="Ex: Appeler avant de venir, code d'accès 1234..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+              className="font-quicksand text-gray-900 text-base"
+              style={{ minHeight: 60, textAlignVertical: 'top' }}
+            />
+          </View>
+        </View>
       </View>
     </View>
   );

@@ -39,7 +39,8 @@ const INITIAL_SERVICE: ServiceState = {
 };
 const INITIAL_PAYMENT: PaymentState = { codAmountAr: "", notes: "" };
 
-const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+// Accepte: +261XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX (sans 0), 030, 033, 034, 038, 032, 020
+const mgPhoneRegex = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
 
 const steps = [
   "Expéditeur",
@@ -323,17 +324,8 @@ export default function NewOrderWizard() {
           </View>
         )}
 
-        {/* Navigation Buttons */}
+        {/* Navigation Buttons - Étape suivante EN BAS, Étape précédente EN HAUT */}
         <View className="gap-3">
-            {step > 0 && (
-              <TouchableOpacity
-                onPress={goPrev}
-              activeOpacity={0.8}
-              className="w-full rounded-3xl border-2 border-[#FFD700] py-4 items-center justify-center"
-              >
-              <Text className="text-[#FFD700] font-quicksand-bold text-base">Étape précédente</Text>
-              </TouchableOpacity>
-            )}
           <TouchableOpacity
             onPress={goNext}
             activeOpacity={0.8}
@@ -343,9 +335,18 @@ export default function NewOrderWizard() {
             }`}
           >
             <Text className="text-white font-quicksand-bold text-base">
-              {step < steps.length - 1 ? "Étape suivante" : submitting ? "Traitement…" : "Paiement"}
+              {step < steps.length - 1 ? "Étape suivante" : submitting ? "Traitement…" : "Confirmation"}
                 </Text>
             </TouchableOpacity>
+            {step > 0 && (
+              <TouchableOpacity
+                onPress={goPrev}
+              activeOpacity={0.8}
+              className="w-full rounded-3xl border-2 border-[#FFD700] py-4 items-center justify-center"
+              >
+              <Text className="text-[#FFD700] font-quicksand-bold text-base">Étape précédente</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
         {/* Quote error/status */}

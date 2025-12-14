@@ -401,35 +401,39 @@ export default function CourierOrderDetail() {
             Actions
           </Text>
           
-          {/* Boutons de transition */}
+          {/* Workflow de livraison en 4 étapes explicites */}
           <View className="mb-6">
             <Text className="text-sm text-slate-600 font-quicksand-medium mb-3">
-              Changer le statut
+              Workflow de livraison
             </Text>
             <View className="gap-3">
               <ActionButton
-                label="Aller récupérer"
-                icon="cube-outline"
+                label="1. En chemin pour récupération"
+                subtitle="Vers l'expéditeur"
+                icon="navigate-outline"
                 onPress={() => updateStatus("en_route_vers_recuperation")}
                 disabled={!canToPickup || submitting}
                 variant="primary"
               />
               <ActionButton
-                label="En chemin"
-                icon="bicycle-outline"
+                label="2. Récupéré"
+                subtitle="Colis pris en charge"
+                icon="cube-outline"
                 onPress={() => updateStatus("en_chemin")}
                 disabled={!canToEnChemin || submitting}
                 variant="primary"
               />
               <ActionButton
-                label="En chemin pour la livraison"
-                icon="location-outline"
+                label="3. En chemin pour livraison"
+                subtitle="Vers le destinataire"
+                icon="bicycle-outline"
                 onPress={() => updateStatus("en_chemin_pour_livraison")}
                 disabled={!canToOutForDelivery || submitting}
                 variant="primary"
               />
               <ActionButton
-                label="Expédié"
+                label="4. Livré"
+                subtitle="Mission terminée"
                 icon="checkmark-circle-outline"
                 onPress={() => updateStatus("expedie")}
                 disabled={!canToExpedie || submitting}

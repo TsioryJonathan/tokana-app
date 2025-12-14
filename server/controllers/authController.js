@@ -13,20 +13,22 @@ import {
 } from "../services/tokenService.js";
 import { normalizeMgPhone } from "../utils/phone.js";
 
+// Accepte: +261XXXXXXXXX, 0XXXXXXXXX, XXXXXXXXX (sans 0), 030, 033, 034, 038, 032, 020
+const mgPhone = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
+
 const registerSchema = Joi.object({
   email: Joi.string().email().messages({ "string.email": "Email invalide" }).optional(),
   phone: Joi.string()
-    .pattern(/^(\+261|0)(3[0-9]|20)\d{7}$/)
+    .pattern(mgPhone)
     .messages({
       "string.pattern.base":
-        "Téléphone MG invalide (ex: +261201234567 ou 0201234567)",
+        "Téléphone MG invalide (ex: +261201234567, 0301234567 ou 301234567)",
     })
     .optional(),
   password: Joi.string().min(6).required().messages({ "string.min": "Mot de passe trop court (min 6)" }),
   name: Joi.string().optional(),
 }).or('email','phone');
 
-const mgPhone = /^(\+261|0)(3[0-9]|20)\d{7}$/;
 const loginSchema = Joi.alternatives().try(
   Joi.object({
     email: Joi.string()
@@ -40,7 +42,7 @@ const loginSchema = Joi.alternatives().try(
   Joi.object({
     phone: Joi.string().pattern(mgPhone).required().messages({
       "string.pattern.base":
-        "Téléphone MG invalide (ex: +261201234567 ou 0201234567)",
+        "Téléphone MG invalide (ex: +261201234567, 0301234567 ou 301234567)",
       "string.empty": "Téléphone requis",
     }),
     password: Joi.string()
