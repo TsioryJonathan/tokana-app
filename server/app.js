@@ -25,6 +25,7 @@ import courierOrderActionsRoutes from "./routes/courierOrderActionsRoutes.js";
 import clientsAdminRoutes from "./routes/admin/clientsAdminRoutes.js";
 import couriersAdminRoutes from "./routes/admin/couriersAdminRoutes.js";
 import clientRoutes from "./routes/clientRoutes.js";
+import savedContactsRoutes from "./routes/savedContactsRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { protect } from "./middleware/authMiddleware.js";
 import User from "./models/User.js";
@@ -190,6 +191,7 @@ app.use("/api/courier/orders", courierOrderActionsRoutes);
 app.use("/api/admin/clients", clientsAdminRoutes);
 app.use("/api/admin/couriers", couriersAdminRoutes);
 app.use("/api/client", clientRoutes);
+app.use("/api/saved-contacts", savedContactsRoutes);
 
 // Serve user uploads (avatars, etc.)
 try {

@@ -5,11 +5,20 @@ import { SenderState } from "../../types/createorder.type";
 import AddressAutocomplete from "../AddressAutocomplete";
 import { assets } from "../../assets/images/assets";
 
+export interface SavedSender {
+  id: number;
+  name: string;
+  phone: string;
+  address: string;
+  addressDetail?: string | null;
+}
+
 const SecondStep = ({
   sender,
   setSender,
   onPickupSelected,
   savedAddresses = [],
+  savedSenders = [],
   bbox = [47.4, -19.1, 47.7, -18.7] as [number, number, number, number],
   coordsText,
 }: {
@@ -17,10 +26,12 @@ const SecondStep = ({
   setSender: Dispatch<SetStateAction<SenderState>>;
   onPickupSelected?: (sel: { label: string; lat: number; lng: number }) => void;
   savedAddresses?: { id: string; label: string; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null }[];
+  savedSenders?: SavedSender[];
   bbox?: [number, number, number, number];
   coordsText?: string | null;
 }) => {
   const [showSaved, setShowSaved] = useState(false);
+  const [showSavedSenders, setShowSavedSenders] = useState(false);
   const [mapboxInputValue, setMapboxInputValue] = useState(sender.address || '');
   const [senderMode, setSenderMode] = useState<'existing' | 'new'>('new');
   
@@ -48,10 +59,13 @@ const SecondStep = ({
       {/* Form Section */}
       <View className="flex-1 bg-white px-6 pt-6">
         {/* Sélecteur mode expéditeur */}
-        {savedAddresses.length > 0 && (
+        {savedSenders.length > 0 && (
           <View className="flex-row gap-3 mb-4">
             <TouchableOpacity
-              onPress={() => setSenderMode('existing')}
+              onPress={() => {
+                setSenderMode('existing');
+                setShowSavedSenders(true);
+              }}
               activeOpacity={0.8}
               className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
                 senderMode === 'existing' 
@@ -66,7 +80,10 @@ const SecondStep = ({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setSenderMode('new')}
+              onPress={() => {
+                setSenderMode('new');
+                setShowSavedSenders(false);
+              }}
               activeOpacity={0.8}
               className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
                 senderMode === 'new' 
@@ -80,6 +97,39 @@ const SecondStep = ({
                 Nouvel expéditeur
               </Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Liste des expéditeurs sauvegardés */}
+        {senderMode === 'existing' && savedSenders.length > 0 && showSavedSenders && (
+          <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+            <View className="px-5 py-3 border-b border-gray-100">
+              <Text className="font-quicksand-bold text-gray-800">Choisir un expéditeur</Text>
+            </View>
+            {savedSenders.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                className="px-5 py-3 border-b border-gray-50"
+                activeOpacity={0.8}
+                onPress={() => {
+                  setSender({
+                    ...sender,
+                    name: s.name,
+                    phone: s.phone,
+                    address: s.address,
+                    adresseExacte: s.addressDetail || '',
+                  });
+                  setMapboxInputValue(s.address);
+                  setShowSavedSenders(false);
+                }}
+              >
+                <Text className="font-quicksand-bold text-gray-900">{s.name}</Text>
+                <Text className="font-quicksand text-gray-600 text-sm">{s.phone}</Text>
+                <Text className="font-quicksand text-gray-500 text-xs mt-1" numberOfLines={1}>
+                  {s.address}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
