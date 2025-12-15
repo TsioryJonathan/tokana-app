@@ -28,7 +28,7 @@ export const listCouriers = async (req, res) => {
     
     // Filtre par GPS activé/désactivé
     if (gpsEnabled !== undefined) {
-      where.gpsEnabled = gpsEnabled === 'true';
+      where.gpsTrackingEnabled = gpsEnabled === 'true';
     }
     
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -36,8 +36,8 @@ export const listCouriers = async (req, res) => {
     const { count, rows } = await User.findAndCountAll({
       where,
       attributes: [
-        'id', 'name', 'email', 'phone', 'role', 'gpsEnabled',
-        'lastGpsLat', 'lastGpsLng', 'lastGpsAt', 
+        'id', 'name', 'email', 'phone', 'role', 'gpsTrackingEnabled',
+        'gpsLastLat', 'gpsLastLng', 'gpsLastSeenAt', 
         'emailVerifiedAt', 'createdAt', 'updatedAt'
       ],
       order: [['createdAt', 'DESC']],
@@ -45,8 +45,24 @@ export const listCouriers = async (req, res) => {
       offset,
     });
     
+    // Mapper les champs GPS pour correspondre au frontend
+    const items = rows.map(courier => ({
+      id: courier.id,
+      name: courier.name,
+      email: courier.email,
+      phone: courier.phone,
+      role: courier.role,
+      gpsEnabled: courier.gpsTrackingEnabled,
+      lastGpsLat: courier.gpsLastLat,
+      lastGpsLng: courier.gpsLastLng,
+      lastGpsAt: courier.gpsLastSeenAt,
+      emailVerifiedAt: courier.emailVerifiedAt,
+      createdAt: courier.createdAt,
+      updatedAt: courier.updatedAt,
+    }));
+    
     return res.json({
-      items: rows,
+      items,
       total: count,
       page: parseInt(page),
       limit: parseInt(limit),
@@ -71,8 +87,8 @@ export const getCourier = async (req, res) => {
     const courier = await User.findOne({
       where: { id: courierId, role: 'livreur' },
       attributes: [
-        'id', 'name', 'email', 'phone', 'role', 'gpsEnabled',
-        'lastGpsLat', 'lastGpsLng', 'lastGpsAt', 
+        'id', 'name', 'email', 'phone', 'role', 'gpsTrackingEnabled',
+        'gpsLastLat', 'gpsLastLng', 'gpsLastSeenAt', 
         'emailVerifiedAt', 'createdAt', 'updatedAt'
       ],
     });
@@ -97,13 +113,27 @@ export const getCourier = async (req, res) => {
       },
     });
     
+    // Mapper les champs GPS
+    const courierData = courier.toJSON();
+    
     return res.json({
-      ...courier.toJSON(),
+      id: courierData.id,
+      name: courierData.name,
+      email: courierData.email,
+      phone: courierData.phone,
+      role: courierData.role,
+      gpsEnabled: courierData.gpsTrackingEnabled,
+      lastGpsLat: courierData.gpsLastLat,
+      lastGpsLng: courierData.gpsLastLng,
+      lastGpsAt: courierData.gpsLastSeenAt,
+      emailVerifiedAt: courierData.emailVerifiedAt,
+      createdAt: courierData.createdAt,
+      updatedAt: courierData.updatedAt,
       stats: {
         totalOrders,
         deliveredOrders,
         pendingOrders,
-        successRate: totalOrders > 0 ? ((deliveredOrders / totalOrders) * 100).toFixed(1) : 0,
+        successRate: totalOrders > 0 ? ((deliveredOrders / totalOrders) * 100).toFixed(1) : '0',
       },
     });
   } catch (err) {
