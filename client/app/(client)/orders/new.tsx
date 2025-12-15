@@ -21,6 +21,7 @@ import { formatAr, toNumberSafe } from "../../../utils/price.helper";
 import type { LocalityItem } from "../../../lib/hooks/useLocalities";
 import { normalizeLocalPhone } from "../../../utils/phone";
 import { useProfile } from "../../../hooks/useProfile";
+import { useSavedContacts } from "../../../lib/hooks/useSavedContacts";
 
 /* INITIAL STATES */
 const INITIAL_PARCEL: ParcelState = {
@@ -55,6 +56,7 @@ export default function NewOrderWizard() {
   const router = useRouter();
   const { showToast } = useToast();
   const { addresses } = useProfile();
+  const { contacts, fetchContacts } = useSavedContacts();
   const [step, setStep] = useState<Step>(0);
   const [parcel, setParcel] = useState<ParcelState>(INITIAL_PARCEL);
   const [sender, setSender] = useState<SenderState>(INITIAL_SENDER);
@@ -79,6 +81,11 @@ export default function NewOrderWizard() {
   // Local estimation removed to avoid confusion; we rely solely on server quote
   // API client
   const api = useMemo(getApiClient, []);
+
+  // Charger les contacts sauvegardés au montage
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
 
   // Locality selection
   const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
@@ -263,6 +270,13 @@ export default function NewOrderWizard() {
             sender={sender}
             setSender={setSender}
             savedAddresses={addresses}
+            savedSenders={contacts.filter(c => c.type === 'sender').map(c => ({
+              id: c.id,
+              name: c.name,
+              phone: c.phone,
+              address: c.address,
+              addressDetail: c.addressDetail,
+            }))}
             onPickupSelected={({ label, lat, lng }) => {
               setPickupLatLng({ lat, lng });
               showToast('Adresse de collecte sélectionnée', 'success');
@@ -276,6 +290,14 @@ export default function NewOrderWizard() {
             recipient={recipient}
             setRecipient={setRecipient}
             savedAddresses={addresses}
+            savedRecipients={contacts.filter(c => c.type === 'recipient').map(c => ({
+              id: c.id,
+              name: c.name,
+              phone: c.phone,
+              address: c.address,
+              addressDetail: c.addressDetail,
+              email: c.email,
+            }))}
             onDropoffSelected={({ label, lat, lng }) => {
               setDropoffLatLng({ lat, lng });
               showToast('Adresse sélectionnée', 'success');

@@ -1,15 +1,25 @@
 import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
-import { User, Phone, MapPin, ChevronRight, Globe } from "lucide-react-native";
+import { User, Phone, MapPin, ChevronRight, Globe, Mail } from "lucide-react-native";
 import { RecipientState } from "../../types/createorder.type";
 import AddressAutocomplete from "../AddressAutocomplete";
 import { assets } from "../../assets/images/assets";
+
+export interface SavedRecipient {
+  id: number;
+  name: string;
+  phone: string;
+  address: string;
+  addressDetail?: string | null;
+  email?: string | null;
+}
 
 const ThirdStep = ({
   recipient,
   setRecipient,
   onDropoffSelected,
   savedAddresses = [],
+  savedRecipients = [],
   bbox = [47.4, -19.1, 47.7, -18.7] as [number, number, number, number],
   coordsText,
 }: {
@@ -17,11 +27,14 @@ const ThirdStep = ({
   setRecipient: Dispatch<SetStateAction<RecipientState>>;
   onDropoffSelected?: (sel: { label: string; lat: number; lng: number }) => void;
   savedAddresses?: { id: string; label: string; detail: string; mapboxAddress?: string | null; lat?: number | null; lng?: number | null }[];
+  savedRecipients?: SavedRecipient[];
   bbox?: [number, number, number, number];
   coordsText?: string | null;
 }) => {
   const [showSaved, setShowSaved] = useState(false);
+  const [showSavedRecipients, setShowSavedRecipients] = useState(false);
   const [mapboxInputValue, setMapboxInputValue] = useState(recipient.address || '');
+  const [recipientMode, setRecipientMode] = useState<'existing' | 'new'>('new');
   
   return (
     <View className="flex-1">
@@ -46,6 +59,84 @@ const ThirdStep = ({
 
       {/* Form Section */}
       <View className="flex-1 bg-white px-6 pt-6">
+        {/* Sélecteur mode destinataire */}
+        {savedRecipients.length > 0 && (
+          <View className="flex-row gap-3 mb-4">
+            <TouchableOpacity
+              onPress={() => {
+                setRecipientMode('existing');
+                setShowSavedRecipients(true);
+              }}
+              activeOpacity={0.8}
+              className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
+                recipientMode === 'existing' 
+                  ? 'bg-[#FFD700]/10 border-[#FFD700]' 
+                  : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text className={`text-center font-quicksand-semibold ${
+                recipientMode === 'existing' ? 'text-[#FFD700]' : 'text-gray-600'
+              }`}>
+                Destinataire existant
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setRecipientMode('new');
+                setShowSavedRecipients(false);
+              }}
+              activeOpacity={0.8}
+              className={`flex-1 rounded-2xl py-3 px-4 border-2 ${
+                recipientMode === 'new' 
+                  ? 'bg-[#FFD700]/10 border-[#FFD700]' 
+                  : 'bg-white border-gray-200'
+              }`}
+            >
+              <Text className={`text-center font-quicksand-semibold ${
+                recipientMode === 'new' ? 'text-[#FFD700]' : 'text-gray-600'
+              }`}>
+                Nouveau destinataire
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Liste des destinataires sauvegardés */}
+        {recipientMode === 'existing' && savedRecipients.length > 0 && showSavedRecipients && (
+          <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
+            <View className="px-5 py-3 border-b border-gray-100">
+              <Text className="font-quicksand-bold text-gray-800">Choisir un destinataire</Text>
+            </View>
+            {savedRecipients.map((r) => (
+              <TouchableOpacity
+                key={r.id}
+                className="px-5 py-3 border-b border-gray-50"
+                activeOpacity={0.8}
+                onPress={() => {
+                  setRecipient({
+                    ...recipient,
+                    name: r.name,
+                    phone: r.phone,
+                    address: r.address,
+                    email: r.email || '',
+                  });
+                  setMapboxInputValue(r.address);
+                  setShowSavedRecipients(false);
+                }}
+              >
+                <Text className="font-quicksand-bold text-gray-900">{r.name}</Text>
+                <Text className="font-quicksand text-gray-600 text-sm">{r.phone}</Text>
+                {r.email && (
+                  <Text className="font-quicksand text-gray-500 text-xs">{r.email}</Text>
+                )}
+                <Text className="font-quicksand text-gray-500 text-xs mt-1" numberOfLines={1}>
+                  {r.address}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {/* Name Input */}
         <View className="bg-white rounded-2xl shadow-md shadow-gray-300/50 mb-4 border border-gray-100">
           <View className="flex-row items-center px-5 py-4">
