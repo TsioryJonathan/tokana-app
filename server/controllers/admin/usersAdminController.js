@@ -184,9 +184,9 @@ export const listUsers = async (req, res, next) => {
       const like = `%${q}%`;
       Object.assign(where, {
         [Op.or]: [
-          { name: { [Op.like]: like } },
-          { email: { [Op.like]: like } },
-          { phone: { [Op.like]: like } },
+          { name: { [Op.iLike]: like } },
+          { email: { [Op.iLike]: like } },
+          { phone: { [Op.iLike]: like } },
         ],
       });
     }

@@ -9,7 +9,7 @@ import type { User } from '../../../lib/api/models/User';
 import { ApiError } from '../../../lib/api';
 import { Calendar, Clock, ChevronLeft, Search, User as UserIcon, Package, MapPin, Phone, Mail } from 'lucide-react-native';
 
-const mgPhoneRegex = /^(\+261|0)(3[0-9]|20)\d{7}$/;
+const mgPhoneRegex = /^(\+261|0)?(30|3[0-9]|20)\d{7}$/;
 const normalizeLocalPhone = (input: string) => input.trim().replace(/[\s.\-()]/g, '');
 
 const ZONES: { key: 'ville' | 'peripherie' | 'super-peripherie'; label: string }[] = [
