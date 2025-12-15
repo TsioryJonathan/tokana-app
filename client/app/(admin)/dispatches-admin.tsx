@@ -13,7 +13,7 @@ import { useAdminDispatches } from '../../lib/hooks/useAdminDispatches';
 export default function AdminDispatchesScreen() {
   const { dispatches, loading, fetchDispatches } = useAdminDispatches();
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'>('PENDING');
+  const [activeTab, setActiveTab] = useState<'WAITING_COURIER' | 'IN_PROGRESS' | 'COMPLETED'>('WAITING_COURIER');
 
   useEffect(() => {
     fetchDispatches();
@@ -29,12 +29,10 @@ export default function AdminDispatchesScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING':
-        return 'bg-slate-200 text-slate-700';
-      case 'ASSIGNED':
-        return 'bg-blue-100 text-blue-700';
-      case 'IN_PROGRESS':
+      case 'WAITING_COURIER':
         return 'bg-amber-100 text-amber-700';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-700';
       case 'COMPLETED':
         return 'bg-green-100 text-green-700';
       default:
@@ -44,10 +42,8 @@ export default function AdminDispatchesScreen() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'PENDING':
-        return 'En attente';
-      case 'ASSIGNED':
-        return 'Assigné';
+      case 'WAITING_COURIER':
+        return 'En attente livreur';
       case 'IN_PROGRESS':
         return 'En cours';
       case 'COMPLETED':
@@ -73,7 +69,7 @@ export default function AdminDispatchesScreen() {
       <View className="bg-white border-b border-slate-200">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 py-2">
           <View className="flex-row gap-2">
-            {['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].map((tab) => {
+            {['WAITING_COURIER', 'IN_PROGRESS', 'COMPLETED'].map((tab) => {
               const count = dispatches.filter((d) => d.status === tab).length;
               return (
                 <TouchableOpacity

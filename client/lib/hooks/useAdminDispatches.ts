@@ -10,7 +10,7 @@ export interface AdminDispatch {
   clientEmail: string | null;
   courierId: number;
   courierName: string;
-  status: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'WAITING_COURIER' | 'IN_PROGRESS' | 'COMPLETED';
   netAmount: number;
   cashAmount: number | null;
   mobileMoneyAmount: number | null;

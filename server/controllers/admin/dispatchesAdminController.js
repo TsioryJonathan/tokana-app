@@ -170,17 +170,53 @@ export const listDispatches = async (req, res) => {
     if (clientId) where.clientId = parseInt(String(clientId), 10);
     if (courierId) where.courierId = parseInt(String(courierId), 10);
 
-    const items = await Dispatch.findAll({ where, order: [['id', 'DESC']] });
+    const dispatches = await Dispatch.findAll({ where, order: [['id', 'DESC']] });
 
-    return res.json(items.map((d) => ({
-      id: d.id,
-      clientId: d.clientId,
-      courierId: d.courierId,
-      status: d.status,
-      netAmount: d.netAmount,
-      cashAmount: d.cashAmount,
-      mobileMoneyAmount: d.mobileMoneyAmount,
-    })));
+    // Récupérer les infos clients et livreurs
+    const clientIds = [...new Set(dispatches.map(d => d.clientId))];
+    const courierIds = [...new Set(dispatches.map(d => d.courierId))];
+    
+    let clientsMap = {};
+    let couriersMap = {};
+    
+    if (clientIds.length > 0) {
+      const clients = await User.findAll({
+        where: { id: { [Op.in]: clientIds } },
+        attributes: ['id', 'name', 'phone', 'email']
+      });
+      clientsMap = Object.fromEntries(clients.map(c => [c.id, c]));
+    }
+    
+    if (courierIds.length > 0) {
+      const couriers = await User.findAll({
+        where: { id: { [Op.in]: courierIds } },
+        attributes: ['id', 'name', 'phone']
+      });
+      couriersMap = Object.fromEntries(couriers.map(c => [c.id, c]));
+    }
+
+    const items = dispatches.map((d) => {
+      const client = clientsMap[d.clientId];
+      const courier = couriersMap[d.courierId];
+      
+      return {
+        id: d.id,
+        clientId: d.clientId,
+        clientName: client?.name || `Client #${d.clientId}`,
+        clientPhone: client?.phone || null,
+        clientEmail: client?.email || null,
+        courierId: d.courierId,
+        courierName: courier?.name || `Livreur #${d.courierId}`,
+        status: d.status,
+        netAmount: d.netAmount,
+        cashAmount: d.cashAmount,
+        mobileMoneyAmount: d.mobileMoneyAmount,
+        createdAt: d.createdAt,
+        updatedAt: d.updatedAt,
+      };
+    });
+
+    return res.json({ items });
   } catch (err) {
     return handleErr(res, err);
   }
