@@ -292,7 +292,7 @@ export default function AdminDashboard() {
             
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => router.push('/(admin)/settlements' as any)}
+              onPress={() => router.push('/(admin)/settlements-evening' as any)}
               className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between mb-3"
             >
               <View className="flex-1 mr-3">
@@ -365,9 +365,9 @@ export default function AdminDashboard() {
               className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex-row items-center justify-between"
             >
               <View className="flex-1 mr-3">
-                <Text className="text-gray-900 font-quicksand-bold text-lg">Suivi GPS</Text>
+                <Text className="text-gray-900 font-quicksand-bold text-lg">Gestion GPS</Text>
                 <Text className="text-gray-500 text-xs font-quicksand mt-1">
-                  Voir les positions et le statut de tracking des livreurs.
+                  Activer/Désactiver le tracking des livreurs.
                 </Text>
               </View>
               <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">

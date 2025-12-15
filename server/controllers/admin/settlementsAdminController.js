@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import Order from '../../models/Order.js';
+import User from '../../models/User.js';
 import CourierSettlement from '../../models/CourierSettlement.js';
 import { computeOrderSettlement } from '../../services/settlementService.js';
 
@@ -8,9 +9,74 @@ const handleErr = (res, err) => {
   return res.status(status).json({ msg: err?.message || 'Erreur serveur' });
 };
 
-export const getEveningSettlements = async (req, res) => {
+/**
+ * GET /api/admin/settlements/evening
+ * Liste tous les règlements (CourierSettlement) filtrés par date optionnelle
+ */
+export const listSettlements = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const where = {};
+    
+    if (date) {
+      // Si date fournie, on filtre exactement sur cette date
+      where.date = date; // date est stockée en YYYY-MM-DD (DATEONLY)
+    } else {
+      // Par défaut, on pourrait limiter aux X derniers jours si nécessaire
+      // Pour l'instant on renvoie tout ou on filtre par défaut sur aujourd'hui ?
+      // Le frontend semble vouloir tout ou filtrer par date.
+    }
+
+    const settlements = await CourierSettlement.findAll({
+      where,
+      order: [['date', 'DESC'], ['declaredAt', 'DESC']],
+      include: [
+        { model: User, as: 'courier', attributes: ['id', 'name', 'phone'] } // Assurez-vous que l'association existe
+      ]
+    });
+
+    // Si l'association n'est pas définie dans le modèle, on doit récupérer les users manuellement
+    // Vérifions si on peut faire une jointure simple. Si non, on map.
+    // Pour simplifier sans toucher aux associations User/CourierSettlement si elles manquent :
+    
+    let items = [];
+    if (settlements.length > 0) {
+      const courierIds = [...new Set(settlements.map(s => s.courierId))];
+      const couriers = await User.findAll({
+        where: { id: courierIds },
+        attributes: ['id', 'name']
+      });
+      const courierMap = couriers.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {});
+
+      items = settlements.map(s => ({
+        id: s.id,
+        courierId: s.courierId,
+        courierName: courierMap[s.courierId] || `Livreur #${s.courierId}`,
+        date: s.date,
+        status: s.status,
+        cashAmount: s.cashAmount,
+        mobileMoneyAmount: s.mobileMoneyAmount,
+        declaredAt: s.declaredAt,
+        confirmedAt: s.confirmedAt,
+      }));
+    }
+
+    return res.json({
+      items
+    });
+  } catch (err) {
+    return handleErr(res, err);
+  }
+};
+
+/**
+ * GET /api/admin/settlements/evening/details
+ * Détails du calcul pour un livreur et une date spécifique (liste des commandes)
+ */
+export const getEveningSettlementDetails = async (req, res) => {
   try {
     const { date, courierId } = req.query;
+    // ... (logique existante de getEveningSettlements)
     const now = new Date();
     const baseDate = date ? new Date(date) : now;
     if (Number.isNaN(baseDate.getTime())) {
@@ -92,9 +158,34 @@ export const getEveningSettlements = async (req, res) => {
 
 export const confirmEveningSettlement = async (req, res) => {
   try {
+    // Cas 1: Confirmation par ID (via URL parameter ou body id)
+    const { id } = req.params;
     const { date, courierId, cashAmount, mobileMoneyAmount } = req.body || {};
+
+    let settlement;
+    const now = new Date();
+
+    if (id) {
+      settlement = await CourierSettlement.findByPk(id);
+      if (!settlement) {
+        return res.status(404).json({ msg: 'Règlement introuvable' });
+      }
+      
+      settlement.status = 'CONFIRMED';
+      settlement.confirmedBy = req.user?.id ?? settlement.confirmedBy;
+      settlement.confirmedAt = now;
+      await settlement.save();
+
+      return res.json({
+        id: settlement.id,
+        status: settlement.status,
+        confirmedAt: settlement.confirmedAt
+      });
+    }
+
+    // Cas 2: Confirmation par date/courierId (création ou update)
     if (!date || !courierId) {
-      return res.status(400).json({ msg: 'date et courierId requis' });
+      return res.status(400).json({ msg: 'date et courierId requis (ou ID dans l\'URL)' });
     }
 
     const baseDate = new Date(date);
@@ -110,7 +201,6 @@ export const confirmEveningSettlement = async (req, res) => {
     const cashAmountNum = typeof cashAmount === 'number' ? cashAmount : parseInt(String(cashAmount ?? ''), 10);
     const mmAmountNum = typeof mobileMoneyAmount === 'number' ? mobileMoneyAmount : parseInt(String(mobileMoneyAmount ?? ''), 10);
 
-    const now = new Date();
     const dateStr = baseDate.toISOString().slice(0, 10);
 
     const [record, created] = await CourierSettlement.findOrCreate({
@@ -140,6 +230,7 @@ export const confirmEveningSettlement = async (req, res) => {
     }
 
     return res.json({
+      id: record.id,
       courierId: record.courierId,
       date: record.date,
       status: record.status,
