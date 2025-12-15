@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { HeaderBackground } from "../../../components/CreateOrder/RecapBackground";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "../../../lib/api/client";
 import { useToast } from "../../../components/ui/Toast";
@@ -10,6 +10,7 @@ import { toNumberSafe, formatAr } from "../../../utils/price.helper";
 import { PricingQuoteRequest } from "../../../lib/api/models/PricingQuoteRequest";
 import { COLORS } from "../../../theme/colors";
 import Row from "../../../components/CreateOrder/Row";
+import { useSavedContacts } from "../../../lib/hooks/useSavedContacts";
 
 type Draft = {
   sender: { name: string; phone: string; address: string; adresseExacte?: string; remarks?: string };
@@ -34,10 +35,13 @@ export default function OrderRecapPage() {
   const params = useLocalSearchParams<{ draft?: string }>();
   const { showToast } = useToast();
   const api = useMemo(getApiClient, []);
+  const { createContact } = useSavedContacts();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [quote, setQuote] = useState<{ total?: number; pickup?: number; delivery?: number; express?: number; manual?: boolean; instructions?: string | null; contactPhone?: string | null; inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showSaveContactModal, setShowSaveContactModal] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
   // Parse draft from URL
   useEffect(() => {
@@ -152,7 +156,10 @@ export default function OrderRecapPage() {
 
       const created = await api.orders.postApiOrders(orderPayload as any);
       showToast("Commande créée", "success");
-      router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(created.id) } });
+      
+      // Proposer de sauvegarder les contacts
+      setCreatedOrderId(created.id || null);
+      setShowSaveContactModal(true);
     } catch (e: any) {
       // Surface server error message to the user for better diagnosis (Joi/business errors)
       let msg = e?.body?.msg || e?.message || "Création échouée";
@@ -300,6 +307,128 @@ export default function OrderRecapPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal de sauvegarde des contacts */}
+      <Modal
+        visible={showSaveContactModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSaveContactModal(false);
+          if (createdOrderId) {
+            router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+          }
+        }}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-3xl p-6 w-full max-w-md">
+            <Text className="text-xl font-quicksand-bold text-slate-900 mb-2">
+              Sauvegarder les contacts ?
+            </Text>
+            <Text className="text-sm text-slate-600 font-quicksand mb-6">
+              Voulez-vous sauvegarder l'expéditeur et le destinataire pour vos prochaines commandes ?
+            </Text>
+
+            <View className="gap-3">
+              {/* Sauvegarder expéditeur */}
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!draft) return;
+                  const success = await createContact({
+                    type: 'sender',
+                    name: draft.sender.name,
+                    phone: draft.sender.phone,
+                    address: draft.sender.address,
+                    addressDetail: draft.sender.adresseExacte,
+                  });
+                  if (success) {
+                    showToast('Expéditeur sauvegardé', 'success');
+                  }
+                }}
+                activeOpacity={0.7}
+                className="bg-[#FFD700] rounded-2xl py-3 px-4"
+              >
+                <Text className="text-center font-quicksand-bold text-slate-900">
+                  Sauvegarder l'expéditeur
+                </Text>
+              </TouchableOpacity>
+
+              {/* Sauvegarder destinataire */}
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!draft) return;
+                  const success = await createContact({
+                    type: 'recipient',
+                    name: draft.recipient.name,
+                    phone: draft.recipient.phone,
+                    address: draft.recipient.address,
+                    email: draft.recipient.email,
+                  });
+                  if (success) {
+                    showToast('Destinataire sauvegardé', 'success');
+                  }
+                }}
+                activeOpacity={0.7}
+                className="bg-[#FFD700] rounded-2xl py-3 px-4"
+              >
+                <Text className="text-center font-quicksand-bold text-slate-900">
+                  Sauvegarder le destinataire
+                </Text>
+              </TouchableOpacity>
+
+              {/* Sauvegarder les deux */}
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!draft) return;
+                  const senderSuccess = await createContact({
+                    type: 'sender',
+                    name: draft.sender.name,
+                    phone: draft.sender.phone,
+                    address: draft.sender.address,
+                    addressDetail: draft.sender.adresseExacte,
+                  });
+                  const recipientSuccess = await createContact({
+                    type: 'recipient',
+                    name: draft.recipient.name,
+                    phone: draft.recipient.phone,
+                    address: draft.recipient.address,
+                    email: draft.recipient.email,
+                  });
+                  if (senderSuccess && recipientSuccess) {
+                    showToast('Contacts sauvegardés', 'success');
+                  }
+                  setShowSaveContactModal(false);
+                  if (createdOrderId) {
+                    router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+                  }
+                }}
+                activeOpacity={0.7}
+                className="bg-emerald-600 rounded-2xl py-3 px-4"
+              >
+                <Text className="text-center font-quicksand-bold text-white">
+                  Sauvegarder les deux
+                </Text>
+              </TouchableOpacity>
+
+              {/* Passer */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowSaveContactModal(false);
+                  if (createdOrderId) {
+                    router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+                  }
+                }}
+                activeOpacity={0.7}
+                className="bg-slate-100 rounded-2xl py-3 px-4"
+              >
+                <Text className="text-center font-quicksand-semibold text-slate-700">
+                  Passer
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

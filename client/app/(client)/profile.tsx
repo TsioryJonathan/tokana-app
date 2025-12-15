@@ -304,6 +304,12 @@ export default function Profile() {
                 label="Adresses enregistrées"
                 value={String(addresses.length)}
                 onPress={() => router.push("/addresses")}
+                showDivider
+              />
+              <KVRow
+                label="Contacts sauvegardés"
+                value="Gérer"
+                onPress={() => router.push("/(client)/contacts")}
               />
             </View>
           )}
