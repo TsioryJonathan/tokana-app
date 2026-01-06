@@ -73,6 +73,7 @@ export const getCourierEveningSettlement = async (req, res) => {
         status: existing.status,
         cashAmount: existing.cashAmount,
         mobileMoneyAmount: existing.mobileMoneyAmount,
+        mobileMoneyProvider: existing.mobileMoneyProvider,
         declaredAt: existing.declaredAt,
         confirmedAt: existing.confirmedAt,
       };
@@ -97,7 +98,7 @@ export const declareCourierEveningSettlement = async (req, res) => {
       return res.status(401).json({ msg: 'Non authentifié' });
     }
 
-    const { date, cashAmount, mobileMoneyAmount } = req.body || {};
+    const { date, cashAmount, mobileMoneyAmount, mobileMoneyProvider } = req.body || {};
     if (!date) {
       return res.status(400).json({ msg: 'date requise' });
     }
@@ -110,6 +111,14 @@ export const declareCourierEveningSettlement = async (req, res) => {
     const cashAmountNum = typeof cashAmount === 'number' ? cashAmount : parseInt(String(cashAmount ?? ''), 10);
     const mmAmountNum = typeof mobileMoneyAmount === 'number' ? mobileMoneyAmount : parseInt(String(mobileMoneyAmount ?? ''), 10);
 
+    // Valider le provider si un montant mobile money est spécifié
+    if (mmAmountNum > 0 && !mobileMoneyProvider) {
+      return res.status(400).json({ msg: 'Veuillez sélectionner le fournisseur de mobile money' });
+    }
+    if (!mmAmountNum && mobileMoneyProvider) {
+      return res.status(400).json({ msg: 'Veuillez spécifier le montant mobile money' });
+    }
+
     const now = new Date();
     const dateStr = baseDate.toISOString().slice(0, 10);
 
@@ -119,6 +128,7 @@ export const declareCourierEveningSettlement = async (req, res) => {
         status: 'DECLARED',
         cashAmount: Number.isFinite(cashAmountNum) ? cashAmountNum : null,
         mobileMoneyAmount: Number.isFinite(mmAmountNum) ? mmAmountNum : null,
+        mobileMoneyProvider: mmAmountNum > 0 ? mobileMoneyProvider : null,
         declaredBy: courierId,
         declaredAt: now,
       },
@@ -128,6 +138,10 @@ export const declareCourierEveningSettlement = async (req, res) => {
       // Mise à jour si déjà existant
       record.cashAmount = Number.isFinite(cashAmountNum) ? cashAmountNum : record.cashAmount;
       record.mobileMoneyAmount = Number.isFinite(mmAmountNum) ? mmAmountNum : record.mobileMoneyAmount;
+      // Mise à jour du provider seulement si un montant mobile money est spécifié
+      if (mmAmountNum > 0) {
+        record.mobileMoneyProvider = mobileMoneyProvider;
+      }
       if (!record.declaredAt) {
         record.declaredAt = now;
         record.declaredBy = courierId;
@@ -145,6 +159,7 @@ export const declareCourierEveningSettlement = async (req, res) => {
       status: record.status,
       cashAmount: record.cashAmount,
       mobileMoneyAmount: record.mobileMoneyAmount,
+      mobileMoneyProvider: record.mobileMoneyProvider,
       declaredAt: record.declaredAt,
       confirmedAt: record.confirmedAt,
     });

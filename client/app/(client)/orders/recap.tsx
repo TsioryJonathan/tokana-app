@@ -35,7 +35,7 @@ export default function OrderRecapPage() {
   const params = useLocalSearchParams<{ draft?: string }>();
   const { showToast } = useToast();
   const api = useMemo(getApiClient, []);
-  const { createContact } = useSavedContacts();
+  const { createContact, contacts, fetchContacts } = useSavedContacts();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [quote, setQuote] = useState<{ total?: number; pickup?: number; delivery?: number; express?: number; manual?: boolean; instructions?: string | null; contactPhone?: string | null; inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,18 +43,43 @@ export default function OrderRecapPage() {
   const [showSaveContactModal, setShowSaveContactModal] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
+  // Vérifier si un contact existe déjà
+  const contactExists = (type: 'sender' | 'recipient', name: string, phone: string, address: string): boolean => {
+    const normalizedPhone = normalizeLocalPhone(phone);
+    return contacts.some(c => {
+      if (c.type !== type) return false;
+      // Vérifier par nom OU téléphone OU adresse
+      return (
+        c.name?.trim().toLowerCase() === name.trim().toLowerCase() ||
+        normalizeLocalPhone(c.phone) === normalizedPhone ||
+        c.address?.trim().toLowerCase() === address.trim().toLowerCase()
+      );
+    });
+  };
+
+  // États pour savoir si les contacts existent déjà
+  const [senderExists, setSenderExists] = useState(false);
+  const [recipientExists, setRecipientExists] = useState(false);
+
   // Parse draft from URL
   useEffect(() => {
-    try {
-      if (!params?.draft) return;
-      const parsed: Draft = JSON.parse(decodeURIComponent(String(params.draft)));
-      setDraft(parsed);
-    } catch (e) {
-      showToast("Récap invalide", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [params?.draft, showToast]);
+    (async () => {
+      try {
+        // Charger les contacts sauvegardés
+        await fetchContacts();
+        if (!params?.draft) return;
+        const parsed: Draft = JSON.parse(decodeURIComponent(String(params.draft)));
+        setDraft(parsed);
+        // Vérifier si les contacts existent déjà
+        setSenderExists(contactExists('sender', parsed.sender.name, parsed.sender.phone, parsed.sender.address));
+        setRecipientExists(contactExists('recipient', parsed.recipient.name, parsed.recipient.phone, parsed.recipient.address));
+      } catch (e) {
+        showToast("Récap invalide", "error");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [params?.draft, showToast, fetchContacts]);
 
   // Fetch a fresh server quote to display
   useEffect(() => {
@@ -156,10 +181,15 @@ export default function OrderRecapPage() {
 
       const created = await api.orders.postApiOrders(orderPayload as any);
       showToast("Commande créée", "success");
-      
-      // Proposer de sauvegarder les contacts
+
+      // Proposer de sauvegarder les contacts SEULEMENT si au moins un n'existe pas
       setCreatedOrderId(created.id || null);
-      setShowSaveContactModal(true);
+      if (!senderExists || !recipientExists) {
+        setShowSaveContactModal(true);
+      } else {
+        // Les deux contacts existent déjà, rediriger directement vers le tracking
+        router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(created.id) } });
+      }
     } catch (e: any) {
       // Surface server error message to the user for better diagnosis (Joi/business errors)
       let msg = e?.body?.msg || e?.message || "Création échouée";
@@ -326,91 +356,137 @@ export default function OrderRecapPage() {
               Sauvegarder les contacts ?
             </Text>
             <Text className="text-sm text-slate-600 font-quicksand mb-6">
-              Voulez-vous sauvegarder l'expéditeur et le destinataire pour vos prochaines commandes ?
+              {!senderExists && !recipientExists
+                ? "Voulez-vous sauvegarder l'expéditeur et le destinataire pour vos prochaines commandes ?"
+                : senderExists && !recipientExists
+                ? "Le destinataire n'est pas encore sauvegardé. Voulez-vous l'ajouter à vos contacts ?"
+                : !senderExists && recipientExists
+                ? "L'expéditeur n'est pas encore sauvegardé. Voulez-vous l'ajouter à vos contacts ?"
+                : "Voulez-vous sauvegarder ces contacts ?"}
             </Text>
 
             <View className="gap-3">
-              {/* Sauvegarder expéditeur */}
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!draft) return;
-                  const success = await createContact({
-                    type: 'sender',
-                    name: draft.sender.name,
-                    phone: draft.sender.phone,
-                    address: draft.sender.address,
-                    addressDetail: draft.sender.adresseExacte,
-                  });
-                  if (success) {
-                    showToast('Expéditeur sauvegardé', 'success');
-                  }
-                }}
-                activeOpacity={0.7}
-                className="bg-[#FFD700] rounded-2xl py-3 px-4"
-              >
-                <Text className="text-center font-quicksand-bold text-slate-900">
-                  Sauvegarder l'expéditeur
-                </Text>
-              </TouchableOpacity>
+              {/* Sauvegarder expéditeur - masqué si existe déjà */}
+              {!senderExists && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!draft) return;
+                    const success = await createContact({
+                      type: 'sender',
+                      name: draft.sender.name,
+                      phone: draft.sender.phone,
+                      address: draft.sender.address,
+                      addressDetail: draft.sender.adresseExacte,
+                    });
+                    if (success) {
+                      setSenderExists(true);
+                      showToast('Expéditeur sauvegardé', 'success');
+                      // Si le destinataire existe aussi, fermer le modal
+                      if (recipientExists) {
+                        setShowSaveContactModal(false);
+                        if (createdOrderId) {
+                          router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+                        }
+                      }
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  className="bg-[#FFD700] rounded-2xl py-3 px-4"
+                >
+                  <Text className="text-center font-quicksand-bold text-slate-900">
+                    Sauvegarder l'expéditeur
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              {/* Sauvegarder destinataire */}
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!draft) return;
-                  const success = await createContact({
-                    type: 'recipient',
-                    name: draft.recipient.name,
-                    phone: draft.recipient.phone,
-                    address: draft.recipient.address,
-                    email: draft.recipient.email,
-                  });
-                  if (success) {
-                    showToast('Destinataire sauvegardé', 'success');
-                  }
-                }}
-                activeOpacity={0.7}
-                className="bg-[#FFD700] rounded-2xl py-3 px-4"
-              >
-                <Text className="text-center font-quicksand-bold text-slate-900">
-                  Sauvegarder le destinataire
-                </Text>
-              </TouchableOpacity>
+              {/* Sauvegarder destinataire - masqué si existe déjà */}
+              {!recipientExists && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!draft) return;
+                    const success = await createContact({
+                      type: 'recipient',
+                      name: draft.recipient.name,
+                      phone: draft.recipient.phone,
+                      address: draft.recipient.address,
+                      email: draft.recipient.email,
+                    });
+                    if (success) {
+                      setRecipientExists(true);
+                      showToast('Destinataire sauvegardé', 'success');
+                      // Si l'expéditeur existe aussi, fermer le modal
+                      if (senderExists) {
+                        setShowSaveContactModal(false);
+                        if (createdOrderId) {
+                          router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+                        }
+                      }
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  className="bg-[#FFD700] rounded-2xl py-3 px-4"
+                >
+                  <Text className="text-center font-quicksand-bold text-slate-900">
+                    Sauvegarder le destinataire
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              {/* Sauvegarder les deux */}
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!draft) return;
-                  const senderSuccess = await createContact({
-                    type: 'sender',
-                    name: draft.sender.name,
-                    phone: draft.sender.phone,
-                    address: draft.sender.address,
-                    addressDetail: draft.sender.adresseExacte,
-                  });
-                  const recipientSuccess = await createContact({
-                    type: 'recipient',
-                    name: draft.recipient.name,
-                    phone: draft.recipient.phone,
-                    address: draft.recipient.address,
-                    email: draft.recipient.email,
-                  });
-                  if (senderSuccess && recipientSuccess) {
-                    showToast('Contacts sauvegardés', 'success');
-                  }
-                  setShowSaveContactModal(false);
-                  if (createdOrderId) {
-                    router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
-                  }
-                }}
-                activeOpacity={0.7}
-                className="bg-emerald-600 rounded-2xl py-3 px-4"
-              >
-                <Text className="text-center font-quicksand-bold text-white">
-                  Sauvegarder les deux
-                </Text>
-              </TouchableOpacity>
+              {/* Sauvegarder les deux - masqué si les deux existent déjà */}
+              {!senderExists && !recipientExists && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!draft) return;
+                    const senderSuccess = await createContact({
+                      type: 'sender',
+                      name: draft.sender.name,
+                      phone: draft.sender.phone,
+                      address: draft.sender.address,
+                      addressDetail: draft.sender.adresseExacte,
+                    });
+                    const recipientSuccess = await createContact({
+                      type: 'recipient',
+                      name: draft.recipient.name,
+                      phone: draft.recipient.phone,
+                      address: draft.recipient.address,
+                      email: draft.recipient.email,
+                    });
+                    if (senderSuccess && recipientSuccess) {
+                      setSenderExists(true);
+                      setRecipientExists(true);
+                      showToast('Contacts sauvegardés', 'success');
+                    }
+                    setShowSaveContactModal(false);
+                    if (createdOrderId) {
+                      router.replace({ pathname: "/tracking/[id]" as any, params: { id: String(createdOrderId) } });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  className="bg-emerald-600 rounded-2xl py-3 px-4"
+                >
+                  <Text className="text-center font-quicksand-bold text-white">
+                    Sauvegarder les deux
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              {/* Passer */}
+              {/* Indicateur de contacts existants */}
+              {senderExists && (
+                <View className="bg-emerald-50 rounded-2xl py-3 px-4">
+                  <Text className="text-center font-quicksand-semibold text-emerald-700">
+                    ✓ Expéditeur déjà sauvegardé
+                  </Text>
+                </View>
+              )}
+              {recipientExists && (
+                <View className="bg-emerald-50 rounded-2xl py-3 px-4">
+                  <Text className="text-center font-quicksand-semibold text-emerald-700">
+                    ✓ Destinataire déjà sauvegardé
+                  </Text>
+                </View>
+              )}
+
+              {/* Passer / Continuer */}
               <TouchableOpacity
                 onPress={() => {
                   setShowSaveContactModal(false);
@@ -422,7 +498,7 @@ export default function OrderRecapPage() {
                 className="bg-slate-100 rounded-2xl py-3 px-4"
               >
                 <Text className="text-center font-quicksand-semibold text-slate-700">
-                  Passer
+                  {senderExists && recipientExists ? 'Continuer' : 'Passer'}
                 </Text>
               </TouchableOpacity>
             </View>

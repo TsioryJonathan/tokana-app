@@ -23,6 +23,10 @@ const CourierSettlement = sequelize.define('CourierSettlement', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  mobileMoneyProvider: {
+    type: DataTypes.ENUM('MVOLA', 'AIRTEL', 'ORANGE', 'TELMA'),
+    allowNull: true,
+  },
   declaredBy: {
     type: DataTypes.INTEGER,
     allowNull: true,

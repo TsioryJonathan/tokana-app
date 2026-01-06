@@ -1,6 +1,7 @@
 import User from '../../models/User.js';
 import Order from '../../models/Order.js';
 import { Op } from 'sequelize';
+import { normalizeMgPhone } from '../../utils/phone.js';
 
 function handleErr(res, err) {
   console.error(err);
@@ -14,16 +15,25 @@ function handleErr(res, err) {
 export const listCouriers = async (req, res) => {
   try {
     const { search, gpsEnabled, page = 1, limit = 50 } = req.query;
-    
+
     const where = { role: 'livreur' };
-    
+
     // Recherche par nom, email ou téléphone
     if (search && search.trim()) {
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search.trim()}%` } },
-        { email: { [Op.iLike]: `%${search.trim()}%` } },
-        { phone: { [Op.iLike]: `%${search.trim()}%` } },
+      const trimmed = search.trim();
+      const normalizedPhone = normalizeMgPhone(trimmed);
+      // Build OR conditions for name, email, and phone (raw + normalized)
+      const orConditions = [
+        { name: { [Op.iLike]: `%${trimmed}%` } },
+        { email: { [Op.iLike]: `%${trimmed}%` } },
       ];
+      // Add raw phone search
+      orConditions.push({ phone: { [Op.iLike]: `%${trimmed}%` } });
+      // Add normalized phone search if different from input
+      if (normalizedPhone && normalizedPhone !== trimmed) {
+        orConditions.push({ phone: { [Op.iLike]: `%${normalizedPhone}%` } });
+      }
+      where[Op.or] = orConditions;
     }
     
     // Filtre par GPS activé/désactivé

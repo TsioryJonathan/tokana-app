@@ -64,13 +64,15 @@ export function useSavedContacts() {
         body: data,
       });
       Toast.show({ type: 'success', text1: 'Succès', text2: 'Contact sauvegardé' });
+      // Auto-refresh contacts after creation
+      await fetchContacts();
       return true;
     } catch (err: any) {
       const msg = err?.body?.msg || 'Erreur lors de la sauvegarde du contact';
       Toast.show({ type: 'error', text1: 'Erreur', text2: msg });
       return false;
     }
-  }, []);
+  }, [fetchContacts]);
 
   const updateContact = useCallback(async (id: number, data: Partial<SavedContactFormData>): Promise<boolean> => {
     try {
@@ -81,13 +83,15 @@ export function useSavedContacts() {
         body: data,
       });
       Toast.show({ type: 'success', text1: 'Succès', text2: 'Contact modifié' });
+      // Auto-refresh contacts after update
+      await fetchContacts();
       return true;
     } catch (err: any) {
       const msg = err?.body?.msg || 'Erreur lors de la modification du contact';
       Toast.show({ type: 'error', text1: 'Erreur', text2: msg });
       return false;
     }
-  }, []);
+  }, [fetchContacts]);
 
   const deleteContact = useCallback(async (id: number): Promise<boolean> => {
     try {
@@ -97,13 +101,15 @@ export function useSavedContacts() {
         url: `/api/saved-contacts/${id}`,
       });
       Toast.show({ type: 'success', text1: 'Succès', text2: 'Contact supprimé' });
+      // Auto-refresh contacts after deletion
+      await fetchContacts();
       return true;
     } catch (err: any) {
       const msg = err?.body?.msg || 'Erreur lors de la suppression du contact';
       Toast.show({ type: 'error', text1: 'Erreur', text2: msg });
       return false;
     }
-  }, []);
+  }, [fetchContacts]);
 
   return {
     contacts,

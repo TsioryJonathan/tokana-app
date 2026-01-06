@@ -29,7 +29,7 @@ export function useAdminEveningSettlements() {
 
       const response = await api.request.request({
         method: 'GET',
-        url: '/api/admin/settlements/evening',
+        url: '/api/admin/settlements/list',
         query: params,
       });
 

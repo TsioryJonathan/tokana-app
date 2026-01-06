@@ -5,14 +5,29 @@ import { ServiceState } from "../../types/createorder.type";
 import { assets } from "../../assets/images/assets";
 import { ImageSourcePropType } from "react-native";
 
+export type ServerQuote = {
+  total?: number;
+  pickup?: number;
+  delivery?: number;
+  express?: number;
+  manual?: boolean;
+  instructions?: string | null;
+  contactPhone?: string | null;
+  inferredZone?: 'ville' | 'peripherie' | 'super-peripherie' | null;
+};
+
 const FourthStep = ({
   service,
   setService,
   lockDistance,
+  serverQuote,
+  quoteLoading,
 }: {
   service: ServiceState;
   setService: Dispatch<SetStateAction<ServiceState>>;
   lockDistance?: boolean;
+  serverQuote: ServerQuote | null;
+  quoteLoading: boolean;
 }) => {
   return (
     <View className="flex-1">
@@ -44,6 +59,39 @@ const FourthStep = ({
           </Text>
         </View>
 
+        {/* Prix réel calculé */}
+        {serverQuote && (
+          <View className="mb-4 p-4 rounded-xl bg-gradient-to-r from-[#FFD700]/20 to-[#FFD700]/10 border border-[#FFD700]/30">
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-xs text-gray-600 font-quicksand">Prix calculé pour votre commande</Text>
+                {serverQuote.inferredZone && (
+                  <Text className="text-xs text-[#FFD700] font-quicksand-semibold mt-0.5">
+                    Zone: {serverQuote.inferredZone === 'ville' ? 'Ville' : serverQuote.inferredZone === 'peripherie' ? 'Périphérie' : 'Super Périphérie'}
+                  </Text>
+                )}
+              </View>
+              <View className="items-end">
+                {quoteLoading ? (
+                  <Text className="text-lg text-gray-400">...</Text>
+                ) : (
+                  <Text className="text-2xl font-quicksand-bold text-gray-900">
+                    {serverQuote.total ? serverQuote.total.toLocaleString('fr-FR') : '---'} Ar
+                  </Text>
+                )}
+              </View>
+            </View>
+            {serverQuote.delivery && (
+              <View className="mt-2 pt-2 border-t border-[#FFD700]/30">
+                <Text className="text-xs text-gray-500">
+                  Frais de livraison: {serverQuote.delivery.toLocaleString('fr-FR')} Ar
+                  {serverQuote.pickup && ` + Frais de collecte: ${serverQuote.pickup.toLocaleString('fr-FR')} Ar`}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View className="flex-row gap-4">
           {/* Standard Service - Logo plus visible */}
           <TouchableOpacity
@@ -74,11 +122,19 @@ const FourthStep = ({
             </Text>
             <View className="items-center">
               <Text className="text-xs text-gray-500">À partir de</Text>
-              <Text className={`text-xl font-quicksand-bold ${
-                service.service === "STANDARD" ? "text-emerald-600" : "text-gray-700"
-              }`}>
-                10,000 Ar
-              </Text>
+              {quoteLoading ? (
+                <Text className="text-lg text-gray-400">...</Text>
+              ) : (
+                <Text className={`text-xl font-quicksand-bold ${
+                  service.service === "STANDARD" ? "text-emerald-600" : "text-gray-700"
+                }`}>
+                  {serverQuote?.total
+                    ? serverQuote.total.toLocaleString('fr-FR') + ' Ar'
+                    : serverQuote?.delivery
+                      ? serverQuote.delivery.toLocaleString('fr-FR') + ' Ar'
+                      : '---'}
+                </Text>
+              )}
             </View>
           </TouchableOpacity>
 
@@ -103,25 +159,44 @@ const FourthStep = ({
               Express
             </Text>
             <Text className="text-sm text-gray-500 text-center mb-3">
-              Livraison J+0
+              Livraison J+0 (même jour)
             </Text>
             <View className="items-center">
               <Text className="text-xs text-gray-500">À partir de</Text>
-              <Text className={`text-xl font-quicksand-bold ${
-                service.service === "EXPRESS" ? "text-amber-600" : "text-gray-700"
-              }`}>
-                20,000 Ar
-              </Text>
+              {quoteLoading ? (
+                <Text className="text-lg text-gray-400">...</Text>
+              ) : (
+                <Text className={`text-xl font-quicksand-bold ${
+                  service.service === "EXPRESS" ? "text-amber-600" : "text-gray-700"
+                }`}>
+                  {serverQuote && serverQuote.total && serverQuote.express
+                    ? (serverQuote.total + serverQuote.express).toLocaleString('fr-FR') + ' Ar'
+                    : serverQuote?.express
+                      ? (serverQuote.express + (serverQuote.delivery || 0)).toLocaleString('fr-FR') + ' Ar'
+                      : '---'}
+                </Text>
+              )}
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* Info BM (Bénéfice Marge) */}
-        <View className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-200">
-          <Text className="text-xs font-quicksand text-blue-700">
-            ℹ️ Le prix final peut varier selon la zone de livraison et le poids du colis (BM).
-          </Text>
-        </View>
+        {/* Info zone détectée */}
+        {serverQuote?.inferredZone && (
+          <View className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-200">
+            <Text className="text-xs font-quicksand text-blue-700 text-center">
+              📍 Zone détectée: {serverQuote.inferredZone === 'ville' ? 'Ville (Tana)' : serverQuote.inferredZone === 'peripherie' ? 'Périphérie' : 'Super Périphérie'}
+            </Text>
+          </View>
+        )}
+
+        {/* Info supplémentaire */}
+        {serverQuote?.manual && (
+          <View className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <Text className="text-xs font-quicksand text-amber-700">
+              ⚠️ {serverQuote.instructions || 'Cette commande nécessite une vérification manuelle.'}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );

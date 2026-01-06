@@ -1,8 +1,9 @@
 import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
-import { User, Phone, MapPin, ChevronRight, Globe, Mail } from "lucide-react-native";
+import { User, Phone, MapPin, ChevronRight, Globe, Mail, MapIcon } from "lucide-react-native";
 import { RecipientState } from "../../types/createorder.type";
 import AddressAutocomplete from "../AddressAutocomplete";
+import AddressMapPicker from "../AddressMapPicker";
 import { assets } from "../../assets/images/assets";
 
 export interface SavedRecipient {
@@ -33,6 +34,8 @@ const ThirdStep = ({
 }) => {
   const [showSaved, setShowSaved] = useState(false);
   const [showSavedRecipients, setShowSavedRecipients] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapboxInputValue, setMapboxInputValue] = useState(recipient.address || '');
   const [recipientMode, setRecipientMode] = useState<'existing' | 'new'>('new');
   
@@ -249,6 +252,7 @@ const ThirdStep = ({
                 onSelected={({ label, lat, lng }) => {
                   setMapboxInputValue(label);
                   setRecipient({ ...recipient, address: label });
+                  setCurrentLocation({ lat, lng });
                   onDropoffSelected?.({ label, lat, lng });
                 }}
                 onTextChange={(t) => {
@@ -260,7 +264,24 @@ const ThirdStep = ({
                 inputClassName="font-quicksand text-gray-900 text-base"
               />
             </View>
-            <ChevronRight size={20} color="#9CA3AF" />
+            <TouchableOpacity
+              onPress={() => setShowMapPicker(true)}
+              className="bg-[#FFD700]/10 p-2 rounded-full ml-2"
+              activeOpacity={0.7}
+            >
+              <MapIcon size={20} color="#FFD700" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+          <View className="px-5 pb-3">
+            <TouchableOpacity
+              onPress={() => setShowMapPicker(true)}
+              className="flex-row items-center gap-2"
+              activeOpacity={0.7}
+            >
+              <Text className="text-xs text-[#FFD700] font-quicksand-semibold">
+                📍 Ouvrir la carte pour un repère précis
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -270,6 +291,20 @@ const ThirdStep = ({
           </Text>
         )}
       </View>
+
+      {/* Map Picker Modal */}
+      <AddressMapPicker
+        visible={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onConfirm={({ label, lat, lng }) => {
+          setMapboxInputValue(label);
+          setRecipient({ ...recipient, address: label });
+          setCurrentLocation({ lat, lng });
+          onDropoffSelected?.({ label, lat, lng });
+        }}
+        initialLocation={currentLocation}
+        initialAddress={mapboxInputValue}
+      />
     </View>
   );
 };

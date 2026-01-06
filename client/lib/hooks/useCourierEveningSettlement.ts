@@ -32,6 +32,7 @@ interface Settlement {
   status: 'DECLARED' | 'CONFIRMED';
   cashAmount?: number;
   mobileMoneyAmount?: number;
+  mobileMoneyProvider?: 'MVOLA' | 'AIRTEL' | 'ORANGE' | 'TELMA' | null;
   declaredAt?: string;
   confirmedAt?: string;
 }
@@ -63,6 +64,7 @@ export function useCourierEveningSettlement(initialDate?: string) {
 
   const [cashAmount, setCashAmount] = useState('');
   const [mobileMoneyAmount, setMobileMoneyAmount] = useState('');
+  const [mobileMoneyProvider, setMobileMoneyProvider] = useState<'MVOLA' | 'AIRTEL' | 'ORANGE' | 'TELMA' | null>(null);
   const [declaring, setDeclaring] = useState(false);
 
   const load = useCallback(async () => {
@@ -92,10 +94,19 @@ export function useCourierEveningSettlement(initialDate?: string) {
       const cashNum = cashAmount.trim() ? parseInt(cashAmount.trim(), 10) : 0;
       const mmNum = mobileMoneyAmount.trim() ? parseInt(mobileMoneyAmount.trim(), 10) : 0;
 
+      // Valider le provider si un montant mobile money est spécifié
+      if (mmNum > 0 && !mobileMoneyProvider) {
+        setError('Veuillez sélectionner le fournisseur de mobile money');
+        showToast('Veuillez sélectionner le fournisseur de mobile money', 'error');
+        setDeclaring(false);
+        return;
+      }
+
       const payload = {
         date,
         cashAmount: Number.isFinite(cashNum) ? cashNum : 0,
         mobileMoneyAmount: Number.isFinite(mmNum) ? mmNum : 0,
+        mobileMoneyProvider: mmNum > 0 ? mobileMoneyProvider : null,
       };
 
       await api.request.request({
@@ -114,7 +125,7 @@ export function useCourierEveningSettlement(initialDate?: string) {
     } finally {
       setDeclaring(false);
     }
-  }, [date, cashAmount, mobileMoneyAmount, api, load, showToast]);
+  }, [date, cashAmount, mobileMoneyAmount, mobileMoneyProvider, api, load, showToast]);
 
   const summary = useMemo<EveningTotals | null>(() => {
     if (!data) return null;
@@ -132,6 +143,8 @@ export function useCourierEveningSettlement(initialDate?: string) {
     setCashAmount,
     mobileMoneyAmount,
     setMobileMoneyAmount,
+    mobileMoneyProvider,
+    setMobileMoneyProvider,
     declaring,
     load,
     declareSettlement,

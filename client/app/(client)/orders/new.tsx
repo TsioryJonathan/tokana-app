@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getApiClient } from "../../../lib/api/client";
 import { PricingQuoteRequest } from "../../../lib/api/models/PricingQuoteRequest";
@@ -86,6 +87,16 @@ export default function NewOrderWizard() {
   useEffect(() => {
     fetchContacts();
   }, [fetchContacts]);
+
+  // Rafraîchir automatiquement les contacts et adresses lors du focus sur la page
+  // (ex: quand l'utilisateur revient de la page de gestion des contacts)
+  useFocusEffect(
+    useCallback(() => {
+      // Rafraîchir les contacts sauvegardés
+      fetchContacts();
+      // Les adresses sont automatiquement rafraîchies par useProfile().useFocusEffect
+    }, [fetchContacts])
+  );
 
   // Locality selection
   const [selectedPickupLocality, setSelectedPickupLocality] = useState<LocalityItem | null>(null);
@@ -308,7 +319,7 @@ export default function NewOrderWizard() {
 
         {step === 2 && <FirstStep parcel={parcel} setParcel={setParcel} />}
 
-        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={true} />}
+        {step === 3 && <FourthStep service={service} setService={setService} lockDistance={true} serverQuote={serverQuote} quoteLoading={quoteLoading} />}
 
         {step === 4 && (
           <FifthStep 

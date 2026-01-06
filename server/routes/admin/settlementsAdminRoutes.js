@@ -1,20 +1,20 @@
 import { Router } from 'express';
 import { protect, authorize } from '../../middleware/authMiddleware.js';
-import { 
-  listSettlements, 
+import {
+  listSettlements,
   getEveningSettlementDetails,
-  confirmEveningSettlement 
+  confirmEveningSettlement
 } from '../../controllers/admin/settlementsAdminController.js';
 
 const router = Router();
 
 router.use(protect, authorize('admin'));
 
-// Liste de tous les règlements (optionally filtered by date)
-router.get('/evening', listSettlements);
+// Liste de tous les règlements (sans détails des commandes)
+router.get('/list', listSettlements);
 
-// Détail d'un règlement (liste des commandes associées pour vérification)
-router.get('/evening/details', getEveningSettlementDetails);
+// Détail d'un règlement avec les commandes (endpoint principal utilisé par le frontend)
+router.get('/evening', getEveningSettlementDetails);
 
 // Confirmation d'un règlement
 router.post('/evening/:id/confirm', confirmEveningSettlement);

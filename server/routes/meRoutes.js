@@ -3,14 +3,17 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, authorize } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
-import { putMe } from '../controllers/meController.js';
+import { putMe, updateGps } from '../controllers/meController.js';
 
 const router = express.Router();
 
 // PUT /api/me - update profile basic fields
 router.put('/', protect, putMe);
+
+// PATCH /api/me/gps - update GPS location (for couriers)
+router.patch('/gps', protect, authorize('livreur'), updateGps);
 
 // Prepare upload storage
 const __filename = fileURLToPath(import.meta.url);

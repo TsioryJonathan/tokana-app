@@ -182,13 +182,20 @@ export const listUsers = async (req, res, next) => {
     }
     if (q) {
       const like = `%${q}%`;
-      Object.assign(where, {
-        [Op.or]: [
-          { name: { [Op.iLike]: like } },
-          { email: { [Op.iLike]: like } },
-          { phone: { [Op.iLike]: like } },
-        ],
-      });
+      // Normalize phone search to handle various formats (030, +26130, etc.)
+      const normalizedPhone = normalizeMgPhone(q);
+      // Build OR conditions for name, email, and phone (raw + normalized)
+      const orConditions = [
+        { name: { [Op.iLike]: like } },
+        { email: { [Op.iLike]: like } },
+      ];
+      // Add raw phone search
+      orConditions.push({ phone: { [Op.iLike]: like } });
+      // Add normalized phone search if different from input
+      if (normalizedPhone && normalizedPhone !== q.trim()) {
+        orConditions.push({ phone: { [Op.iLike]: `%${normalizedPhone}%` } });
+      }
+      Object.assign(where, { [Op.or]: orConditions });
     }
 
     const { rows, count } = await User.findAndCountAll({

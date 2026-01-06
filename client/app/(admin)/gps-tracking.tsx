@@ -26,7 +26,7 @@ export default function AdminGpsTrackingScreen() {
       fetchCouriers();
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchCouriers]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -90,9 +90,9 @@ export default function AdminGpsTrackingScreen() {
                     longitude: courier.lastGpsLng!,
                   }}
                   title={courier.name}
-                  description={`Dernière position: ${new Date(
-                    courier.lastGpsAt!
-                  ).toLocaleTimeString('fr-FR')}`}
+                  description={`Dernière position: ${courier.lastGpsAt
+                    ? new Date(courier.lastGpsAt).toLocaleTimeString('fr-FR')
+                    : 'Inconnue'}`}
                   onPress={() => setSelectedCourier(courier.id)}
                 >
                   <View className="bg-blue-600 p-2 rounded-full">
@@ -166,7 +166,9 @@ export default function AdminGpsTrackingScreen() {
                           Lng: {courier.lastGpsLng?.toFixed(6)}
                         </Text>
                         <Text className="text-xs text-slate-500 font-quicksand mt-2">
-                          Mis à jour: {new Date(courier.lastGpsAt!).toLocaleString('fr-FR')}
+                          Mis à jour: {courier.lastGpsAt
+                            ? new Date(courier.lastGpsAt).toLocaleString('fr-FR')
+                            : 'Inconnu'}
                         </Text>
                       </View>
 

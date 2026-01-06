@@ -18,6 +18,18 @@ export interface AdminGpsCourier {
   };
 }
 
+// Backend fields mapping
+interface BackendGpsCourier {
+  id: number;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  gpsTrackingEnabled: boolean;
+  gpsLastLat: number | null;
+  gpsLastLng: number | null;
+  gpsLastSeenAt: string | null;
+}
+
 export function useAdminGps() {
   const [couriers, setCouriers] = useState<AdminGpsCourier[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +45,19 @@ export function useAdminGps() {
         url: '/api/admin/gps/couriers',
       });
 
-      setCouriers(response.items || []);
+      // Map backend fields to frontend interface
+      const items = (response.items || []).map((item: BackendGpsCourier) => ({
+        id: item.id,
+        name: item.name || '',
+        email: item.email || '',
+        phone: item.phone || '',
+        gpsEnabled: item.gpsTrackingEnabled,
+        lastGpsLat: item.gpsLastLat,
+        lastGpsLng: item.gpsLastLng,
+        lastGpsAt: item.gpsLastSeenAt,
+      }));
+
+      setCouriers(items);
     } catch (err: any) {
       const msg = err?.body?.msg || 'Erreur lors du chargement des positions GPS';
       setError(msg);
