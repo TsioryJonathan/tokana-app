@@ -8,16 +8,22 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdminGps } from '../../lib/hooks/useAdminGps';
 
+// Initialiser Mapbox
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
+
 const { width, height } = Dimensions.get('window');
+const DEFAULT_CENTER: [number, number] = [47.5079, -18.8792]; // Antananarivo [lng, lat]
 
 export default function AdminGpsTrackingScreen() {
   const { couriers, loading, fetchCouriers } = useAdminGps();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCourier, setSelectedCourier] = useState<number | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
+  const [zoomLevel, setZoomLevel] = useState(10);
 
   useEffect(() => {
     fetchCouriers();
@@ -38,13 +44,17 @@ export default function AdminGpsTrackingScreen() {
     (c) => c.gpsEnabled && c.lastGpsLat && c.lastGpsLng
   );
 
-  // Centre de la carte (Antananarivo par défaut)
-  const initialRegion = {
-    latitude: -18.8792,
-    longitude: 47.5079,
-    latitudeDelta: 0.2,
-    longitudeDelta: 0.2,
-  };
+  // Centrer la carte sur le livreur sélectionné
+  useEffect(() => {
+    if (selectedCourier) {
+      const courier = activeCouriers.find(c => c.id === selectedCourier);
+      if (courier && courier.lastGpsLng && courier.lastGpsLat) {
+        const newCenter: [number, number] = [courier.lastGpsLng, courier.lastGpsLat];
+        setMapCenter(newCenter);
+        setZoomLevel(14);
+      }
+    }
+  }, [selectedCourier, activeCouriers]);
 
   return (
     <View className="flex-1 bg-slate-50">
@@ -73,34 +83,78 @@ export default function AdminGpsTrackingScreen() {
         </View>
       ) : (
         <View className="flex-1">
-          {/* Carte */}
+          {/* Carte Mapbox */}
           <View style={{ height: height * 0.5 }}>
-            <MapView
-              provider={PROVIDER_GOOGLE}
+            <Mapbox.MapView
               style={{ flex: 1 }}
-              initialRegion={initialRegion}
-              showsUserLocation
-              showsMyLocationButton
+              onCameraChanged={(state) => {
+                setMapCenter(state.properties.center as [number, number]);
+                setZoomLevel(state.properties.zoom);
+              }}
             >
+              <Mapbox.Camera
+                centerCoordinate={mapCenter}
+                zoomLevel={zoomLevel}
+                animationMode="flyTo"
+                animationDuration={500}
+              />
+              
+              <Mapbox.UserLocation />
+              
               {activeCouriers.map((courier) => (
-                <Marker
+                <Mapbox.PointAnnotation
                   key={courier.id}
-                  coordinate={{
-                    latitude: courier.lastGpsLat!,
-                    longitude: courier.lastGpsLng!,
-                  }}
-                  title={courier.name}
-                  description={`Dernière position: ${courier.lastGpsAt
-                    ? new Date(courier.lastGpsAt).toLocaleTimeString('fr-FR')
-                    : 'Inconnue'}`}
-                  onPress={() => setSelectedCourier(courier.id)}
+                  id={`courier-${courier.id}`}
+                  coordinate={[courier.lastGpsLng!, courier.lastGpsLat!]}
+                  onSelected={() => setSelectedCourier(courier.id)}
                 >
-                  <View className="bg-blue-600 p-2 rounded-full">
+                  <View className="bg-blue-600 p-2 rounded-full border-2 border-white shadow-lg">
                     <Ionicons name="bicycle" size={20} color="#fff" />
                   </View>
-                </Marker>
+                  <Mapbox.Callout title={courier.name}>
+                    <View className="p-2">
+                      <Text className="text-sm font-semibold">{courier.name}</Text>
+                      <Text className="text-xs text-gray-600">
+                        Dernière position: {courier.lastGpsAt
+                          ? new Date(courier.lastGpsAt).toLocaleTimeString('fr-FR')
+                          : 'Inconnue'}
+                      </Text>
+                    </View>
+                  </Mapbox.Callout>
+                </Mapbox.PointAnnotation>
               ))}
-            </MapView>
+              
+              {/* Lignes de trajectoire (optionnel) */}
+              {activeCouriers.length > 0 && (
+                <Mapbox.ShapeSource
+                  id="couriers-source"
+                  shape={{
+                    type: 'FeatureCollection',
+                    features: activeCouriers.map(courier => ({
+                      type: 'Feature',
+                      geometry: {
+                        type: 'Point',
+                        coordinates: [courier.lastGpsLng!, courier.lastGpsLat!],
+                      },
+                      properties: {
+                        id: courier.id,
+                        name: courier.name,
+                      },
+                    })),
+                  }}
+                >
+                  <Mapbox.CircleLayer
+                    id="couriers-circles"
+                    style={{
+                      circleRadius: 8,
+                      circleColor: '#2563EB',
+                      circleStrokeWidth: 2,
+                      circleStrokeColor: '#FFFFFF',
+                    }}
+                  />
+                </Mapbox.ShapeSource>
+              )}
+            </Mapbox.MapView>
           </View>
 
           {/* Liste des livreurs */}

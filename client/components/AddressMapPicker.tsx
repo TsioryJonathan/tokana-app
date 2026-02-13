@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,19 @@ import {
   TextInput,
   StyleSheet,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { X, MapPin, Navigation, Check } from 'lucide-react-native';
+import Mapbox from '@rnmapbox/maps';
+import { X, MapPin, Navigation, Check, Search } from 'lucide-react-native';
+import { geocodeSearch, type MapboxFeature } from '../lib/mapbox/geocoding';
 
-const DEFAULT_REGION = {
-  latitude: -18.8792, // Antananarivo
-  longitude: 47.5079,
-  latitudeDelta: 0.02,
-  longitudeDelta: 0.02,
-};
+// Initialiser Mapbox (doit être fait une fois)
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '');
+
+const DEFAULT_CENTER = [-18.8792, 47.5079]; // Antananarivo [lng, lat]
 
 export type AddressMapPickerProps = {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (location: { label: string; lat: number; lng: number }) => void;
+  onConfirm: (location: { label: string; lat: number; lng: number; address?: string }) => void;
   initialLocation?: { lat: number; lng: number; address?: string } | null;
   initialAddress?: string;
 };
@@ -33,43 +32,60 @@ export default function AddressMapPicker({
   initialLocation,
   initialAddress = '',
 }: AddressMapPickerProps) {
-  const mapRef = useRef<MapView>(null);
-  const [region, setRegion] = useState<Region>(
-    initialLocation
-      ? {
-          latitude: initialLocation.lat,
-          longitude: initialLocation.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        }
-      : DEFAULT_REGION
+  const mapRef = useRef<Mapbox.MapView>(null);
+  const [center, setCenter] = useState<[number, number]>(
+    initialLocation ? [initialLocation.lng, initialLocation.lat] : DEFAULT_CENTER
   );
-  const [markerPosition, setMarkerPosition] = useState<{
-    latitude: number;
-    longitude: number;
-  }>(
-    initialLocation
-      ? { latitude: initialLocation.lat, longitude: initialLocation.lng }
-      : { latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude }
+  const [markerPosition, setMarkerPosition] = useState<[number, number]>(
+    initialLocation ? [initialLocation.lng, initialLocation.lat] : DEFAULT_CENTER
   );
   const [addressInput, setAddressInput] = useState(initialAddress);
   const [loading, setLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<MapboxFeature[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(12);
+
+  // Recherche d'adresse avec Mapbox
+  const handleSearchAddress = async () => {
+    if (!addressInput.trim()) return;
+    
+    setLoading(true);
+    try {
+      const results = await geocodeSearch(addressInput, { 
+        limit: 5, 
+        country: 'MG' 
+      });
+      setSearchResults(results);
+      setShowSearchResults(true);
+      
+      if (results.length > 0) {
+        const firstResult = results[0];
+        const newCenter: [number, number] = firstResult.center;
+        setCenter(newCenter);
+        setMarkerPosition(newCenter);
+        setZoomLevel(14);
+        
+        mapRef.current?.flyTo(newCenter, 500);
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMapPress = (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMarkerPosition({ latitude, longitude });
-    // Centrer la carte sur la nouvelle position
-    setRegion((prev) => ({
-      ...prev,
-      latitude,
-      longitude,
-    }));
+    const { geometry } = event;
+    if (geometry && geometry.coordinates) {
+      const [lng, lat] = geometry.coordinates;
+      setMarkerPosition([lng, lat]);
+      setCenter([lng, lat]);
+    }
   };
 
   const handleCenterOnUser = async () => {
     setLoading(true);
     try {
-      // Demander la position actuelle
       const Location = (await import('expo-location')).default;
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -77,15 +93,12 @@ export default function AddressMapPicker({
       }
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
-      const newRegion = {
-        latitude,
-        longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      };
-      setRegion(newRegion);
-      setMarkerPosition({ latitude, longitude });
-      mapRef.current?.animateToRegion(newRegion, 500);
+      const newCenter: [number, number] = [longitude, latitude];
+      setCenter(newCenter);
+      setMarkerPosition(newCenter);
+      setZoomLevel(14);
+      
+      mapRef.current?.flyTo(newCenter, 500);
     } catch (error) {
       console.warn('Location error:', error);
     } finally {
@@ -93,11 +106,24 @@ export default function AddressMapPicker({
     }
   };
 
+  const handleSelectSearchResult = (result: MapboxFeature) => {
+    const [lng, lat] = result.center;
+    setCenter([lng, lat]);
+    setMarkerPosition([lng, lat]);
+    setAddressInput(result.place_name);
+    setShowSearchResults(false);
+    setZoomLevel(14);
+    
+    mapRef.current?.flyTo([lng, lat], 500);
+  };
+
   const handleConfirm = () => {
+    const [lng, lat] = markerPosition;
     onConfirm({
-      label: addressInput || `Position: ${markerPosition.latitude.toFixed(5)}, ${markerPosition.longitude.toFixed(5)}`,
-      lat: markerPosition.latitude,
-      lng: markerPosition.longitude,
+      label: addressInput || `Position: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+      lat,
+      lng,
+      address: addressInput,
     });
     onClose();
   };
@@ -117,36 +143,96 @@ export default function AddressMapPicker({
           </TouchableOpacity>
           <View style={styles.headerTitle}>
             <Text style={styles.headerTitleText}>Sélectionner sur la carte</Text>
-            <Text style={styles.headerSubtitle}>Touchez la carte pour préciser l'emplacement</Text>
+            <Text style={styles.headerSubtitle}>Touchez la carte ou recherchez une adresse</Text>
           </View>
           <View style={styles.headerButton} />
         </View>
 
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Search size={20} color="#64748B" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher une adresse..."
+              value={addressInput}
+              onChangeText={setAddressInput}
+              onSubmitEditing={handleSearchAddress}
+              placeholderTextColor="#94A3B8"
+            />
+            {addressInput.length > 0 && (
+              <TouchableOpacity onPress={() => setAddressInput('')}>
+                <X size={18} color="#64748B" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={handleSearchAddress}
+            disabled={loading || !addressInput.trim()}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.searchButtonText}>Rechercher</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Results */}
+        {showSearchResults && searchResults.length > 0 && (
+          <View style={styles.searchResults}>
+            {searchResults.map((result) => (
+              <TouchableOpacity
+                key={result.id}
+                style={styles.searchResultItem}
+                onPress={() => handleSelectSearchResult(result)}
+              >
+                <MapPin size={16} color="#64748B" />
+                <Text style={styles.searchResultText} numberOfLines={2}>
+                  {result.place_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {/* Map */}
-        <MapView
+        <Mapbox.MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={region}
-          region={region}
           onPress={handleMapPress}
-          onRegionChangeComplete={setRegion}
-          showsUserLocation
-          showsMyLocationButton={false}
+          onCameraChanged={(state) => {
+            setCenter(state.properties.center as [number, number]);
+            setZoomLevel(state.properties.zoom);
+          }}
         >
-          <Marker
+          <Mapbox.Camera
+            centerCoordinate={center}
+            zoomLevel={zoomLevel}
+            animationMode="flyTo"
+            animationDuration={500}
+          />
+          
+          <Mapbox.PointAnnotation
+            id="marker"
             coordinate={markerPosition}
             draggable
-            onDragEnd={(e) => {
-              const { latitude, longitude } = e.nativeEvent.coordinate;
-              setMarkerPosition({ latitude, longitude });
+            onDragEnd={(event) => {
+              const { geometry } = event;
+              if (geometry && geometry.coordinates) {
+                const [lng, lat] = geometry.coordinates;
+                setMarkerPosition([lng, lat]);
+              }
             }}
           >
             <View style={styles.markerContainer}>
               <MapPin size={32} color="#FFD700" strokeWidth={3} />
             </View>
-          </Marker>
-        </MapView>
+          </Mapbox.PointAnnotation>
+          
+          <Mapbox.UserLocation />
+        </Mapbox.MapView>
 
         {/* Center button */}
         <TouchableOpacity
@@ -163,21 +249,8 @@ export default function AddressMapPicker({
           <View style={styles.coordinateInfo}>
             <Text style={styles.coordinateLabel}>Position sélectionnée</Text>
             <Text style={styles.coordinateValue}>
-              {markerPosition.latitude.toFixed(6)}, {markerPosition.longitude.toFixed(6)}
+              {markerPosition[1].toFixed(6)}, {markerPosition[0].toFixed(6)}
             </Text>
-          </View>
-
-          <View style={styles.addressInputContainer}>
-            <View style={styles.inputRow}>
-              <MapPin size={20} color="#64748B" />
-              <TextInput
-                style={styles.addressInput}
-                placeholder="Nom du lieu / Repère (optionnel)"
-                value={addressInput}
-                onChangeText={setAddressInput}
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
           </View>
 
           <TouchableOpacity
@@ -229,6 +302,66 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    gap: 8,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    marginRight: 8,
+    fontSize: 15,
+    color: '#0F172A',
+  },
+  searchButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  searchButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  searchResults: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    maxHeight: 200,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 12,
+  },
+  searchResultText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#334155',
+  },
   map: {
     flex: 1,
   },
@@ -238,7 +371,7 @@ const styles = StyleSheet.create({
   },
   centerButton: {
     position: 'absolute',
-    top: 80,
+    top: 180,
     right: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 28,
@@ -282,25 +415,6 @@ const styles = StyleSheet.create({
   coordinateValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F172A',
-  },
-  addressInputContainer: {
-    marginBottom: 16,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  addressInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 15,
     color: '#0F172A',
   },
   confirmButton: {
