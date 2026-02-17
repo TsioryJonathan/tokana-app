@@ -52,10 +52,9 @@ export function useProfile() {
         setPhone(me.phone || '');
         setEmail(me.email || '');
         setRole(me.role || null);
-        setAvatarUrl((me as any).avatarUrl || null);
-        // Optional verification statuses (if provided by backend)
-        setPhoneVerifiedAt((me as any).phoneVerifiedAt || null);
-        setEmailVerifiedAt((me as any).emailVerifiedAt || null);
+        setAvatarUrl(me.avatarUrl || null);
+        setPhoneVerifiedAt(me.phoneVerifiedAt || null);
+        setEmailVerifiedAt(me.emailVerifiedAt || null);
         setInitialProfile({ name: me.name || '', phone: me.phone || '', email: me.email || '', addressDetail: '', addressId: null });
       } catch (e) {
         console.warn('/api/me failed', e);
@@ -78,14 +77,14 @@ export function useProfile() {
           if (editing) return; // do not override while user is editing
           const [me, rows] = await Promise.all([
             api.me.getApiMe().catch(() => null),
-            (api as any).addresses.getApiAddresses().catch(() => []),
+            api.addresses.getApiAddresses().catch(() => [] as any[]),
           ]);
           if (!active) return;
           if (me) {
-            setAvatarUrl((me as any).avatarUrl || null);
+            setAvatarUrl(me.avatarUrl || null);
           }
           if (Array.isArray(rows)) {
-            const list = rows.map((r: any) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null, isDefault: !!r.isDefault }));
+            const list = rows.map((r) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null, isDefault: !!r.isDefault }));
             setAddresses(list);
             const first = list[0] || null;
             setAddressEdit(first?.detail ?? '');
@@ -113,7 +112,7 @@ export function useProfile() {
     let mounted = true;
     (async () => {
       try {
-        const rows: any = await (api as any).addresses.getApiAddresses();
+        const rows = await api.addresses.getApiAddresses();
         if (!mounted) return;
         const list = Array.isArray(rows)
           ? rows.map((r) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', mapboxAddress: r.mapboxAddress ?? null, lat: r.lat != null ? Number(r.lat) : null, lng: r.lng != null ? Number(r.lng) : null, isDefault: !!r.isDefault }))
@@ -142,7 +141,7 @@ export function useProfile() {
     }
     // Persist name/phone/email
     try {
-      await (api as any).me.putApiMe({ name, email, phone });
+      await api.me.putApiMe({ name, email, phone });
     } catch (e) {
       console.warn('put /api/me failed', e);
       showToast("Impossible d'enregistrer le profil", 'error');
@@ -154,15 +153,15 @@ export function useProfile() {
       const managed = addresses[0] || null;
       if (managed) {
         if (addressEdit !== initialProfile.addressDetail) {
-          const body: any = { label: managed.label || 'Adresse', detail: addressEdit };
-          await (api as any).addresses.putApiAddresses(Number(managed.id), body);
+          const body = { label: managed.label || 'Adresse', detail: addressEdit };
+          await api.addresses.putApiAddresses(Number(managed.id), body);
         }
       } else if (addressEdit.trim()) {
-        const body: any = { label: 'Adresse', detail: addressEdit };
-        await (api as any).addresses.postApiAddresses(body);
+        const body = { label: 'Adresse', detail: addressEdit };
+        await api.addresses.postApiAddresses(body);
       }
       // Re-fetch authoritative list and reset local state from server
-      const fresh: any[] = await (api as any).addresses.getApiAddresses();
+      const fresh = await api.addresses.getApiAddresses();
       const normalized = Array.isArray(fresh)
         ? fresh.map((r) => ({ id: String(r.id), label: r.label ?? '', detail: r.detail ?? '', isDefault: !!r.isDefault }))
         : [];
@@ -178,7 +177,6 @@ export function useProfile() {
       return;
     }
 
-    // TODO: implement API update for name/phone/email when backend endpoint exists
     // Exit edit mode and notify
     setEditing(false);
     showToast('Profil mis à jour', 'success');

@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import type { User } from '../api/models/User';
+
 const KEY_ACCESS = 'tokana_access_token';
 const KEY_REFRESH = 'tokana_refresh_token';
 const KEY_USER = 'tokana_user_json';
@@ -8,7 +10,7 @@ const KEY_USER = 'tokana_user_json';
 export type SessionData = {
   token?: string; // access
   refreshToken?: string;
-  user?: any;
+  user?: User;
 };
 
 type StorageLike = {
@@ -84,7 +86,7 @@ export async function getRefreshToken(): Promise<string | undefined> {
   }
 }
 
-export async function getUser<T = any>(): Promise<T | undefined> {
+export async function getUser<T = User>(): Promise<T | undefined> {
   try {
     const store = await getStorage();
     const raw = await store.getItem(KEY_USER);

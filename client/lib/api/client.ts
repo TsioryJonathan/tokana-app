@@ -28,34 +28,17 @@ export function getApiClient(): TokanaApiClient {
   const apiBaseProd = extra.API_BASE_PROD;
   const apiBaseDev = extra.API_BASE_DEV;
   
-  console.log("[TokanaApi] 🔍 Diagnostic de configuration:");
-  console.log("  - EXPO_PUBLIC_USE_LOCAL_API:", useLocalApi);
-  console.log("  - EXPO_PUBLIC_API_BASE_URL:", envBase);
-  console.log("  - extra.API_BASE_PROD:", apiBaseProd);
-  console.log("  - extra.API_BASE_DEV:", apiBaseDev);
-  console.log("  - Constants.expoConfig.extra:", JSON.stringify(extra, null, 2));
-
   let base: string | undefined;
   
-  // MODE DÉVELOPPEMENT: Utiliser l'URL depuis app.json (API_BASE_PROD ou API_BASE_DEV)
-  // Pour revenir en production Render, changez les URLs dans app.json
   if (useLocalApi && envBase && envBase.trim().length > 0) {
-    // Mode développement avec API locale explicite via variable d'environnement
     base = envBase.trim();
-    console.log("[TokanaApi] ⚠️ MODE DÉVELOPPEMENT (ENV) - Utilisation de l'API LOCALE:", base);
   } else if (apiBaseProd && apiBaseProd.trim().length > 0) {
-    // Utiliser API_BASE_PROD depuis app.json (peut être local ou distant)
     base = apiBaseProd.trim();
-    console.log("[TokanaApi] ✅ Utilisation de API_BASE_PROD depuis app.json:", base);
   } else if (apiBaseDev && apiBaseDev.trim().length > 0) {
-    // Fallback sur API_BASE_DEV
     base = apiBaseDev.trim();
-    console.log("[TokanaApi] ✅ Utilisation de API_BASE_DEV depuis app.json:", base);
   } else {
-    // Fallback final sur Render si aucune config n'est trouvée
     const RENDER_API_URL = "https://tokana-app.onrender.com";
     base = RENDER_API_URL;
-    console.log("[TokanaApi] ⚠️ Aucune config trouvée, fallback sur Render:", base);
   }
   currentBase = base!;
   // Custom HttpRequest to handle 401 globally

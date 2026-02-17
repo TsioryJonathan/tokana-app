@@ -69,7 +69,7 @@ export default function Profile() {
         totalDeliveries: completed.length,
         todayDeliveries: todayCompleted.length,
         totalRevenue,
-        averageRating: 0, // TODO: calculer depuis les avis
+        averageRating: 0, // Note: backend ne fournit pas encore les avis
         activeOrders: active.length,
       });
     } catch (e) {

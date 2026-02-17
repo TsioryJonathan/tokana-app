@@ -58,7 +58,6 @@ export default function OrderDetails() {
       setLoading(true);
       try {
         const data = await api.orders.getApiOrders1(Number(id));
-        console.log(data);
 
         const ui = mapBackendOrderToUI(data);
         if (mounted) {

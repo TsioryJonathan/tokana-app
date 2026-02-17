@@ -193,7 +193,7 @@ export default function OrderRecapPage() {
     } catch (e: any) {
       // Surface server error message to the user for better diagnosis (Joi/business errors)
       let msg = e?.body?.msg || e?.message || "Création échouée";
-      console.log('[recap] Erreur création commande:', e?.status, msg, e?.body);
+      console.warn('[recap] Erreur création commande:', e?.status, msg, e?.body);
       
       // Normaliser le message d'erreur : remplacer "Téléphone non vérifié" par "Email non vérifié"
       // (au cas où le serveur n'a pas été redémarré et utilise encore l'ancien code)
